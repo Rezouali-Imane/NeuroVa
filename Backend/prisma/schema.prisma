@@ -1,15 +1,357 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
+
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+
+model users {
+  userid                    String                     @id @default(dbgenerated("('usr'::text || nextval('userid_seq'::regclass))"))
+  name                      String
+  lastname                  String
+  username                  String                     @unique
+  email                     String                     @unique
+  passwordhash              String                    
+  bio                       String?
+  userrole                  userrole
+  xppoints                  Int                        @default(0)
+  failedloginattempts       Int                        @default(0)
+  islocked                  Boolean                    @default(false)
+  createdat                 DateTime                   @default(now()) @db.Timestamptz(6)
+  leaderboardid             String?
+  isverified Boolean @default(false)
+  leaderboard               leaderboard?               @relation(fields: [leaderboardid], references: [leaderboardid], onDelete: NoAction, onUpdate: NoAction)
+  admin                     admin?
+  student                   student?
+  assistant                 assistant[]
+  digitaldesciplinesettings digitaldesciplinesettings?
+  focussession              focussession[]
+  tasklist                  tasklist[]
+  task                      task[]
+  note                      note[]
+  notification              notification[]
+  achievement               achievement[]
+  studyroom_user            studyroom_user[]
+  chathistory               chathistory[]
+  passwordresettoken        passwordresettoken[]
+  emailverificationtoken emailverificationtoken[]
+}
+
+model student {
+  userid             String  @id
+  major              String?
+  focusstreak        Int     @default(0)
+  productivitypoints Int     @default(0)
+  focusmodeenabled   Boolean @default(false)
+  users              users   @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model admin {
+  userid String @id
+  users  users  @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+
+model passwordresettoken {
+  tokenid   String   @id @default(dbgenerated("('tkn'::text || nextval('tokenid_seq'::regclass))"))
+  userid    String
+  tokenhash String   @unique
+  expiresat DateTime @db.Timestamptz(6)
+  usedat    DateTime? @db.Timestamptz(6)
+  createdat DateTime @default(now()) @db.Timestamptz(6)
+  users     users    @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+
+model leaderboard {
+  leaderboardid String   @id @default(dbgenerated("('ldr'::text || nextval('leaderboardid_seq'::regclass))"))
+  lastupdated   DateTime @default(now()) @db.Timestamptz(6)
+  users         users[]
+}
+
+model achievement {
+  achievementid String  @id @default(dbgenerated("('achv'::text || nextval('achievementid_seq'::regclass))"))
+  userid        String?
+  title         String  @unique
+  description   String?
+  pointreward   Int     @default(0)
+  earnedat      DateTime @default(now()) @db.Timestamptz(6)
+  users         users?  @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+
+model tasklist {
+  listid     String    @id @default(dbgenerated("('lst'::text || nextval('listid_seq'::regclass))"))
+  userid     String
+  scheduleid String?
+  name       String
+  createdat  DateTime  @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  schedule   schedule? @relation(fields: [scheduleid], references: [scheduleid], onDelete: NoAction, onUpdate: NoAction)
+  task       task[]
+}
+
+model task {
+  taskid            String              @id @default(dbgenerated("('tsk'::text || nextval('taskid_seq'::regclass))"))
+  userid            String
+  listid            String
+  title             String
+  description       String?
+  deadline          DateTime?           @db.Timestamptz(6)
+  priority          Int                 @default(0)
+  status            taskstatus          @default(PENDING)
+  category          taskcategory        @default(PERSONAL)
+  googleeventid     String?
+  syncwithgoogle    Boolean             @default(false)
+  createdat         DateTime            @default(now()) @db.Timestamptz(6)
+  updatedat         DateTime            @updatedAt
+  users             users               @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  tasklist          tasklist            @relation(fields: [listid], references: [listid], onDelete: NoAction, onUpdate: NoAction)
+  task_focussession task_focussession[]
+  notification      notification[]      
+}
+
+model task_focussession {
+  taskid       String
+  sessionid    String
+  task         task         @relation(fields: [taskid], references: [taskid], onDelete: NoAction, onUpdate: NoAction)
+  focussession focussession @relation(fields: [sessionid], references: [sessionid], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([taskid, sessionid])
+}
+
+
+model schedule {
+  scheduleid   String         @id @default(dbgenerated("('sch'::text || nextval('scheduleid_seq'::regclass))"))
+  createdat    DateTime       @default(now()) @db.Timestamptz(6)
+  focussession focussession[]
+  tasklist     tasklist[]
+}
+
+
+
+model focussession {
+  sessionid          String              @id @default(dbgenerated("('ssn'::text || nextval('sessionid_seq'::regclass))"))
+  userid             String
+  scheduleid         String?
+  roomid             String?
+  starttime          DateTime            @db.Timestamptz(6)
+  endtime            DateTime            @db.Timestamptz(6)
+  allowbreakminutes  Int                 @default(0)
+  focusscore         Float               @default(0)
+  status             sessionstatus       @default(SCHEDULED)
+  users              users               @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  schedule           schedule?           @relation(fields: [scheduleid], references: [scheduleid], onDelete: NoAction, onUpdate: NoAction)
+  studyroom          studyroom?          @relation(fields: [roomid], references: [roomid], onDelete: NoAction, onUpdate: NoAction)
+  focusaudiosettings focusaudiosettings?
+  timer              timer?
+  task_focussession  task_focussession[]
+  notification       notification[]
+}
+
+model timer {
+  timerid          String       @id @default(dbgenerated("('tmr'::text || nextval('timerid_seq'::regclass))"))
+  sessionid        String       @unique
+  type             timertype    @default(POMODORO)
+  durationminutes  Int          @default(25)
+  breakminutes     Int          @default(5)
+  longbreakminutes Int          @default(15)
+  pomodoroscycle   Int          @default(4)
+  isrunning        Boolean      @default(false)
+  remainingseconds Int          @default(0)
+  starttime        DateTime?    @db.Timestamptz(6)
+  endtime          DateTime?    @db.Timestamptz(6)
+  focussession     focussession @relation(fields: [sessionid], references: [sessionid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model focusaudiosettings {
+  settingsid       String         @id @default(dbgenerated("('fas'::text || nextval('settingsid_seq'::regclass))"))
+  sessionid        String         @unique
+  volumelevel      Float          @default(1.0)
+  mixambientsounds Boolean        @default(false)
+  focussession     focussession   @relation(fields: [sessionid], references: [sessionid], onDelete: NoAction, onUpdate: NoAction)
+  ambientsound     ambientsound[]
+}
+
+model ambientsound {
+  soundid            String             @id @default(dbgenerated("('snd'::text || nextval('soundid_seq'::regclass))"))
+  settingsid         String
+  name               String
+  audiourl           String?
+  islooping          Boolean            @default(false)
+  focusaudiosettings focusaudiosettings @relation(fields: [settingsid], references: [settingsid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+
+model assistant {
+  assistantid   String          @id @default(dbgenerated("('asst'::text || nextval('assistantid_seq'::regclass))"))
+  userid        String?
+  supportmajor  String?
+  users         users?          @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  knowledgebase knowledgebase[]
+}
+
+model knowledgebase {
+  knowledgeid String     @id @default(dbgenerated("('kng'::text || nextval('knowledgeid_seq'::regclass))"))
+  assistantid String?
+  major       String?
+  subject     String?
+  filename    String?
+  fileurl     String?
+  uploadedat  DateTime   @default(now()) @db.Timestamptz(6)
+  assistant   assistant? @relation(fields: [assistantid], references: [assistantid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model chathistory {
+  chatid    String   @id @default(dbgenerated("('cht'::text || nextval('chatid_seq'::regclass))"))
+  userid    String
+  role      chatrole                     
+  content   String
+  createdat DateTime @default(now()) @db.Timestamptz(6)
+  users     users    @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+
+
+model digitaldesciplinesettings {
+  settingsid            String             @id @default(dbgenerated("('dds'::text || nextval('settingsid_seq'::regclass))"))
+  userid                String             @unique
+  filterlevel           contentfilterlevel @default(NORMAL)
+  dailyfreeminutes      Int                @default(0)
+  customblockingenabled Boolean            @default(false)
+  faithmodeenabled      Boolean            @default(false)
+  users                 users              @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  blockedapp            blockedapp[]
+  blockedwebsite        blockedwebsite[]
+}
+
+model blockedapp {
+  appid                     String                    @id @default(dbgenerated("('app'::text || nextval('appid_seq'::regclass))"))
+  settingsid                String
+  appname                   String
+  digitaldesciplinesettings digitaldesciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model blockedwebsite {
+  websiteid                 String                    @id @default(dbgenerated("('web'::text || nextval('websiteid_seq'::regclass))"))
+  settingsid                String
+  domain                    String
+  digitaldesciplinesettings digitaldesciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model contentmoderationpolicy {
+  policyid                        String             @id @default(dbgenerated("('plc'::text || nextval('policyid_seq'::regclass))"))
+  sensitivecontentblockingenabled Boolean            @default(false)
+  sensitivitylevel                contentfilterlevel @default(NORMAL)
+  aicontentdetector               aicontentdetector?
+}
+
+model aicontentdetector {
+  detectorid              String                  @id @default(dbgenerated("('dtc'::text || nextval('detectorid_seq'::regclass))"))
+  policyid                String                  @unique
+  contentmoderationpolicy contentmoderationpolicy @relation(fields: [policyid], references: [policyid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+
+model studyroom {
+  roomid          String           @id @default(dbgenerated("('rom'::text || nextval('roomid_seq'::regclass))"))
+  roomname        String
+  sessionduration Int              @default(0)
+  isactive        Boolean          @default(false)
+  createdat       DateTime         @default(now()) @db.Timestamptz(6)
+  focussession    focussession[]
+  studyroom_user  studyroom_user[]
+}
+
+model studyroom_user {
+  roomid    String
+  userid    String
+  joinedat  DateTime  @default(now()) @db.Timestamptz(6)
+  studyroom studyroom @relation(fields: [roomid], references: [roomid], onDelete: NoAction, onUpdate: NoAction)
+  users     users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([roomid, userid])
+}
+
+model note {
+  noteid    String   @id @default(dbgenerated("('nte'::text || nextval('noteid_seq'::regclass))"))
+  userid    String
+  title     String
+  content   String?                           
+  createdat DateTime @default(now()) @db.Timestamptz(6)
+  updatedat DateTime @updatedAt
+  users     users    @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model notification {
+  notificationid String        @id @default(dbgenerated("('ntf'::text || nextval('notificationid_seq'::regclass))"))
+  userid         String
+  sessionid      String?
+  taskid         String?                      
+  title          String?
+  message        String?
+  scheduledtime  DateTime?     @db.Timestamptz(6)
+  isread         Boolean       @default(false)
+  createdat      DateTime      @default(now()) @db.Timestamptz(6)
+  users          users         @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  focussession   focussession? @relation(fields: [sessionid], references: [sessionid], onDelete: NoAction, onUpdate: NoAction)
+  task           task?         @relation(fields: [taskid], references: [taskid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model emailverificationtoken {
+  tokenid   String    @id @default(dbgenerated("('evt'::text || nextval('evtid_seq'::regclass))"))
+  userid    String
+  token     String    @unique
+  expiresat DateTime  @db.Timestamptz(6)
+  verifiedat DateTime? @db.Timestamptz(6)
+  isverified Boolean  @default(false)
+  createdat DateTime  @default(now()) @db.Timestamptz(6)
+  users     users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+
+enum userrole {
+  ADMIN
+  STUDENT
+}
+
+enum taskstatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum taskcategory {
+  ACADEMIC
+  PERSONAL
+  WORK
+  HEALTH
+  OTHER
+}
+
+enum sessionstatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELED
+}
+
+enum timertype {
+  CHRONOMETER             
+  COUNTDOWN
+  POMODORO
+}
+
+enum contentfilterlevel {
+  NORMAL
+  SFW_STRICT
+}
+
+enum chatrole {
+  USER
+  ASSISTANT
 }
