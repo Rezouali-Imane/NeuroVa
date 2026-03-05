@@ -1,12 +1,12 @@
 generator client {
   provider = "prisma-client-js"
-
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
-
 
 model users {
   userid                    String                     @id @default(dbgenerated("('usr'::text || nextval('userid_seq'::regclass))"))
@@ -14,7 +14,7 @@ model users {
   lastname                  String
   username                  String                     @unique
   email                     String                     @unique
-  passwordhash              String                    
+  passwordhash              String
   bio                       String?
   userrole                  userrole
   xppoints                  Int                        @default(0)
@@ -22,22 +22,22 @@ model users {
   islocked                  Boolean                    @default(false)
   createdat                 DateTime                   @default(now()) @db.Timestamptz(6)
   leaderboardid             String?
-  isverified Boolean @default(false)
-  leaderboard               leaderboard?               @relation(fields: [leaderboardid], references: [leaderboardid], onDelete: NoAction, onUpdate: NoAction)
+  isverified                Boolean                    @default(false)
+  achievement               achievement[]
   admin                     admin?
-  student                   student?
   assistant                 assistant[]
+  chathistory               chathistory[]
   digitaldesciplinesettings digitaldesciplinesettings?
+  emailverificationtoken    emailverificationtoken[]
   focussession              focussession[]
-  tasklist                  tasklist[]
-  task                      task[]
   note                      note[]
   notification              notification[]
-  achievement               achievement[]
-  studyroom_user            studyroom_user[]
-  chathistory               chathistory[]
   passwordresettoken        passwordresettoken[]
-  emailverificationtoken emailverificationtoken[]
+  student                   student?
+  studyroom_user            studyroom_user[]
+  task                      task[]
+  tasklist                  tasklist[]
+  leaderboard               leaderboard?               @relation(fields: [leaderboardid], references: [leaderboardid], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model student {
@@ -54,17 +54,15 @@ model admin {
   users  users  @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
 }
 
-
 model passwordresettoken {
-  tokenid   String   @id @default(dbgenerated("('tkn'::text || nextval('tokenid_seq'::regclass))"))
+  tokenid   String    @id @default(dbgenerated("('tkn'::text || nextval('tokenid_seq'::regclass))"))
   userid    String
-  tokenhash String   @unique
-  expiresat DateTime @db.Timestamptz(6)
+  tokenhash String    @unique
+  expiresat DateTime  @db.Timestamptz(6)
   usedat    DateTime? @db.Timestamptz(6)
-  createdat DateTime @default(now()) @db.Timestamptz(6)
-  users     users    @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  createdat DateTime  @default(now()) @db.Timestamptz(6)
+  users     users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
 }
-
 
 model leaderboard {
   leaderboardid String   @id @default(dbgenerated("('ldr'::text || nextval('leaderboardid_seq'::regclass))"))
@@ -73,15 +71,14 @@ model leaderboard {
 }
 
 model achievement {
-  achievementid String  @id @default(dbgenerated("('achv'::text || nextval('achievementid_seq'::regclass))"))
+  achievementid String   @id @default(dbgenerated("('achv'::text || nextval('achievementid_seq'::regclass))"))
   userid        String?
-  title         String  @unique
+  title         String   @unique
   description   String?
-  pointreward   Int     @default(0)
+  pointreward   Int      @default(0)
   earnedat      DateTime @default(now()) @db.Timestamptz(6)
-  users         users?  @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  users         users?   @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
 }
-
 
 model tasklist {
   listid     String    @id @default(dbgenerated("('lst'::text || nextval('listid_seq'::regclass))"))
@@ -89,9 +86,9 @@ model tasklist {
   scheduleid String?
   name       String
   createdat  DateTime  @default(now()) @db.Timestamptz(6)
-  users      users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
-  schedule   schedule? @relation(fields: [scheduleid], references: [scheduleid], onDelete: NoAction, onUpdate: NoAction)
   task       task[]
+  schedule   schedule? @relation(fields: [scheduleid], references: [scheduleid], onDelete: NoAction, onUpdate: NoAction)
+  users      users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model task {
@@ -108,21 +105,20 @@ model task {
   syncwithgoogle    Boolean             @default(false)
   createdat         DateTime            @default(now()) @db.Timestamptz(6)
   updatedat         DateTime            @updatedAt
-  users             users               @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  notification      notification[]
   tasklist          tasklist            @relation(fields: [listid], references: [listid], onDelete: NoAction, onUpdate: NoAction)
+  users             users               @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
   task_focussession task_focussession[]
-  notification      notification[]      
 }
 
 model task_focussession {
   taskid       String
   sessionid    String
-  task         task         @relation(fields: [taskid], references: [taskid], onDelete: NoAction, onUpdate: NoAction)
   focussession focussession @relation(fields: [sessionid], references: [sessionid], onDelete: NoAction, onUpdate: NoAction)
+  task         task         @relation(fields: [taskid], references: [taskid], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([taskid, sessionid])
 }
-
 
 model schedule {
   scheduleid   String         @id @default(dbgenerated("('sch'::text || nextval('scheduleid_seq'::regclass))"))
@@ -130,8 +126,6 @@ model schedule {
   focussession focussession[]
   tasklist     tasklist[]
 }
-
-
 
 model focussession {
   sessionid          String              @id @default(dbgenerated("('ssn'::text || nextval('sessionid_seq'::regclass))"))
@@ -143,13 +137,13 @@ model focussession {
   allowbreakminutes  Int                 @default(0)
   focusscore         Float               @default(0)
   status             sessionstatus       @default(SCHEDULED)
-  users              users               @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
-  schedule           schedule?           @relation(fields: [scheduleid], references: [scheduleid], onDelete: NoAction, onUpdate: NoAction)
-  studyroom          studyroom?          @relation(fields: [roomid], references: [roomid], onDelete: NoAction, onUpdate: NoAction)
   focusaudiosettings focusaudiosettings?
-  timer              timer?
-  task_focussession  task_focussession[]
+  studyroom          studyroom?          @relation(fields: [roomid], references: [roomid], onDelete: NoAction, onUpdate: NoAction)
+  schedule           schedule?           @relation(fields: [scheduleid], references: [scheduleid], onDelete: NoAction, onUpdate: NoAction)
+  users              users               @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
   notification       notification[]
+  task_focussession  task_focussession[]
+  timer              timer?
 }
 
 model timer {
@@ -172,8 +166,8 @@ model focusaudiosettings {
   sessionid        String         @unique
   volumelevel      Float          @default(1.0)
   mixambientsounds Boolean        @default(false)
-  focussession     focussession   @relation(fields: [sessionid], references: [sessionid], onDelete: NoAction, onUpdate: NoAction)
   ambientsound     ambientsound[]
+  focussession     focussession   @relation(fields: [sessionid], references: [sessionid], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model ambientsound {
@@ -184,7 +178,6 @@ model ambientsound {
   islooping          Boolean            @default(false)
   focusaudiosettings focusaudiosettings @relation(fields: [settingsid], references: [settingsid], onDelete: NoAction, onUpdate: NoAction)
 }
-
 
 model assistant {
   assistantid   String          @id @default(dbgenerated("('asst'::text || nextval('assistantid_seq'::regclass))"))
@@ -208,13 +201,11 @@ model knowledgebase {
 model chathistory {
   chatid    String   @id @default(dbgenerated("('cht'::text || nextval('chatid_seq'::regclass))"))
   userid    String
-  role      chatrole                     
+  role      chatrole
   content   String
   createdat DateTime @default(now()) @db.Timestamptz(6)
   users     users    @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
 }
-
-
 
 model digitaldesciplinesettings {
   settingsid            String             @id @default(dbgenerated("('dds'::text || nextval('settingsid_seq'::regclass))"))
@@ -223,9 +214,9 @@ model digitaldesciplinesettings {
   dailyfreeminutes      Int                @default(0)
   customblockingenabled Boolean            @default(false)
   faithmodeenabled      Boolean            @default(false)
-  users                 users              @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
   blockedapp            blockedapp[]
   blockedwebsite        blockedwebsite[]
+  users                 users              @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model blockedapp {
@@ -255,7 +246,6 @@ model aicontentdetector {
   contentmoderationpolicy contentmoderationpolicy @relation(fields: [policyid], references: [policyid], onDelete: NoAction, onUpdate: NoAction)
 }
 
-
 model studyroom {
   roomid          String           @id @default(dbgenerated("('rom'::text || nextval('roomid_seq'::regclass))"))
   roomname        String
@@ -280,7 +270,7 @@ model note {
   noteid    String   @id @default(dbgenerated("('nte'::text || nextval('noteid_seq'::regclass))"))
   userid    String
   title     String
-  content   String?                           
+  content   String?
   createdat DateTime @default(now()) @db.Timestamptz(6)
   updatedat DateTime @updatedAt
   users     users    @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
@@ -290,28 +280,27 @@ model notification {
   notificationid String        @id @default(dbgenerated("('ntf'::text || nextval('notificationid_seq'::regclass))"))
   userid         String
   sessionid      String?
-  taskid         String?                      
+  taskid         String?
   title          String?
   message        String?
   scheduledtime  DateTime?     @db.Timestamptz(6)
   isread         Boolean       @default(false)
   createdat      DateTime      @default(now()) @db.Timestamptz(6)
-  users          users         @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
   focussession   focussession? @relation(fields: [sessionid], references: [sessionid], onDelete: NoAction, onUpdate: NoAction)
   task           task?         @relation(fields: [taskid], references: [taskid], onDelete: NoAction, onUpdate: NoAction)
+  users          users         @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model emailverificationtoken {
-  tokenid   String    @id @default(dbgenerated("('evt'::text || nextval('evtid_seq'::regclass))"))
-  userid    String
-  token     String    @unique
-  expiresat DateTime  @db.Timestamptz(6)
+  tokenid    String    @id @default(dbgenerated("('evt'::text || nextval('evtid_seq'::regclass))"))
+  userid     String
+  token      String    @unique
+  expiresat  DateTime  @db.Timestamptz(6)
   verifiedat DateTime? @db.Timestamptz(6)
-  isverified Boolean  @default(false)
-  createdat DateTime  @default(now()) @db.Timestamptz(6)
-  users     users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  isverified Boolean   @default(false)
+  createdat  DateTime  @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
 }
-
 
 enum userrole {
   ADMIN
@@ -341,7 +330,7 @@ enum sessionstatus {
 }
 
 enum timertype {
-  CHRONOMETER             
+  CHRONOMETER
   COUNTDOWN
   POMODORO
 }
