@@ -1,6 +1,20 @@
-node_modules
-# Keep environment variables out of version control
-.env
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
 
-/src/generated/prisma
+# Environment files (keep examples)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Generated artifacts
+src/generated/prisma/
+
+# Local development noise
 tempCodeRunnerFile.ts
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
