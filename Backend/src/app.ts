@@ -3,6 +3,7 @@ import cors from 'cors';
 import type { Application } from 'express';
 import taskRoutes from './interfaces/routes/Tasks.routes.js';
 import taskListRoutes from './interfaces/routes/TaskLists.routes.js';
+import authRoutes from './interfaces/routes/Auth.routes.js';
 
 const app: Application = express();
 
@@ -16,6 +17,7 @@ app.get('/health', (_req, res) => {
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/tasklists', taskListRoutes);
 
