@@ -10,12 +10,12 @@ export const Login = async (data: LoginUserDTO) => {
 
   const user = await UserRepository.findByEmailOrUsername(normalizedIdentifier);
   if (!user) {
-    throw new Error("Identifiants invalides.");
+    throw new Error("Invalid credentials.");
   }
 
   if (user.islocked) {
     throw new Error(
-      "Votre compte est bloqué suite à trop de tentatives. Veuillez contacter le support."
+      "Your account is locked after too many attempts. Please contact support."
     );
   }
 
@@ -26,7 +26,7 @@ export const Login = async (data: LoginUserDTO) => {
     const shouldLock = newAttempts >= 5;
 
     await UserRepository.updateLoginAttempts(user.userid, newAttempts, shouldLock);
-    throw new Error("Identifiants invalides.");
+    throw new Error("Invalid credentials.");
   }
 
   if (user.failedloginattempts > 0) {
@@ -40,7 +40,7 @@ export const Login = async (data: LoginUserDTO) => {
       success: false,
       requiresVerification: true,
       userid: user.userid,
-      message: "Veuillez vérifier votre email. Un nouveau code a été envoyé.",
+      message: "Please verify your email. A new code has been sent.",
     };
   }
 

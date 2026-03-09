@@ -8,18 +8,18 @@ export const VerifyResetCode = async (data: VerifyResetCodeDTO) => {
 
   const user = await UserRepository.findByEmail(normalizedEmail);
   if (!user) {
-    throw new Error("Code invalide ou expiré.");
+    throw new Error("Invalid or expired code.");
   }
 
   const token = await PasswordResetRepository.findValidToken(user.userid, data.resetcode);
 
   if (!token) {
-    throw new Error("Code invalide ou expiré.");
+    throw new Error("Invalid or expired code.");
   }
 
   return {
     success: true,
-    message: "Code vérifié avec succès.",
+    message: "Code verified successfully.",
     userid: user.userid,
   };
 };

@@ -27,12 +27,12 @@ export const SignUp = async (data: RegisterUserDTO) => {
 
   const existingEmail = await UserRepository.findByEmail(normalizedEmail);
   if (existingEmail) {
-    throw new Error("Cette adresse email est déjà utilisée.");
+    throw new Error("This email address is already in use.");
   }
 
   const existingUsername = await UserRepository.findByUsername(normalizedUsername);
   if (existingUsername) {
-    throw new Error("Ce nom d'utilisateur est déjà pris.");
+    throw new Error("This username is already taken.");
   }
 
   const passwordhash = await PasswordService.hash(data.password);
@@ -56,7 +56,7 @@ export const SignUp = async (data: RegisterUserDTO) => {
 
   return {
     success: true,
-    message: "Inscription réussie. Veuillez vérifier votre email.",
+    message: "Sign-up successful. Please verify your email.",
     userid: user.userid,
   };
 };

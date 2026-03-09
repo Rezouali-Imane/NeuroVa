@@ -12,6 +12,6 @@ export const SendVerificationCode = async (userid: string, email: string) => {
 
   return {
     success: true,
-    message: "Code de vérification envoyé.",
+    message: "Verification code sent.",
   };
 };

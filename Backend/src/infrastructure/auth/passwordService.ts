@@ -18,14 +18,14 @@ export const PasswordService = {
     if (emojiRegex.test(password)) {
       return {
         valid: false,
-        message: "Les emojis ne sont pas autorisés dans le mot de passe."
+        message: "Emojis are not allowed in the password."
       };
     }
 
     if (!passwordRegex.test(password)) {
       return {
         valid: false,
-        message: "Le mot de passe doit contenir au moins 8 caractères, incluant une majuscule, une minuscule, un chiffre et un caractère spécial (@$!%*?&)."
+        message: "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character (@$!%*?&)."
       };
     }
 

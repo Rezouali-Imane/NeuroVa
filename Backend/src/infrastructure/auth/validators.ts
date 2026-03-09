@@ -5,7 +5,7 @@ export const AuthValidators = {
     if (!emailRegex.test(email)) {
       return {
         valid: false,
-        message: "L'adresse email est mal formée."
+        message: "The email address format is invalid."
       };
     }
 
@@ -24,14 +24,14 @@ export const AuthValidators = {
     if (username.length < 3) {
       return {
         valid: false,
-        message: "Le nom d'utilisateur doit contenir au moins 3 caractères."
+        message: "Username must be at least 3 characters long."
       };
     }
 
     if (username.length > 30) {
       return {
         valid: false,
-        message: "Le nom d'utilisateur ne peut pas dépasser 30 caractères."
+        message: "Username cannot exceed 30 characters."
       };
     }
 
@@ -39,7 +39,7 @@ export const AuthValidators = {
     if (!usernameRegex.test(username)) {
       return {
         valid: false,
-        message: "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores."
+        message: "Username can only contain letters, numbers, hyphens, and underscores."
       };
     }
 

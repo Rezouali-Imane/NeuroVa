@@ -14,13 +14,13 @@ export const ResetPassword = async (data: ResetPasswordDTO) => {
 
   const user = await UserRepository.findByEmail(normalizedEmail);
   if (!user) {
-    throw new Error("Code invalide ou expiré.");
+    throw new Error("Invalid or expired code.");
   }
 
   const tokenRecord = await PasswordResetRepository.findValidToken(user.userid, data.resetcode);
 
   if (!tokenRecord) {
-    throw new Error("Code invalide ou expiré.");
+    throw new Error("Invalid or expired code.");
   }
 
   const newPasswordHash = await PasswordService.hash(data.newPassword);
@@ -30,6 +30,6 @@ export const ResetPassword = async (data: ResetPasswordDTO) => {
 
   return {
     success: true,
-    message: "Mot de passe réinitialisé avec succès.",
+    message: "Password reset successfully.",
   };
 };

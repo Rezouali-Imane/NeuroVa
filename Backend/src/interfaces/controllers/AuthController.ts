@@ -14,7 +14,7 @@ export const AuthController = {
     } catch (error: any) {
       res.status(400).json({
         success: false,
-        message: error.message || "Une erreur technique est survenue.",
+        message: error.message || "A technical error occurred.",
       });
     }
   },
@@ -31,7 +31,7 @@ export const AuthController = {
     } catch (error: any) {
       res.status(401).json({
         success: false,
-        message: error.message || "Échec de la connexion.",
+        message: error.message || "Login failed.",
       });
     }
   },
@@ -43,7 +43,7 @@ export const AuthController = {
     } catch (error: any) {
       res.status(400).json({
         success: false,
-        message: error.message || "Échec de la vérification.",
+        message: error.message || "Verification failed.",
       });
     }
   },
@@ -55,7 +55,7 @@ export const AuthController = {
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        message: "Une erreur est survenue.",
+        message: "An error occurred.",
       });
     }
   },
@@ -67,7 +67,7 @@ export const AuthController = {
     } catch (error: any) {
       res.status(400).json({
         success: false,
-        message: error.message || "Code invalide.",
+        message: error.message || "Invalid code.",
       });
     }
   },
@@ -79,7 +79,7 @@ export const AuthController = {
     } catch (error: any) {
       res.status(400).json({
         success: false,
-        message: error.message || "Échec de la réinitialisation.",
+        message: error.message || "Password reset failed.",
       });
     }
   }

@@ -11,7 +11,7 @@ export const JWTService = {
     try {
       return jwt.verify(token, JWT_SECRET) as { userid: string; role: string };
     } catch (error) {
-      throw new Error('Token invalide ou expiré.');
+      throw new Error('Invalid or expired token.');
     }
   },
 

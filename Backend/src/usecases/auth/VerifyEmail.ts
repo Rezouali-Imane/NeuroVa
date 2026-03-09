@@ -8,7 +8,7 @@ export const VerifyEmail = async (data: EmailVerificationDTO) => {
   const tokenRecord = await EmailTokenRepository.findValidToken(userid, token);
 
   if (!tokenRecord) {
-    throw new Error("Code de vérification invalide ou expiré.");
+    throw new Error("Invalid or expired verification code.");
   }
 
   await UserRepository.markUserAsVerified(userid);
@@ -16,6 +16,6 @@ export const VerifyEmail = async (data: EmailVerificationDTO) => {
 
   return {
     success: true,
-    message: "Email vérifié avec succès. Vous pouvez maintenant vous connecter.",
+    message: "Email verified successfully. You can now log in.",
   };
 };

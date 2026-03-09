@@ -15,7 +15,7 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Token manquant.",
+        message: "Missing token.",
       });
     }
 
@@ -26,7 +26,7 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
   } catch (error: any) {
     return res.status(401).json({
       success: false,
-      message: error.message || "Token invalide ou expiré.",
+      message: error.message || "Invalid or expired token.",
     });
   }
 };
@@ -35,7 +35,7 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
   if (req.user?.role !== 'ADMIN') {
     return res.status(403).json({
       success: false,
-      message: "Accès réservé aux administrateurs.",
+      message: "Access restricted to administrators.",
     });
   }
   next();

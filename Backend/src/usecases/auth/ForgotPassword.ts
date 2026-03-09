@@ -12,7 +12,7 @@ export const ForgotPassword = async (data: ForgotPasswordDTO) => {
   if (!user) {
     return {
       success: true,
-      message: "Si ce compte existe, un code de réinitialisation a été envoyé.",
+      message: "If this account exists, a reset code has been sent.",
     };
   }
 
@@ -25,6 +25,6 @@ export const ForgotPassword = async (data: ForgotPasswordDTO) => {
 
   return {
     success: true,
-    message: "Si ce compte existe, un code de réinitialisation a été envoyé.",
+    message: "If this account exists, a reset code has been sent.",
   };
 };
