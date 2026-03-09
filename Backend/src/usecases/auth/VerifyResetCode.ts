@@ -1,9 +1,10 @@
 import type { VerifyResetCodeDTO } from '../../interfaces/dtos/Auth.dto.js';
 import { UserRepository } from '../../interfaces/repositories/UserRepository.js';
 import { PasswordResetRepository } from '../../interfaces/repositories/PasswordResetRepository.js';
+import { AuthValidators } from '../../infrastructure/auth/validators.js';
 
 export const VerifyResetCode = async (data: VerifyResetCodeDTO) => {
-  const normalizedEmail = data.email.toLowerCase().trim();
+  const normalizedEmail = AuthValidators.normalizeEmail(data.email);
 
   // Find user
   const user = await UserRepository.findByEmail(normalizedEmail);

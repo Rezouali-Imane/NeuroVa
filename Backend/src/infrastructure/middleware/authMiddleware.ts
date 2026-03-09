@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { JWTService } from '../auth/jwtService.js';
 
 interface AuthRequest extends Request {
   user?: {
@@ -19,17 +19,14 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret") as {
-      userid: string;
-      role: string;
-    };
+    const decoded = JWTService.verifyToken(token);
 
     req.user = decoded;
     next();
-  } catch (error) {
+  } catch (error: any) {
     return res.status(401).json({
       success: false,
-      message: "Token invalide ou expiré.",
+      message: error.message || "Token invalide ou expiré.",
     });
   }
 };

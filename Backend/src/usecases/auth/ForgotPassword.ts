@@ -2,9 +2,11 @@ import type { ForgotPasswordDTO } from '../../interfaces/dtos/Auth.dto.js';
 import { UserRepository } from '../../interfaces/repositories/UserRepository.js';
 import { PasswordResetRepository } from '../../interfaces/repositories/PasswordResetRepository.js';
 import { MailService } from '../../infrastructure/email/MailService.js';
+import { TokenGenerator } from '../../infrastructure/auth/tokenGenerator.js';
+import { AuthValidators } from '../../infrastructure/auth/validators.js';
 
 export const ForgotPassword = async (data: ForgotPasswordDTO) => {
-  const normalizedEmail = data.email.toLowerCase().trim();
+  const normalizedEmail = AuthValidators.normalizeEmail(data.email);
 
   // Find user
   const user = await UserRepository.findByEmail(normalizedEmail);
@@ -17,11 +19,10 @@ export const ForgotPassword = async (data: ForgotPasswordDTO) => {
   }
 
   // Generate 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const resetcode = TokenGenerator.generateResetToken();
 
   // Set expiration to 1 hour from now
-  const expiresat = new Date();
-  expiresat.setHours(expiresat.getHours() + 1);
+  const expiresat = TokenGenerator.getExpirationDate(1);
 
   // Invalidate old tokens
   await PasswordResetRepository.invalidateOldTokens(user.userid);

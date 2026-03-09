@@ -1,13 +1,13 @@
 import { EmailTokenRepository } from '../../interfaces/repositories/EmailTokenRepository.js';
 import { MailService } from '../../infrastructure/email/MailService.js';
+import { TokenGenerator } from '../../infrastructure/auth/tokenGenerator.js';
 
 export const SendVerificationCode = async (userid: string, email: string) => {
   // Generate 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const code = TokenGenerator.generateVerificationCode();
   
   // Set expiration to 1 hour from now
-  const expiresat = new Date();
-  expiresat.setHours(expiresat.getHours() + 1);
+  const expiresat = TokenGenerator.getExpirationDate(1);
 
   // Invalidate old tokens
   await EmailTokenRepository.invalidateOldTokens(userid);

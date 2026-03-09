@@ -1,11 +1,12 @@
 import type { LoginUserDTO } from '../../interfaces/dtos/Auth.dto.js';
 import { UserRepository } from '../../interfaces/repositories/UserRepository.js';
 import { SendVerificationCode } from './SendVerificationCode.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { PasswordService } from '../../infrastructure/auth/passwordService.js';
+import { JWTService } from '../../infrastructure/auth/jwtService.js';
+import { AuthValidators } from '../../infrastructure/auth/validators.js';
 
 export const Login = async (data: LoginUserDTO) => {
-  const normalizedIdentifier = data.identifier.toLowerCase().trim();
+  const normalizedIdentifier = AuthValidators.normalizeEmail(data.identifier);
 
   // Find user by email or username
   const user = await UserRepository.findByEmailOrUsername(normalizedIdentifier);
@@ -21,7 +22,7 @@ export const Login = async (data: LoginUserDTO) => {
   }
 
   // Verify password
-  const isPasswordValid = await bcrypt.compare(data.password, user.passwordhash);
+  const isPasswordValid = await PasswordService.compare(data.password, user.passwordhash);
 
   if (!isPasswordValid) {
     const newAttempts = user.failedloginattempts + 1;
@@ -49,11 +50,10 @@ export const Login = async (data: LoginUserDTO) => {
   }
 
   // Generate JWT token
-  const token = jwt.sign(
-    { userid: user.userid, role: user.userrole },
-    process.env.JWT_SECRET || "secret",
-    { expiresIn: "24h" }
-  );
+  const token = JWTService.generateToken({
+    userid: user.userid,
+    role: user.userrole
+  });
 
   return {
     success: true,

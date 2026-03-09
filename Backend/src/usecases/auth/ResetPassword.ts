@@ -1,23 +1,16 @@
 import type { ResetPasswordDTO } from '../../interfaces/dtos/Auth.dto.js';
 import { UserRepository } from '../../interfaces/repositories/UserRepository.js';
 import { PasswordResetRepository } from '../../interfaces/repositories/PasswordResetRepository.js';
-import bcrypt from 'bcrypt';
+import { PasswordService } from '../../infrastructure/auth/passwordService.js';
+import { AuthValidators } from '../../infrastructure/auth/validators.js';
 
 export const ResetPassword = async (data: ResetPasswordDTO) => {
-  const normalizedEmail = data.email.toLowerCase().trim();
+  const normalizedEmail = AuthValidators.normalizeEmail(data.email);
 
   // Validate new password
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
-
-  if (emojiRegex.test(data.newPassword)) {
-    throw new Error("Les emojis ne sont pas autorisés dans le mot de passe.");
-  }
-
-  if (!passwordRegex.test(data.newPassword)) {
-    throw new Error(
-      "Le mot de passe doit contenir au moins 8 caractères, incluant une majuscule, une minuscule, un chiffre et un caractère spécial (@$!%*?&)."
-    );
+  const passwordValidation = PasswordService.validateFormat(data.newPassword);
+  if (!passwordValidation.valid) {
+    throw new Error(passwordValidation.message);
   }
 
   // Find user
@@ -34,7 +27,7 @@ export const ResetPassword = async (data: ResetPasswordDTO) => {
   }
 
   // Hash new password
-  const newPasswordHash = await bcrypt.hash(data.newPassword, 10);
+  const newPasswordHash = await PasswordService.hash(data.newPassword);
 
   // Update password
   await UserRepository.resetUserPassword(user.userid, newPasswordHash);

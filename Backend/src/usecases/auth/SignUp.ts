@@ -3,30 +3,29 @@ import { UserRepository } from '../../interfaces/repositories/UserRepository.js'
 import { StudentRepository, AdminRepository } from '../../interfaces/repositories/RoleRepository.js';
 import { SendVerificationCode } from './SendVerificationCode.js';
 import { UserRole } from '../../entities/User.js';
-import bcrypt from 'bcrypt';
+import { PasswordService } from '../../infrastructure/auth/passwordService.js';
+import { AuthValidators } from '../../infrastructure/auth/validators.js';
 
 export const SignUp = async (data: RegisterUserDTO) => {
-  const normalizedEmail = data.email.toLowerCase().trim();
-  const normalizedUsername = data.username.toLowerCase().trim();
+  const normalizedEmail = AuthValidators.normalizeEmail(data.email);
+  const normalizedUsername = AuthValidators.normalizeUsername(data.username);
 
   // Validate email format
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!emailRegex.test(normalizedEmail)) {
-    throw new Error("L'adresse email est mal formée.");
+  const emailValidation = AuthValidators.validateEmail(normalizedEmail);
+  if (!emailValidation.valid) {
+    throw new Error(emailValidation.message);
+  }
+
+  // Validate username format
+  const usernameValidation = AuthValidators.validateUsername(normalizedUsername);
+  if (!usernameValidation.valid) {
+    throw new Error(usernameValidation.message);
   }
 
   // Validate password format
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
-
-  if (emojiRegex.test(data.password)) {
-    throw new Error("Les emojis ne sont pas autorisés dans le mot de passe.");
-  }
-
-  if (!passwordRegex.test(data.password)) {
-    throw new Error(
-      "Le mot de passe doit contenir au moins 8 caractères, incluant une majuscule, une minuscule, un chiffre et un caractère spécial (@$!%*?&)."
-    );
+  const passwordValidation = PasswordService.validateFormat(data.password);
+  if (!passwordValidation.valid) {
+    throw new Error(passwordValidation.message);
   }
 
   // Check if email or username already exists
@@ -41,7 +40,7 @@ export const SignUp = async (data: RegisterUserDTO) => {
   }
 
   // Hash password
-  const passwordhash = await bcrypt.hash(data.password, 10);
+  const passwordhash = await PasswordService.hash(data.password);
 
   // Create user
   const user = await UserRepository.create({
