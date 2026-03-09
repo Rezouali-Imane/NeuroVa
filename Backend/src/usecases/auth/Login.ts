@@ -8,20 +8,17 @@ import { AuthValidators } from '../../infrastructure/auth/validators.js';
 export const Login = async (data: LoginUserDTO) => {
   const normalizedIdentifier = AuthValidators.normalizeEmail(data.identifier);
 
-  // Find user by email or username
   const user = await UserRepository.findByEmailOrUsername(normalizedIdentifier);
   if (!user) {
     throw new Error("Identifiants invalides.");
   }
 
-  // Check if account is locked
   if (user.islocked) {
     throw new Error(
       "Votre compte est bloqué suite à trop de tentatives. Veuillez contacter le support."
     );
   }
 
-  // Verify password
   const isPasswordValid = await PasswordService.compare(data.password, user.passwordhash);
 
   if (!isPasswordValid) {
@@ -32,12 +29,10 @@ export const Login = async (data: LoginUserDTO) => {
     throw new Error("Identifiants invalides.");
   }
 
-  // Reset failed attempts if password is valid
   if (user.failedloginattempts > 0) {
     await UserRepository.updateLoginAttempts(user.userid, 0, false);
   }
 
-  // Check if email is verified
   if (!user.isverified) {
     await SendVerificationCode(user.userid, user.email);
 
@@ -49,7 +44,6 @@ export const Login = async (data: LoginUserDTO) => {
     };
   }
 
-  // Generate JWT token
   const token = JWTService.generateToken({
     userid: user.userid,
     role: user.userrole

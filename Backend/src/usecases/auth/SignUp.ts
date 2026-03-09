@@ -10,25 +10,21 @@ export const SignUp = async (data: RegisterUserDTO) => {
   const normalizedEmail = AuthValidators.normalizeEmail(data.email);
   const normalizedUsername = AuthValidators.normalizeUsername(data.username);
 
-  // Validate email format
   const emailValidation = AuthValidators.validateEmail(normalizedEmail);
   if (!emailValidation.valid) {
     throw new Error(emailValidation.message);
   }
 
-  // Validate username format
   const usernameValidation = AuthValidators.validateUsername(normalizedUsername);
   if (!usernameValidation.valid) {
     throw new Error(usernameValidation.message);
   }
 
-  // Validate password format
   const passwordValidation = PasswordService.validateFormat(data.password);
   if (!passwordValidation.valid) {
     throw new Error(passwordValidation.message);
   }
 
-  // Check if email or username already exists
   const existingEmail = await UserRepository.findByEmail(normalizedEmail);
   if (existingEmail) {
     throw new Error("Cette adresse email est déjà utilisée.");
@@ -39,10 +35,8 @@ export const SignUp = async (data: RegisterUserDTO) => {
     throw new Error("Ce nom d'utilisateur est déjà pris.");
   }
 
-  // Hash password
   const passwordhash = await PasswordService.hash(data.password);
 
-  // Create user
   const user = await UserRepository.create({
     name: data.name,
     lastname: data.lastname,
@@ -52,14 +46,12 @@ export const SignUp = async (data: RegisterUserDTO) => {
     userrole: data.role || UserRole.STUDENT,
   });
 
-  // Create role-specific entry
   if (user.userrole === UserRole.STUDENT) {
     await StudentRepository.create(user.userid);
   } else if (user.userrole === UserRole.ADMIN) {
     await AdminRepository.create(user.userid);
   }
 
-  // Send verification code
   await SendVerificationCode(user.userid, user.email);
 
   return {

@@ -6,13 +6,11 @@ import { AuthValidators } from '../../infrastructure/auth/validators.js';
 export const VerifyResetCode = async (data: VerifyResetCodeDTO) => {
   const normalizedEmail = AuthValidators.normalizeEmail(data.email);
 
-  // Find user
   const user = await UserRepository.findByEmail(normalizedEmail);
   if (!user) {
     throw new Error("Code invalide ou expiré.");
   }
 
-  // Find valid token
   const token = await PasswordResetRepository.findValidToken(user.userid, data.resetcode);
 
   if (!token) {

@@ -1,10 +1,4 @@
-/**
- * Validation utilities for authentication
- */
 export const AuthValidators = {
-  /**
-   * Validate email format
-   */
   validateEmail(email: string): { valid: boolean; message?: string } {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     
@@ -18,23 +12,14 @@ export const AuthValidators = {
     return { valid: true };
   },
 
-  /**
-   * Normalize email (lowercase and trim)
-   */
   normalizeEmail(email: string): string {
     return email.toLowerCase().trim();
   },
 
-  /**
-   * Normalize username (lowercase and trim)
-   */
   normalizeUsername(username: string): string {
     return username.toLowerCase().trim();
   },
 
-  /**
-   * Validate username format
-   */
   validateUsername(username: string): { valid: boolean; message?: string } {
     if (username.length < 3) {
       return {
