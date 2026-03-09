@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "dev": "npm --prefix Backend run dev",
+    "build": "npm --prefix Backend run build",
+    "start": "npm --prefix Backend run start"
+  },
   "devDependencies": {
     "@types/node": "^25.3.3"
   },

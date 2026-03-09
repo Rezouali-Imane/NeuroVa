@@ -4,10 +4,10 @@
   "description": "",
   "main": "./src/main.ts",
   "scripts": {
-  "dev": "tsx watch src/main.ts",
-  "start": "node dist/main.js",
-  "build": "tsc"
-},
+    "dev": "tsx watch src/main.ts",
+    "start": "npm run build && node dist/main.js",
+    "build": "tsc"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
