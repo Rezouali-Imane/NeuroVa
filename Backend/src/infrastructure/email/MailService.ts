@@ -89,7 +89,7 @@ export const MailService = {
                 <div class="code-box">
                   <div class="code">${code}</div>
                 </div>
-                <p class="expiry">⏰ This code will expire in 1 hour</p>
+                <p class="expiry">⏰ This code will expire in 15 minutes</p>
               </div>
               <div class="footer">
                 <p>If you didn't create an account with Neurova, you can safely ignore this email.</p>

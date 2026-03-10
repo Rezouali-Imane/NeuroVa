@@ -4,7 +4,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 export const JWTService = {
   generateToken(payload: { userid: string; role: string }): string {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
   },
 
   verifyToken(token: string): { userid: string; role: string } {

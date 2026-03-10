@@ -4,7 +4,7 @@ import { TokenGenerator } from '../../infrastructure/auth/tokenGenerator.js';
 
 export const SendVerificationCode = async (userid: string, email: string) => {
   const code = TokenGenerator.generateVerificationCode();
-  const expiresat = TokenGenerator.getExpirationDate(1);
+  const expiresat = new Date(Date.now() + 15 * 60 * 1000);
 
   await EmailTokenRepository.invalidateOldTokens(userid);
   await EmailTokenRepository.create(userid, code, expiresat);
