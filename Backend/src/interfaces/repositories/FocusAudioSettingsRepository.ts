@@ -1,0 +1,83 @@
+import prisma from "../../infrastructure/database/prisma.client.js";
+import type {CreateFocusAudioDTO,CreateAmbientSoundDTO, UpdateFocusAudioSettingsDTO } from "../dtos/FocusAudio.dto.ts";
+
+export const FocusAudioRepository = {
+    async create(data: CreateFocusAudioDTO) {
+    const createData = {
+        sessionid: data.sessionid,
+        volumelevel: data.volumelevel ?? 1.0,
+        mixambientsounds: data.mixambientsounds ?? false,
+        ...(data.sounds && data.sounds.length > 0
+            ? {
+                ambientsound: {
+                    create: data.sounds.map(sound => ({
+                        name: sound.name,
+                        ...(sound.audiourl !== undefined ? { audiourl: sound.audiourl } : {}),
+                        islooping: sound.islooping ?? false
+                    }))
+                }
+            }
+            : {})
+    };
+
+    return await prisma.focusaudiosettings.create({
+        data: createData,
+        include: { ambientsound: true }
+    });
+},
+    async findBySessionId(sessionid: string) {
+        return await prisma.focusaudiosettings.findUnique({
+            where: { sessionid },
+            include: { ambientsound: true }
+        });
+    },
+
+    async createAmbientSound(settingsid: string, soundData: CreateAmbientSoundDTO) {
+        return await prisma.ambientsound.create({
+            data: {
+                settingsid,
+                name: soundData.name,
+                ...(soundData.audiourl !== undefined ? { audiourl: soundData.audiourl } : {}),
+                islooping: soundData.islooping ?? false
+            }
+        });
+    },
+
+    async updateAmbientSound(soundid: string, soundData: CreateAmbientSoundDTO) {
+        const updateData = {
+            name: soundData.name,
+            ...(soundData.audiourl !== undefined ? { audiourl: soundData.audiourl } : {}),
+            islooping: soundData.islooping ?? false
+        };
+
+        return await prisma.ambientsound.update({
+            where: { soundid },
+            data: updateData
+        });
+    },
+
+    async updateAmbientSoundLooping(soundid: string, islooping: boolean) {
+        return await prisma.ambientsound.update({
+            where: { soundid },
+            data: { islooping }
+        });
+    },
+
+    async updateSettings(sessionid: string, data: UpdateFocusAudioSettingsDTO) {
+        const updateData = {
+            ...(data.volumelevel !== undefined ? { volumelevel: data.volumelevel } : {}),
+            ...(data.mixambientsounds !== undefined ? { mixambientsounds: data.mixambientsounds } : {})
+        };
+
+        return await prisma.focusaudiosettings.update({
+            where: { sessionid },
+            data: updateData
+        });
+    },
+
+    async deleteAmbientSound(soundid: string) {
+        return await prisma.ambientsound.delete({
+            where: { soundid }
+        });
+    }
+};
