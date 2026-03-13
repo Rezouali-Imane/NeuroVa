@@ -33,6 +33,8 @@ model users {
   note                      note[]
   notification              notification[]
   passwordresettoken        passwordresettoken[]
+  studentmemory             studentmemory[]
+  documentchunk             documentchunk[]
   student                   student?
   studyroom_user            studyroom_user[]
   task                      task[]
@@ -302,6 +304,7 @@ model emailverificationtoken {
   users      users     @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
 }
 
+
 enum userrole {
   ADMIN
   STUDENT
@@ -343,4 +346,24 @@ enum contentfilterlevel {
 enum chatrole {
   USER
   ASSISTANT
+}
+
+model studentmemory {
+  memoryid  String   @id @default(dbgenerated("'mem'::text || nextval('memoryid_seq'::regclass)"))
+  userid    String
+  key       String
+  value     String
+  updatedat DateTime @updatedAt
+  users     users    @relation(fields: [userid], references: [userid])
+  @@unique([userid, key])
+}
+
+model documentchunk {
+  chunkid     String   @id @default(dbgenerated("'chk'::text || nextval('chunkid_seq'::regclass)"))
+  knowledgeid String?
+  userid      String
+  content     String
+  chunkindex  Int?
+  uploadedat  DateTime @default(now())
+  users       users    @relation(fields: [userid], references: [userid])
 }
