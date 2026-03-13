@@ -1,7 +1,7 @@
 // CreatTimer.ts
 import { TimerRepository } from "../../interfaces/repositories/TimerRepository.js";
-import { TimerType } from "../../entities/timer.js";
-import type { CreateTimerDTO } from "../../interfaces/dtos/timer.dto.ts";
+import { TimerType } from "../../entities/Timer.js";
+import type { CreateTimerDTO } from "../../interfaces/dtos/Timer.dto.js";
 
 export const CreateTimer = async (sessionid: string) => {
     if (!sessionid) {

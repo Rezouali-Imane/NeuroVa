@@ -1,4 +1,4 @@
-import { TimerType } from "../../entities/timer.js";
+import { TimerType } from "../../entities/Timer.js";
 
 export interface CreateTimerDTO {
     sessionid: string;

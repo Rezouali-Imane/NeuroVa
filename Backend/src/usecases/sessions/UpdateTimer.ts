@@ -1,5 +1,5 @@
 import { TimerRepository } from "../../interfaces/repositories/TimerRepository.js";
-import { TimerType } from "../../entities/timer.js";
+import { TimerType } from "../../entities/Timer.js";
 
 export const UpdateTimer = async (sessionid: string, data: any) => {
     
