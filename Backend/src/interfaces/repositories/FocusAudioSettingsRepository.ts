@@ -1,5 +1,5 @@
 import prisma from "../../infrastructure/database/prisma.client.js";
-import type {CreateFocusAudioDTO,CreateAmbientSoundDTO, UpdateFocusAudioSettingsDTO } from "../dtos/FocusAudio.dto.ts";
+import type {CreateFocusAudioDTO,CreateAmbientSoundDTO, UpdateFocusAudioSettingsDTO } from "../dtos/FocusAudio.dto.js";
 
 export const FocusAudioRepository = {
     async create(data: CreateFocusAudioDTO) {
@@ -45,9 +45,9 @@ export const FocusAudioRepository = {
 
     async updateAmbientSound(soundid: string, soundData: CreateAmbientSoundDTO) {
         const updateData = {
-            name: soundData.name,
+            ...(soundData.name !== undefined ? { name: soundData.name } : {}),
             ...(soundData.audiourl !== undefined ? { audiourl: soundData.audiourl } : {}),
-            islooping: soundData.islooping ?? false
+            ...(soundData.islooping !== undefined ? { islooping: soundData.islooping } : {})
         };
 
         return await prisma.ambientsound.update({

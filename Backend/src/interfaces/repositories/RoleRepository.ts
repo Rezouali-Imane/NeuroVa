@@ -2,11 +2,13 @@ import prisma from '../../infrastructure/database/prisma.client.js';
 
 export const StudentRepository = {
   async create(userid: string, major?: string) {
+    const createData = {
+      userid,
+      ...(major ? { major } : {}),
+    };
+
     return await prisma.student.create({
-      data: {
-        userid,
-        major,
-      },
+      data: createData,
     });
   },
 

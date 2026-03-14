@@ -4,12 +4,14 @@ import type { CreateTaskListDTO, UpdateTaskListDTO } from '../dtos/TaskList.dto.
 export const TaskListRepository = {
 
   async create(data: CreateTaskListDTO) {
+    const createData = {
+      userid: data.userid,
+      name: data.name,
+      ...(data.scheduleid ? { scheduleid: data.scheduleid } : {}),
+    };
+
     return await prisma.tasklist.create({
-      data: {
-        userid: data.userid,
-        scheduleid: data.scheduleid,
-        name: data.name,
-      },
+      data: createData,
     });
   },
 

@@ -4,17 +4,15 @@ import type { CreateFocusAudioDTO } from "../dtos/FocusAudio.dto.js";
 export const FocusAudioRepository = {
   
     async create(data: CreateFocusAudioDTO) {
+        const createData = {
+            sessionid: data.sessionid,
+            volumelevel: data.volumelevel ?? 1.0,
+            mixambientsounds: data.mixambientsounds ?? false,
+            ...(data.sounds && data.sounds.length > 0 ? { ambientsound: { create: data.sounds } } : {}),
+        };
+
         return await prisma.focusaudiosettings.create({
-            data: {
-                sessionid: data.sessionid, 
-                volumelevel: data.volumelevel ?? 1.0, 
-                mixambientsounds: data.mixambientsounds ?? false, 
-                
-                // creat ambient sound array
-                ambientsound: {
-                    create: data.sounds 
-                }
-            },
+            data: createData,
             include: { 
                 ambientsound: true 
             }

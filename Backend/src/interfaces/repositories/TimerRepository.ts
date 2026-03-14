@@ -1,5 +1,5 @@
 import prisma from "../../infrastructure/database/prisma.client.js";
-import type { CreateTimerDTO, UpdateTimerDTO } from "../dtos/timer.dto.js";
+import type { CreateTimerDTO, UpdateTimerDTO } from "../dtos/Timer.dto.js";
 
 export const TimerRepository = {
     async create(data: CreateTimerDTO) {

@@ -3,19 +3,25 @@ import type {CreateFocusAudioDTO,CreateAmbientSoundDTO, UpdateFocusAudioSettings
 
 export const FocusAudioRepository = {
     async create(data: CreateFocusAudioDTO) {
+    const createData = {
+        sessionid: data.sessionid,
+        volumelevel: data.volumelevel ?? 1.0,
+        mixambientsounds: data.mixambientsounds ?? false,
+        ...(data.sounds && data.sounds.length > 0
+            ? {
+                ambientsound: {
+                    create: data.sounds.map(sound => ({
+                        name: sound.name,
+                        ...(sound.audiourl !== undefined ? { audiourl: sound.audiourl } : {}),
+                        islooping: sound.islooping ?? false
+                    }))
+                }
+            }
+            : {})
+    };
+
     return await prisma.focusaudiosettings.create({
-        data: {
-            sessionid: data.sessionid,
-            volumelevel: data.volumelevel ?? 1.0,
-            mixambientsounds: data.mixambientsounds ?? false,
-            ambientsound: data.sounds ? {
-                create: data.sounds.map(sound => ({
-                    name: sound.name,
-                    audiourl: sound.audiourl,
-                    islooping: sound.islooping ?? false
-                }))
-            } : undefined
-        },
+        data: createData,
         include: { ambientsound: true }
     });
 },
@@ -33,13 +39,15 @@ export const FocusAudioRepository = {
 
         // MODIFY (The user provided a specific ID)
         if (soundData.soundid) {
+            const updateData = {
+                ...(soundData.name !== undefined ? { name: soundData.name } : {}),
+                ...(soundData.audiourl !== undefined ? { audiourl: soundData.audiourl } : {}),
+                ...(soundData.islooping !== undefined ? { islooping: soundData.islooping } : {}),
+            };
+
             return await prisma.ambientsound.update({
                 where: { soundid: soundData.soundid },
-                data: {
-                    name: soundData.name,
-                    audiourl: soundData.audiourl,
-                    islooping: soundData.islooping ?? false
-                }
+                data: updateData
             });
         }
 
@@ -61,19 +69,21 @@ export const FocusAudioRepository = {
             data: {
                 settingsid: settings.settingsid,
                 name: soundData.name,
-                audiourl: soundData.audiourl,
+                ...(soundData.audiourl !== undefined ? { audiourl: soundData.audiourl } : {}),
                 islooping: soundData.islooping ?? false
             }
         });
     },
 
     async updateSettings(sessionid: string, data: UpdateFocusAudioSettingsDTO) {
+        const updateData = {
+            ...(data.volumelevel !== undefined ? { volumelevel: data.volumelevel } : {}),
+            ...(data.mixambientsounds !== undefined ? { mixambientsounds: data.mixambientsounds } : {}),
+        };
+
         return await prisma.focusaudiosettings.update({
             where: { sessionid },
-            data: {
-                volumelevel: data.volumelevel,
-                mixambientsounds: data.mixambientsounds
-            }
+            data: updateData
         });
     },
 
