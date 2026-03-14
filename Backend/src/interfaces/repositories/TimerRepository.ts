@@ -23,7 +23,19 @@ export const TimerRepository = {
         });
     },
 
-    async update(sessionid: string, data: UpdateTimerDTO) {
+    async findById(timerid: string) {
+        return await prisma.timer.findUnique({
+            where: { timerid },
+        });
+    },
+
+    async findManyBySession(sessionid: string) {
+        return await prisma.timer.findMany({
+            where: { sessionid },
+        });
+    },
+
+    async update(timerid: string, data: UpdateTimerDTO) {
         const updateData = {
             ...(data.type !== undefined || (data as any).timertype !== undefined
                 ? { type: data.type ?? (data as any).timertype }
@@ -39,14 +51,14 @@ export const TimerRepository = {
         };
 
         return await prisma.timer.update({
-            where: { sessionid },
+            where: { timerid },
             data: updateData,
         });
     },
 
-    async delete(sessionid: string) {
+    async delete(timerid: string) {
         return await prisma.timer.delete({
-            where: { sessionid },
+            where: { timerid },
         });
     }
 };

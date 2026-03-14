@@ -13,10 +13,10 @@ import { GetKnowledgeBase, DeleteDocument } from '../../usecases/ai/Knowledgebas
 import { ScheduleFocusSession } from '../../usecases/ai/Schedulefocussession.js';
 import { SendTaskReminders } from '../../usecases/ai/Sendtaskreminders.js';
 
-// Multer — file uploads stored in memory (no disk)
+// Store uploaded files in memory before processing.
 export const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
   fileFilter: (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
     const allowed = ['application/pdf', 'text/plain', 'text/markdown'];
     if (allowed.includes(file.mimetype)) cb(null, true);
@@ -26,7 +26,7 @@ export const upload = multer({
 
 export const AIAssistantController = {
 
-  // ── Layer 1+2+3 — Chat ──────────────────────────────────────
+  // Chat
 
   async sendMessage(req: Request, res: Response) {
     try {
@@ -57,7 +57,7 @@ export const AIAssistantController = {
     }
   },
 
-  // ── Layer 2 — Smart Features ────────────────────────────────
+  // Study planning and analysis
 
   async generateStudyPlan(req: Request, res: Response) {
     try {
@@ -80,7 +80,7 @@ export const AIAssistantController = {
     }
   },
 
-  // ── Layer 2 — Memory ────────────────────────────────────────
+  // Memory
 
   async getMemory(req: Request, res: Response) {
     try {
@@ -102,7 +102,7 @@ export const AIAssistantController = {
     }
   },
 
-  // ── Layer 3 — RAG ───────────────────────────────────────────
+  // Knowledge base
 
   async uploadDocument(req: Request, res: Response) {
     try {
@@ -143,7 +143,7 @@ export const AIAssistantController = {
     }
   },
 
-  // ── Layer 4 — Agentic ───────────────────────────────────────
+  // Automation actions
 
   async scheduleFocusSession(req: Request, res: Response) {
     try {

@@ -53,6 +53,6 @@ Rules:
       }
     }
   } catch {
-    // Silent fail — memory extraction is non-critical
+    // Ignore extraction failures so chat is never blocked.
   }
 };

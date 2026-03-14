@@ -22,7 +22,7 @@ import { GetAmbientSoundsBySettings, GetAmbientSoundById } from "../../usecases/
 import { RemoveAmbientSound } from "../../usecases/sessions/DeleteAmbientSound.js";
 
 export const FocusSessionController = {
-  // ------------------------- SESSION ---------------------------------
+  // Session lifecycle
   async create(req: Request, res: Response) {
     try {
       const session = await CreateSession(req.body);
@@ -84,7 +84,7 @@ export const FocusSessionController = {
     }
   },
 
-  //--------------------------- TIMER ----------------------------------
+  // Timer management
 
   async addTimer(req: Request, res: Response) {
     try {
@@ -136,7 +136,7 @@ export const FocusSessionController = {
     }
   },
 
-  //-------------------------- AUDIOSETTINGS ------------------------
+  // Audio settings
 
   async addAudio(req: Request, res: Response) {
     try {
@@ -188,7 +188,7 @@ export const FocusSessionController = {
     }
   },
 
-  //---------------------- AMBIENT SOUND --------------------------
+  // Ambient sounds
 
   async getAmbientSoundsBySettings(req: Request, res: Response) {
     try {

@@ -1,4 +1,4 @@
-import { TimerType } from "../../entities/Timer.js";
+import { TimerType } from "../../entities/timer.js";
 
 export interface CreateTimerDTO {
     sessionid: string;
@@ -21,4 +21,8 @@ export interface UpdateTimerDTO {
     remainingseconds?: number;
     starttime?: Date | null;
     endtime?: Date | null;
+}
+
+export interface DeleteTimerDTO {
+    timerid: string;
 }

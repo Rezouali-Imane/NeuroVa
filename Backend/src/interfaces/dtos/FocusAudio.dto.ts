@@ -20,3 +20,7 @@ export interface UpdateFocusAudioSettingsDTO {
 export interface DeleteAmbientSoundDTO {
     soundid: string;
 }
+
+export interface DeleteFocusAudioSettingsDTO {
+  settingsid: string;
+}

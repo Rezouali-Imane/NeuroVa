@@ -9,10 +9,10 @@ export const ProcessDocument = async (data: UploadDocumentDTO) => {
   if (!data.userid) throw new Error('User ID is required');
   if (!data.fileBuffer) throw new Error('File is required');
 
-  // 1. Get or create assistant
+  // Ensure an assistant record exists for this user.
   const assistant = await AssistantRepository.findOrCreate(data.userid, data.major);
 
-  // 2. Save document record
+  // Store the document metadata.
   const doc = await KnowledgeBaseRepository.create({
     assistantid: assistant.assistantid,
     filename: data.filename,
@@ -21,7 +21,7 @@ export const ProcessDocument = async (data: UploadDocumentDTO) => {
     ...(data.subject ? { subject: data.subject } : {}),
   });
 
-  // 3. Extract text
+  // Extract raw text from the uploaded file.
   let rawText: string;
   if (data.mimetype === 'application/pdf') {
     rawText = await extractTextFromPDF(data.fileBuffer);
@@ -29,13 +29,13 @@ export const ProcessDocument = async (data: UploadDocumentDTO) => {
     rawText = extractTextFromFile(data.fileBuffer.toString('utf-8'));
   }
 
-  // 4. Clean + chunk
+  // Normalize text and split it into chunks.
   const cleanedText = cleanText(rawText);
   const chunks = chunkText(cleanedText, 500, 50);
 
   if (chunks.length === 0) throw new Error('Could not extract any text from this document');
 
-  // 5. Save chunks to database
+  // Persist chunk content.
   const savedChunks = await Promise.all(
     chunks.map((content, index) =>
       prisma.documentchunk.create({
@@ -44,7 +44,7 @@ export const ProcessDocument = async (data: UploadDocumentDTO) => {
     )
   );
 
-  // 6. Generate + store embeddings
+  // Generate embeddings and save them to the vector store.
   const embeddings = await getEmbeddings(chunks);
   await Promise.all(
     savedChunks.map((chunk, index) =>

@@ -24,7 +24,7 @@ import { TaskCategory, TaskStatus } from '../../entities/Task.js';
 import type { CreateTaskDTO, UpdateTaskDTO } from '../../interfaces/dtos/Task.dto.js';
 import { ExtractAndSaveMemory } from './Extractandsavememory.js';
 
-// ── Helpers ────────────────────────────────────────────────────
+// Utility helpers
 
 const detectLanguage = (text: string): string => {
   if (/[\u0600-\u06FF]/.test(text)) return 'Arabic';
@@ -188,22 +188,22 @@ const fallbackAssistantAction = async (userid: string, content: string) => {
   };
 };
 
-// ── Main ───────────────────────────────────────────────────────
+// Main flow
 
 export const SendMessage = async (data: SendMessageDTO) => {
   if (!data.content?.trim()) throw new Error('Message content is required');
   if (!data.userid) throw new Error('User ID is required');
 
-  // 1. Get or create assistant
+  // Ensure the user has an assistant profile.
   const assistant = await AssistantRepository.findOrCreate(data.userid, data.major);
 
-  // 2. Load + update memory
+  // Load memory and refresh fields provided in this request.
   const memory = await StudentMemoryRepository.findByUser(data.userid);
   if (data.major) { await StudentMemoryRepository.upsert(data.userid, 'major', data.major); memory['major'] = data.major; }
   if (data.university) { await StudentMemoryRepository.upsert(data.userid, 'university', data.university); memory['university'] = data.university; }
   if (data.year) { await StudentMemoryRepository.upsert(data.userid, 'year', data.year); memory['year'] = data.year; }
 
-  // 3. RAG — find relevant document chunks
+  // Try to pull useful context from indexed documents.
   let ragContext = '';
   try {
     const queryEmbedding = await getEmbedding(data.content);
@@ -213,20 +213,20 @@ export const SendMessage = async (data: SendMessageDTO) => {
       ragContext = goodChunks.map((c, i) => `[Source ${i + 1}]\n${c.content}`).join('\n\n');
     }
   } catch {
-    // RAG failure is non-critical
+    // Continue without RAG context if retrieval fails.
   }
 
-  // 4. Chat history (last 10, oldest first)
+  // Use recent conversation context.
   const history = await ChatHistoryRepository.findByUser(data.userid, 10);
   const historyMessages = history.reverse().map(h => ({
     role: h.role === 'USER' ? 'user' as const : 'assistant' as const,
     content: h.content,
   }));
 
-  // 5. Detect language
+  // Match the user's language where possible.
   const language = detectLanguage(data.content);
 
-  // 6. Build prompt + call Gemini
+  // Build prompt and ask the model.
   const systemPrompt = buildSystemPrompt(memory, ragContext, language, data.faithmode ?? false);
 
   const tools: ChatCompletionTool[] = [
@@ -542,11 +542,11 @@ export const SendMessage = async (data: SendMessageDTO) => {
     actions = fallback.actions;
   }
 
-  // 7. Save to history
+  // Persist both user and assistant messages.
   await ChatHistoryRepository.save(data.userid, 'USER', data.content);
   await ChatHistoryRepository.save(data.userid, 'ASSISTANT', aiReply);
 
-  // 8. Background tasks (non-blocking)
+  // Update long-term memory in the background.
   ExtractAndSaveMemory(data.userid, data.content, memory).catch(() => {});
 
   return {

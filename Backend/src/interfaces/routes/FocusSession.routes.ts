@@ -3,23 +3,32 @@ import { FocusSessionController} from "../controllers/FocusSessionController.js"
 
 const router = Router();
 
-// Create a new focus session
+// Create a focus session
 router.post('/', FocusSessionController.create);
 
-// Get all sessions for a user
+// List sessions for a user
 router.get('/user/:userid', FocusSessionController.getAll);
 
-// Get a specific session by ID
+// Get one session by ID
 router.get('/:sessionid', FocusSessionController.getById);
 
 // Start a session
 router.post('/:sessionid/start', FocusSessionController.start);
 
-//get time information
-router.get('/:sessionid/get_timer', FocusSessionController.getTimer);
+// Add timer settings to a session
+router.post('/:sessionid/timer', FocusSessionController.addTimer);
 
-// update timer(type,status ....)
-router.patch('/:sessionid/timer', FocusSessionController.updateTimer);
+// Get one timer
+router.get('/:timerid/get_timer', FocusSessionController.getTimer);
+
+// List timers for a session
+router.get('/:sessionid/get_timers', FocusSessionController.getTimersBySession);
+
+// Update timer settings
+router.patch('/:timerid/timer', FocusSessionController.updateTimer);
+
+// Remove one timer
+router.delete('/:timerid/timer', FocusSessionController.removeTimer);
 
 // End a session
 router.post('/:sessionid/end', FocusSessionController.end);
@@ -27,13 +36,34 @@ router.post('/:sessionid/end', FocusSessionController.end);
 // Delete a session
 router.delete('/:sessionid', FocusSessionController.delete);
 
-// manage the audio settings (Volume, Mixage)
-router.patch('/:sessionid/audio-settings', FocusSessionController.updateAudioSettings);
+// Create audio settings for a session
+router.post('/:sessionid/audio', FocusSessionController.addAudio);
 
-// manage ambient sound
-router.post('/:sessionid/ambient-sound', FocusSessionController.handleAmbientSound);
+// Update audio settings
+router.patch('/:settingsid/audio-settings', FocusSessionController.updateAudioSettings);
 
-// Delete an ambient sound
-router.delete('/ambient-sound/:soundid', FocusSessionController.deleteAmbientSound);
+// Remove one audio settings record
+router.delete('/:settingsid/audio-settings', FocusSessionController.removeAudio);
+
+// Get audio settings by ID
+router.get('/:settingsid/get_audiosession', FocusSessionController.getAudioById);
+
+// List audio settings by session
+router.get('/:sessionid/get_audiosessions', FocusSessionController.getAudioBySession);
+
+// Add an ambient sound
+router.post('/audio-settings/:settingsid/ambient-sound', FocusSessionController.addAmbientSound);
+
+// List ambient sounds for one audio settings record
+router.get('/audio-settings/:settingsid/get_ambientsounds', FocusSessionController.getAmbientSoundsBySettings);
+
+// Get one ambient sound
+router.get('/audio-settings/:soundid/get_ambientsound', FocusSessionController.getAmbientSoundById);
+
+// Update one ambient sound
+router.patch('/audio-settings/:soundid/ambient-sound', FocusSessionController.updateAmbientSound);
+
+// Remove an ambient sound
+router.delete('/:soundid/ambient-sound', FocusSessionController.deleteAmbientSound);
 
 export default router;

@@ -1,5 +1,11 @@
 import prisma from "../../infrastructure/database/prisma.client.js";
-import type {CreateFocusAudioDTO,CreateAmbientSoundDTO, UpdateFocusAudioSettingsDTO } from "../dtos/FocusAudio.dto.js";
+import type {
+    CreateFocusAudioDTO,
+    CreateAmbientSoundDTO,
+    UpdateFocusAudioSettingsDTO,
+    DeleteAmbientSoundDTO,
+    DeleteFocusAudioSettingsDTO,
+} from "../dtos/FocusAudio.dto.js";
 
 export const FocusAudioRepository = {
     async create(data: CreateFocusAudioDTO) {
@@ -32,6 +38,20 @@ export const FocusAudioRepository = {
         });
     },
 
+    async findById(settingsid: string) {
+        return await prisma.focusaudiosettings.findUnique({
+            where: { settingsid },
+            include: { ambientsound: true },
+        });
+    },
+
+    async findManyBySession(sessionid: string) {
+        return await prisma.focusaudiosettings.findMany({
+            where: { sessionid },
+            include: { ambientsound: true },
+        });
+    },
+
     async createAmbientSound(settingsid: string, soundData: CreateAmbientSoundDTO) {
         return await prisma.ambientsound.create({
             data: {
@@ -56,6 +76,18 @@ export const FocusAudioRepository = {
         });
     },
 
+    async findAmbientSoundById(soundid: string) {
+        return await prisma.ambientsound.findUnique({
+            where: { soundid },
+        });
+    },
+
+    async findSoundsBySettings(settingsid: string) {
+        return await prisma.ambientsound.findMany({
+            where: { settingsid },
+        });
+    },
+
     async updateAmbientSoundLooping(soundid: string, islooping: boolean) {
         return await prisma.ambientsound.update({
             where: { soundid },
@@ -63,19 +95,26 @@ export const FocusAudioRepository = {
         });
     },
 
-    async updateSettings(sessionid: string, data: UpdateFocusAudioSettingsDTO) {
+    async updateSettings(settingsid: string, data: UpdateFocusAudioSettingsDTO) {
         const updateData = {
             ...(data.volumelevel !== undefined ? { volumelevel: data.volumelevel } : {}),
             ...(data.mixambientsounds !== undefined ? { mixambientsounds: data.mixambientsounds } : {})
         };
 
         return await prisma.focusaudiosettings.update({
-            where: { sessionid },
+            where: { settingsid },
             data: updateData
         });
     },
 
-    async deleteAmbientSound(soundid: string) {
+    async delete(data: DeleteFocusAudioSettingsDTO) {
+        return await prisma.focusaudiosettings.delete({
+            where: { settingsid: data.settingsid },
+        });
+    },
+
+    async deleteAmbientSound(sound: string | DeleteAmbientSoundDTO) {
+        const soundid = typeof sound === "string" ? sound : sound.soundid;
         return await prisma.ambientsound.delete({
             where: { soundid }
         });

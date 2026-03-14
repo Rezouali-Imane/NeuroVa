@@ -6,19 +6,19 @@ import type { AnalyzeWeaknessDTO } from '../../interfaces/dtos/AI.dto.js';
 export const AnalyzeWeakness = async (data: AnalyzeWeaknessDTO) => {
   if (!data.userid) throw new Error('User ID is required');
 
-  // 1. Fetch all tasks
+  // Pull task history for this user.
   const tasks = await prisma.task.findMany({ where: { userid: data.userid } });
 
   if (tasks.length === 0) {
     return { analysis: 'No task history yet. Complete some tasks so I can analyze your patterns!' };
   }
 
-  // 2. Load memory
+  // Load saved profile details used in the prompt.
   const memory = await StudentMemoryRepository.findByUser(data.userid);
   const name = memory['name'] ?? 'Student';
   const major = memory['major'] ?? '';
 
-  // 3. Group by category + status
+  // Aggregate stats by category and status.
   const summary: Record<string, { total: number; completed: number; overdue: number; pending: number }> = {};
 
   for (const task of tasks) {
@@ -30,7 +30,7 @@ export const AnalyzeWeakness = async (data: AnalyzeWeaknessDTO) => {
     else summary[cat].pending++;
   }
 
-  // 4. Format stats
+  // Build a readable stats block for the model.
   const statsBlock = Object.entries(summary).map(([cat, s]) => {
     const rate = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
     return `${cat}: ${s.total} total | ${s.completed} completed (${rate}%) | ${s.overdue} overdue | ${s.pending} pending`;
@@ -41,7 +41,7 @@ export const AnalyzeWeakness = async (data: AnalyzeWeaknessDTO) => {
     .map(t => `- ${t.title} (${t.category})`)
     .join('\n');
 
-  // 5. Prompt
+  // Ask for a structured weakness analysis.
   const prompt = `Analyze the academic performance of ${name}${major ? ` studying ${major}` : ''}.
 
 Task statistics by category:
@@ -59,7 +59,7 @@ Provide:
 
 Use markdown. Be specific and personal.`;
 
-  // 6. Call Gemini
+  // Generate analysis text.
   const response = await openai.chat.completions.create({
     model: 'gemini-2.0-flash',
     messages: [{ role: 'user', content: prompt }],
@@ -68,7 +68,7 @@ Use markdown. Be specific and personal.`;
 
   const analysis = response.choices[0]?.message?.content ?? 'Could not generate analysis.';
 
-  // 7. Save weak subjects back to memory
+  // Save likely weak categories for later personalization.
   const weakCategories = Object.entries(summary)
     .filter(([, s]) => s.total > 0 && (s.overdue / s.total) > 0.3)
     .map(([cat]) => cat).join(', ');

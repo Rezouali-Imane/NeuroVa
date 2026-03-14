@@ -1,7 +1,7 @@
 import openai from '../../infrastructure/ai/openai.client.js';
 import prisma from '../../infrastructure/database/prisma.client.js';
 
-// Automatically detects tasks mentioned in conversation and creates them
+// Extract explicit task requests from messages and create them.
 
 export const DetectAndCreateTasks = async (
   userid: string,
@@ -65,6 +65,6 @@ Example: [{"title": "Study for algorithms exam", "category": "ACADEMIC", "priori
       });
     }
   } catch {
-    // Silent fail — task detection is non-critical
+    // Skip silently if extraction fails; chat response should still succeed.
   }
 };

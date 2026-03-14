@@ -1,14 +1,14 @@
 import prisma from '../../infrastructure/database/prisma.client.js';
 import { sendEmail, emailTemplates } from '../../infrastructure/resend.client.js';
 
-// Send email reminders for tasks due in the next 24 hours
-// Can be called for one user or all users
+// Send email reminders for tasks due in the next 24 hours.
+// If `userid` is omitted, reminders are sent for all users.
 
 export const SendTaskReminders = async (userid?: string) => {
   const now = new Date();
   const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-  // Find tasks due within next 24 hours
+  // Find due-soon tasks.
   const upcomingTasks = await prisma.task.findMany({
     where: {
       ...(userid ? { userid } : {}),
