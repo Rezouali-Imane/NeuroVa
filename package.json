@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "openai": "^6.29.0",
     "prisma": "^5.22.0",
     "typescript": "^5.9.3"
   }
