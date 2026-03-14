@@ -1,21 +1,20 @@
 import { FocusAudioRepository } from "../../interfaces/repositories/FocusAudioSettingsRepository.js";
 import type { CreateFocusAudioDTO } from "../../interfaces/dtos/FocusAudio.dto.js";
 
-export const CreateFocusAudio = async (data: CreateFocusAudioDTO) => {
-    
-    if (!data.sessionid) {
-        throw new Error("A Session ID is required to initialize audio settings.");
-    }
+export const CreateFocusAudio = async (
+  sessionid: string,
+  customData?: Partial<CreateFocusAudioDTO>,
+) => {
+  if (!sessionid) {
+    throw new Error("A Session ID is required to initialize audio settings.");
+  }
 
-    
-    const audioData: CreateFocusAudioDTO = {
-        sessionid: data.sessionid,
-        volumelevel: data.volumelevel ?? 1.0, // default value 1.0 volume (if user didnt enter anything)
-        mixambientsounds: data.mixambientsounds ?? false,
-        sounds: data.sounds ?? [] 
-    };
+  const audioData: CreateFocusAudioDTO = {
+    sessionid: sessionid,
+    volumelevel: customData?.volumelevel ?? 1.0,
+    mixambientsounds: customData?.mixambientsounds ?? false,
+    sounds: customData?.sounds ?? [],
+  };
 
-    const newAudioSetting = await FocusAudioRepository.create(audioData);
-
-    return newAudioSetting;
+  return await FocusAudioRepository.create(audioData);
 };
