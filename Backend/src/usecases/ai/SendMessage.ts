@@ -16,15 +16,17 @@ import { GetTasks } from '../tasks/GetTasks.js';
 import { UpdateTaskStatus } from '../tasks/UpdateTaskStatus.js';
 import { CreateTaskList } from '../tasks/CreateTaskList.js';
 import { GetTaskList } from '../tasks/GetTaskList.js';
+import { UpdateTaskList } from '../tasks/UpdateTaskList.js';
 import { CreateSession } from '../sessions/CreateSession.js';
 import { StartSession } from '../sessions/StartSession.js';
 import { EndSession } from '../sessions/EndSession.js';
 import { GetSessions } from '../sessions/GetSession.js';
 import { TaskCategory, TaskStatus } from '../../entities/Task.js';
 import type { CreateTaskDTO, UpdateTaskDTO } from '../../interfaces/dtos/Task.dto.js';
+import type { UpdateTaskListDTO } from '../../interfaces/dtos/TaskList.dto.js';
 import { ExtractAndSaveMemory } from './Extractandsavememory.js';
 
-// Utility helpers
+// Small helpers used throughout the flow.
 
 const detectLanguage = (text: string): string => {
   if (/[\u0600-\u06FF]/.test(text)) return 'Arabic';
@@ -65,16 +67,16 @@ const buildSystemPrompt = (
     : '';
 
   return `You are Neurova, an intelligent AI academic assistant built into a student productivity app.
-Personality: encouraging, focused, knowledgeable, concise.
+Personality: warm, encouraging, practical, and clear.
 Help with: concept explanations, study strategies, problem solving, exam prep, and academic planning.
 Always format responses clearly using markdown (bold, bullet points, code blocks when relevant).
 
 You can perform actions through tools for:
 - Task management: create/update/delete/list tasks, update task status
-- Task lists: create/list
+- Task lists: create/update/list
 - Focus sessions: create/list/start/end
 
-When a user asks for an action, call the appropriate tool first, then summarize the result clearly.${profileBlock}${ragBlock}${faithBlock}${langBlock}`;
+When a user asks for an action, call the right tool first, then explain the result in a natural and friendly way.${profileBlock}${ragBlock}${faithBlock}${langBlock}`;
 };
 
 const toTaskCategory = (value: unknown): TaskCategory | undefined => {
@@ -104,6 +106,216 @@ const parseToolArguments = (input: string): Record<string, unknown> => {
   }
 };
 
+const parseInlineToolCalls = (content: string): Array<{
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+}> => {
+  const matches = content.matchAll(/<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/g);
+  const parsedCalls: Array<{
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string };
+  }> = [];
+
+  let index = 0;
+  for (const match of matches) {
+    const payload = match[1]?.trim();
+    if (!payload) continue;
+
+    try {
+      const parsed = JSON.parse(payload) as { name?: unknown; arguments?: unknown };
+      if (typeof parsed.name !== 'string' || !parsed.name.trim()) continue;
+
+      const argsObject =
+        typeof parsed.arguments === 'object' && parsed.arguments !== null
+          ? parsed.arguments
+          : {};
+
+      parsedCalls.push({
+        id: `inline_tool_${index++}`,
+        type: 'function',
+        function: {
+          name: parsed.name,
+          arguments: JSON.stringify(argsObject),
+        },
+      });
+    } catch {
+      continue;
+    }
+  }
+
+  return parsedCalls;
+};
+
+const normalizeText = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const pickFirstString = (...values: unknown[]): string | undefined => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return undefined;
+};
+
+const extractEntityQueryFromContent = (content: string, entity: 'task' | 'tasklist'): string | undefined => {
+  const quoted = content.match(/"([^"]{2,})"|'([^']{2,})'/);
+  const quotedValue = quoted?.[1] ?? quoted?.[2];
+  if (quotedValue?.trim()) return quotedValue.trim();
+
+  if (entity === 'task') {
+    const m = content.match(/(?:task\s+named|task\s+called|task\s+title\s+is|task)\s+([^.,;\n]+?)(?:\s+(?:to|as|with|status|priority|deadline|description)\b|$)/i);
+    if (m?.[1]?.trim()) return m[1].trim();
+  } else {
+    const m = content.match(/(?:task\s*list|tasklist)\s+(?:named|called)?\s*([^.,;\n]+?)(?:\s+(?:to|as|with|name|title|rename|update)\b|$)/i);
+    if (m?.[1]?.trim()) return m[1].trim();
+  }
+
+  return undefined;
+};
+
+const resolveTaskIdForUser = async (userid: string, query: string): Promise<string | null> => {
+  const tasks = await GetTasks(userid);
+  const normalizedQuery = normalizeText(query);
+  if (!normalizedQuery) return null;
+
+  const exact = tasks.find((task) => normalizeText(task.title) === normalizedQuery);
+  if (exact) return exact.taskid;
+
+  const contains = tasks.find((task) => normalizeText(task.title).includes(normalizedQuery));
+  if (contains) return contains.taskid;
+
+  const reverseContains = tasks.find((task) => normalizedQuery.includes(normalizeText(task.title)));
+  if (reverseContains) return reverseContains.taskid;
+
+  return null;
+};
+
+const resolveTaskListIdForUser = async (userid: string, query: string): Promise<string | null> => {
+  const lists = await GetTaskList(userid);
+  const normalizedQuery = normalizeText(query);
+  if (!normalizedQuery) return null;
+
+  const exact = lists.find((list) => normalizeText(list.name) === normalizedQuery);
+  if (exact) return exact.listid;
+
+  const contains = lists.find((list) => normalizeText(list.name).includes(normalizedQuery));
+  if (contains) return contains.listid;
+
+  const reverseContains = lists.find((list) => normalizedQuery.includes(normalizeText(list.name)));
+  if (reverseContains) return reverseContains.listid;
+
+  return null;
+};
+
+const isActionIntent = (content: string): boolean => {
+  const text = content.toLowerCase();
+  const hasActionVerb = /\b(create|add|schedule|start|end|delete|remove|update|list|show)\b/.test(text);
+  const hasSupportedEntity = /\btask|tasks|task list|tasklist|focus session|session|focus\b/.test(text);
+  return hasActionVerb && hasSupportedEntity;
+};
+
+const isUpdateIntent = (content: string): boolean => {
+  const text = content.toLowerCase();
+  const hasUpdateVerb = /\b(update|rename|change|edit|mark|set)\b/.test(text);
+  const hasUpdatableEntity = /\btask|tasks|task list|tasklist|status|title|description|deadline|priority|name\b/.test(text);
+  return hasUpdateVerb && hasUpdatableEntity;
+};
+
+const UPDATE_ONLY_TOOL_NAMES = new Set([
+  'update_task',
+  'update_task_status',
+  'update_task_list',
+  'list_tasks',
+  'list_task_lists',
+]);
+
+const sleep = async (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+
+const DEFAULT_GEMINI_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+] as const;
+
+const DEFAULT_OPENROUTER_MODELS = [
+  'qwen/qwen-2.5-7b-instruct:free',
+  'meta-llama/llama-3.1-8b-instruct:free',
+  'mistralai/mistral-7b-instruct:free',
+] as const;
+
+const getGeminiModelPool = (): string[] => {
+  if (AI_PROVIDER === 'openrouter') {
+    const configuredModel = process.env.OPENROUTER_MODEL?.trim();
+    if (!configuredModel) return [...DEFAULT_OPENROUTER_MODELS];
+    return [configuredModel, ...DEFAULT_OPENROUTER_MODELS.filter((m) => m !== configuredModel)];
+  }
+
+  const configuredModel = process.env.GEMINI_MODEL?.trim();
+  if (!configuredModel) return [...DEFAULT_GEMINI_MODELS];
+  return [configuredModel, ...DEFAULT_GEMINI_MODELS.filter((m) => m !== configuredModel)];
+};
+
+const createGeminiCompletion = async (params: {
+  messages: ChatCompletionMessageParam[];
+  tools?: ChatCompletionTool[];
+  directchat: boolean;
+  maxRetries?: number;
+}) => {
+  const { messages, tools, directchat, maxRetries = 2 } = params;
+  let lastError: unknown;
+  let quotaError: unknown;
+  const modelPool = getGeminiModelPool();
+
+  for (const model of modelPool) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (directchat || !tools || tools.length === 0) {
+          return await openai.chat.completions.create({
+            model,
+            messages,
+            max_tokens: 1000,
+          });
+        }
+
+        return await openai.chat.completions.create({
+          model,
+          messages,
+          tools,
+          tool_choice: 'auto',
+          max_tokens: 1000,
+        });
+      } catch (error) {
+        lastError = error;
+        const status = (error as { status?: number })?.status;
+        const isRateLimited = status === 429;
+        const hasRetryLeft = attempt < maxRetries;
+
+        if (isRateLimited) quotaError = error;
+
+        if (isRateLimited && hasRetryLeft) {
+          await sleep(600 * 2 ** attempt);
+          continue;
+        }
+
+        if (!isRateLimited) {
+          break;
+        }
+      }
+    }
+  }
+
+  const finalError = quotaError ?? lastError;
+  throw finalError instanceof Error ? finalError : new Error('Gemini request failed');
+};
+
 const ensureTaskListId = async (userid: string, listid?: string): Promise<string> => {
   if (listid) return listid;
   const lists = await GetTaskList(userid);
@@ -112,9 +324,399 @@ const ensureTaskListId = async (userid: string, listid?: string): Promise<string
   return created.listid;
 };
 
+const parseEndDate = (content: string): Date | null => {
+  const normalized = content.toLowerCase().replace(/(st|nd|rd|th)/g, '');
+  const monthDateYear = normalized.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2}),?\s+(\d{4})\b/i);
+  if (monthDateYear) {
+    const parsed = new Date(`${monthDateYear[1]} ${monthDateYear[2]} ${monthDateYear[3]}`);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
+  const dayOfMonthYear = normalized.match(/\b(\d{1,2})\s+of\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})\b/i);
+  if (dayOfMonthYear) {
+    const parsed = new Date(`${dayOfMonthYear[2]} ${dayOfMonthYear[1]} ${dayOfMonthYear[3]}`);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
+  return null;
+};
+
+const extractStatusFromContent = (content: string): TaskStatus | null => {
+  const text = content.toLowerCase();
+  if (text.includes('completed') || text.includes('done') || text.includes('finished')) return TaskStatus.COMPLETED;
+  if (text.includes('in progress') || text.includes('in-progress') || text.includes('ongoing')) return TaskStatus.IN_PROGRESS;
+  if (text.includes('overdue') || text.includes('late')) return TaskStatus.OVERDUE;
+  if (text.includes('pending') || text.includes('todo') || text.includes('to do')) return TaskStatus.PENDING;
+  return null;
+};
+
+const extractRenamePair = (content: string, entity: 'task' | 'tasklist'): { from: string; to: string } | null => {
+  if (entity === 'tasklist') {
+    const pattern = /rename\s+(?:task\s*list|tasklist)\s+(.+?)\s+to\s+(.+?)(?:[.!?]|$)/i;
+    const match = content.match(pattern);
+    if (match?.[1] && match?.[2]) {
+      return { from: match[1].trim(), to: match[2].trim() };
+    }
+    return null;
+  }
+
+  const pattern = /rename\s+task\s+(.+?)\s+to\s+(.+?)(?:[.!?]|$)/i;
+  const match = content.match(pattern);
+  if (match?.[1] && match?.[2]) {
+    return { from: match[1].trim(), to: match[2].trim() };
+  }
+  return null;
+};
+
+const extractLearningTopic = (content: string, listName: string): string => {
+  const learnMatch = content.match(/to\s+learn\s+(.+?)(?:\s+in\s+\d+\s+steps?|\s+from\s+today|\s+by\s+|,|$)/i);
+  if (learnMatch?.[1]) return learnMatch[1].trim();
+
+  const cleanedListName = listName
+    .replace(/\b(task\s*list|tasklist|learning|plan)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return cleanedListName || 'the requested subject';
+};
+
+const titleCase = (value: string): string =>
+  value
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
+const inferTopicFromPrompt = (content: string): string | null => {
+  const patterns = [
+    /about\s+how\s+to\s+(?:make|cook|build|learn)\s+(.+?)(?:\s+in\s+\d+\s+steps?|\.|,|$)/i,
+    /how\s+to\s+(?:make|cook|build|learn)\s+(.+?)(?:\s+in\s+\d+\s+steps?|\.|,|$)/i,
+    /about\s+(.+?)(?:\s+in\s+\d+\s+steps?|\.|,|$)/i,
+    /to\s+(?:make|cook|build|learn)\s+(.+?)(?:\s+in\s+\d+\s+steps?|\s+from\s+today|\s+by\s+|\.|,|$)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = content.match(pattern);
+    if (match?.[1]?.trim()) {
+      return match[1].trim();
+    }
+  }
+
+  return null;
+};
+
+type LearningStep = { title: string; description: string };
+
+const buildLearningSteps = (topic: string, taskCount: number): LearningStep[] => {
+  const normalizedTopic = topic.toLowerCase();
+
+  const flutterTrack: LearningStep[] = [
+    {
+      title: 'Set up Flutter environment',
+      description: 'Install Flutter SDK, configure Android Studio or VS Code, run flutter doctor, and create your first app skeleton.',
+    },
+    {
+      title: 'Learn Dart foundations',
+      description: 'Practice Dart syntax, null safety, functions, classes, async/await, and write small console exercises.',
+    },
+    {
+      title: 'Master widgets and layout',
+      description: 'Build UI screens with StatelessWidget and StatefulWidget, Row/Column/Flex, padding, themes, and responsive layouts.',
+    },
+    {
+      title: 'State management and navigation',
+      description: 'Implement app state with Provider or Riverpod basics, add named routes, and handle form validation and user flows.',
+    },
+    {
+      title: 'Build and polish a mini project',
+      description: 'Create a complete Flutter project (auth + CRUD + API), test key screens, and prepare a deploy-ready release build.',
+    },
+  ];
+
+  const frontendTrack: LearningStep[] = [
+    {
+      title: 'HTML and semantic structure',
+      description: 'Learn semantic HTML tags, forms, accessibility basics, and build clean page structure from scratch.',
+    },
+    {
+      title: 'CSS fundamentals and responsive UI',
+      description: 'Practice box model, Flexbox, Grid, and media queries to recreate responsive layouts.',
+    },
+    {
+      title: 'JavaScript core skills',
+      description: 'Cover variables, functions, arrays/objects, DOM events, and async fetch with practical mini exercises.',
+    },
+    {
+      title: 'Component architecture',
+      description: 'Build reusable UI components, organize project structure, and manage state with a simple pattern.',
+    },
+    {
+      title: 'Ship a portfolio-grade app',
+      description: 'Create and deploy a full frontend project with routing, API integration, error handling, and polished UX.',
+    },
+  ];
+
+  const cookingTrack: LearningStep[] = [
+    {
+      title: `Understand ${topic} ingredients and tools`,
+      description: `List the required ingredients, quantities, and kitchen tools needed to prepare ${topic} correctly.`,
+    },
+    {
+      title: `Prepare the filling for ${topic}`,
+      description: `Season and cook the filling base, then let it cool so it can be wrapped neatly without tearing pastry.`,
+    },
+    {
+      title: `Wrap and shape ${topic}`,
+      description: `Practice folding technique step by step so each bourak is sealed and consistent in size.`,
+    },
+    {
+      title: `Cook ${topic} to golden crisp`,
+      description: `Fry or bake at the right heat, monitor color and texture, and avoid overcooking the outer layer.`,
+    },
+    {
+      title: `Serve and refine ${topic}`,
+      description: `Taste, adjust seasoning, and document improvements for your next batch.`,
+    },
+  ];
+
+  const genericTrack: LearningStep[] = [
+    {
+      title: `Foundations of ${topic}`,
+      description: `Study core concepts and terminology for ${topic}, then summarize them in your own notes.`,
+    },
+    {
+      title: `${topic} hands-on basics`,
+      description: `Complete beginner exercises to apply the fundamentals of ${topic} in short focused sessions.`,
+    },
+    {
+      title: `Intermediate ${topic} practice`,
+      description: `Work on increasingly difficult tasks and identify recurring mistakes to fix quickly.`,
+    },
+    {
+      title: `${topic} mini project`,
+      description: `Build a practical mini project that combines the main skills you learned in ${topic}.`,
+    },
+    {
+      title: `${topic} revision and delivery`,
+      description: `Review weak areas, refine your project or notes, and prepare a final polished outcome.`,
+    },
+  ];
+
+  const baseTrack = normalizedTopic.includes('flutter')
+    ? flutterTrack
+    : (normalizedTopic.includes('bourak') || normalizedTopic.includes('recipe') || normalizedTopic.includes('cook') || normalizedTopic.includes('cooking'))
+      ? cookingTrack
+    : (normalizedTopic.includes('frontend') || normalizedTopic.includes('front-end'))
+      ? frontendTrack
+      : genericTrack;
+
+  const steps: LearningStep[] = [];
+  for (let i = 0; i < taskCount; i++) {
+    const template = baseTrack[i] ?? {
+      title: `${topic} practical sprint ${i + 1}`,
+      description: `Deepen your ${topic} skills with a focused implementation sprint and document key learnings.`,
+    };
+
+    steps.push({
+      title: template.title,
+      description: template.description,
+    });
+  }
+
+  return steps;
+};
+
+const createSmartTaskPlanFromPrompt = async (userid: string, content: string) => {
+  const text = content.toLowerCase();
+  const asksForTaskList = /task\s*list|tasklist/.test(text);
+  const asksForSteps = /\bstep\b|\bsteps\b/.test(text);
+  const asksToCreate = /\bcreate\b|\bmake\b|\bbuild\b/.test(text);
+
+  if (!(asksForTaskList && asksForSteps && asksToCreate)) return null;
+
+  const countMatch = text.match(/(\d+)\s+steps?/);
+  const taskCount = countMatch ? Math.max(1, Math.min(15, Number(countMatch[1]))) : 5;
+
+  const explicitTitle = pickFirstString(
+    content.match(/task\s*list\s+titled\s+(.+?)(?:\s+to\s+learn|\s+from\s+today|\s+from\s+|\s+by\s+|,|$)/i)?.[1],
+    content.match(/task\s*list\s+(?:named|called)\s+(.+?)(?:\s+to\s+learn|\s+from\s+today|\s+from\s+|\s+by\s+|,|$)/i)?.[1],
+  );
+  const inferredTopic = inferTopicFromPrompt(content);
+  const listName = explicitTitle || (inferredTopic ? `${titleCase(inferredTopic)} Plan` : 'AI Learning Plan');
+  const learningTopic = inferredTopic || extractLearningTopic(content, listName);
+  const plannedSteps = buildLearningSteps(learningTopic, taskCount);
+
+  const endDate = parseEndDate(content) ?? (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d;
+  })();
+
+  const startDate = new Date();
+  startDate.setHours(9, 0, 0, 0);
+
+  const totalMs = Math.max(24 * 60 * 60 * 1000, endDate.getTime() - startDate.getTime());
+  const stepMs = taskCount > 1 ? totalMs / (taskCount - 1) : totalMs;
+
+  const list = await CreateTaskList({ userid, name: listName });
+
+  const createdTasks = [];
+  for (let i = 0; i < taskCount; i++) {
+    const deadline = new Date(startDate.getTime() + i * stepMs);
+    deadline.setHours(23, 59, 0, 0);
+    const step = plannedSteps[i]!;
+
+    const task = await CreateTask({
+      userid,
+      listid: list.listid,
+      title: `Step ${i + 1}: ${step.title}`,
+      description: step.description,
+      deadline,
+      priority: i + 1,
+      category: TaskCategory.ACADEMIC,
+    });
+
+    createdTasks.push(task);
+  }
+
+  return {
+    reply: `Perfect, I created **${listName}** with **${taskCount}** steps and spread them out until **${endDate.toDateString()}**.`,
+    actions: ['create_task_list', 'create_task'],
+    createdTasks,
+  };
+};
+
 const fallbackAssistantAction = async (userid: string, content: string) => {
   const text = content.toLowerCase();
   const actions: string[] = [];
+
+  if ((text.includes('list') || text.includes('show')) && (text.includes('task list') || text.includes('tasklist'))) {
+    const lists = await GetTaskList(userid);
+    actions.push('list_task_lists');
+    if (lists.length === 0) {
+      return {
+        reply: "You don't have any task lists yet. Want me to create one for you?",
+        actions,
+      };
+    }
+
+    return {
+      reply: `Here are your task lists:\n${lists.map((list) => `- ${list.name}`).join('\n')}`,
+      actions,
+    };
+  }
+
+  if ((text.includes('list') || text.includes('show')) && text.includes('task')) {
+    const tasks = await GetTasks(userid);
+    actions.push('list_tasks');
+    if (tasks.length === 0) {
+      return {
+        reply: "You don't have any tasks yet. I can help you add one in a second.",
+        actions,
+      };
+    }
+
+    const preview = tasks
+      .slice(0, 10)
+      .map((task) => `- ${task.title} (${task.status})`)
+      .join('\n');
+
+    return {
+      reply: `Here are your current tasks:\n${preview}`,
+      actions,
+    };
+  }
+
+  if ((text.includes('create') || text.includes('add')) && (text.includes('task list') || text.includes('tasklist'))) {
+    const title = pickFirstString(
+      content.match(/(?:task\s*list|tasklist)\s+(?:named|called|titled)\s+(.+?)(?:[.!?]|$)/i)?.[1],
+      content.match(/(?:create|add)\s+(?:a\s+)?(?:task\s*list|tasklist)\s+(.+?)(?:[.!?]|$)/i)?.[1],
+    ) ?? 'New Task List';
+
+    const list = await CreateTaskList({ userid, name: title });
+    actions.push('create_task_list');
+    return {
+      reply: `Done, I created **${list.name}** for you.`,
+      actions,
+    };
+  }
+
+  const renameList = extractRenamePair(content, 'tasklist');
+  if (renameList || ((text.includes('update') || text.includes('rename') || text.includes('change')) && (text.includes('task list') || text.includes('tasklist')))) {
+    const fromName = renameList?.from ?? extractEntityQueryFromContent(content, 'tasklist');
+    const toName = renameList?.to ?? pickFirstString(
+      content.match(/(?:to|as)\s+(.+?)(?:[.!?]|$)/i)?.[1],
+      content.match(/name\s+(?:to|as)\s+(.+?)(?:[.!?]|$)/i)?.[1],
+    );
+
+    if (fromName && toName) {
+      const listId = await resolveTaskListIdForUser(userid, fromName);
+      if (!listId) {
+        return { reply: `I couldn't find a task list named **${fromName}**.`, actions };
+      }
+
+      await UpdateTaskList(listId, { name: toName } as UpdateTaskListDTO);
+      actions.push('update_task_list');
+      return {
+        reply: `Nice, I renamed **${fromName}** to **${toName}**.`,
+        actions,
+      };
+    }
+  }
+
+  if ((text.includes('delete') || text.includes('remove')) && text.includes('task')) {
+    const selector = extractEntityQueryFromContent(content, 'task') ?? pickFirstString(
+      content.match(/(?:delete|remove)\s+task\s+(.+?)(?:[.!?]|$)/i)?.[1],
+    );
+
+    if (selector) {
+      const taskId = await resolveTaskIdForUser(userid, selector);
+      if (!taskId) {
+        return { reply: `I couldn't find a task named **${selector}**.`, actions };
+      }
+
+      await DeleteTask(taskId);
+      actions.push('delete_task');
+      return {
+        reply: `Done, I removed **${selector}**.`,
+        actions,
+      };
+    }
+  }
+
+  const renameTask = extractRenamePair(content, 'task');
+  if (renameTask) {
+    const taskId = await resolveTaskIdForUser(userid, renameTask.from);
+    if (!taskId) {
+      return { reply: `I couldn't find a task named **${renameTask.from}**.`, actions };
+    }
+
+    await UpdateTask(taskId, { title: renameTask.to });
+    actions.push('update_task');
+    return {
+      reply: `Great, I renamed **${renameTask.from}** to **${renameTask.to}**.`,
+      actions,
+    };
+  }
+
+  if ((text.includes('mark') || text.includes('set') || text.includes('update')) && text.includes('task')) {
+    const status = extractStatusFromContent(content);
+    const selector = extractEntityQueryFromContent(content, 'task');
+
+    if (status && selector) {
+      const taskId = await resolveTaskIdForUser(userid, selector);
+      if (!taskId) {
+        return { reply: `I couldn't find a task named **${selector}**.`, actions };
+      }
+
+      await UpdateTaskStatus(taskId, { status });
+      actions.push('update_task_status');
+      return {
+        reply: `Done, I marked **${selector}** as **${status}**.`,
+        actions,
+      };
+    }
+  }
 
   if (text.includes('create') && text.includes('task')) {
     const titleMatch = content.match(/titled\s+(.+)$/i);
@@ -146,7 +748,7 @@ const fallbackAssistantAction = async (userid: string, content: string) => {
     const task = await CreateTask(createTaskData);
     actions.push('create_task');
     return {
-      reply: `Task created: **${task.title}**.`,
+      reply: `Done, I added **${task.title}**.`,
       actions,
     };
   }
@@ -177,33 +779,33 @@ const fallbackAssistantAction = async (userid: string, content: string) => {
 
     actions.push('create_focus_session');
     return {
-      reply: `Focus session scheduled for **${duration} minutes** starting now.`,
+      reply: `You're all set. I scheduled a **${duration}-minute** focus session starting now.`,
       actions,
     };
   }
 
   return {
-    reply: 'I can help with tasks and focus sessions. Ask me to create a task or schedule a focus session.',
+    reply: 'I can help you manage tasks and focus sessions. Tell me what you want to add, update, or remove.',
     actions,
   };
 };
 
-// Main flow
+// Main request flow.
 
 export const SendMessage = async (data: SendMessageDTO) => {
   if (!data.content?.trim()) throw new Error('Message content is required');
   if (!data.userid) throw new Error('User ID is required');
 
-  // Ensure the user has an assistant profile.
+  // Make sure this user has an assistant profile ready.
   const assistant = await AssistantRepository.findOrCreate(data.userid, data.major);
 
-  // Load memory and refresh fields provided in this request.
+  // Pull saved memory and refresh any profile fields sent in this request.
   const memory = await StudentMemoryRepository.findByUser(data.userid);
   if (data.major) { await StudentMemoryRepository.upsert(data.userid, 'major', data.major); memory['major'] = data.major; }
   if (data.university) { await StudentMemoryRepository.upsert(data.userid, 'university', data.university); memory['university'] = data.university; }
   if (data.year) { await StudentMemoryRepository.upsert(data.userid, 'year', data.year); memory['year'] = data.year; }
 
-  // Try to pull useful context from indexed documents.
+  // Try to bring in relevant snippets from indexed documents.
   let ragContext = '';
   try {
     const queryEmbedding = await getEmbedding(data.content);
@@ -213,20 +815,20 @@ export const SendMessage = async (data: SendMessageDTO) => {
       ragContext = goodChunks.map((c, i) => `[Source ${i + 1}]\n${c.content}`).join('\n\n');
     }
   } catch {
-    // Continue without RAG context if retrieval fails.
+    // If retrieval fails, continue without document context.
   }
 
-  // Use recent conversation context.
+  // Add recent conversation history for continuity.
   const history = await ChatHistoryRepository.findByUser(data.userid, 10);
   const historyMessages = history.reverse().map(h => ({
     role: h.role === 'USER' ? 'user' as const : 'assistant' as const,
     content: h.content,
   }));
 
-  // Match the user's language where possible.
+  // Reply in the same language the user is speaking.
   const language = detectLanguage(data.content);
 
-  // Build prompt and ask the model.
+  // Build the system prompt and send the request.
   const systemPrompt = buildSystemPrompt(memory, ragContext, language, data.faithmode ?? false);
 
   const tools: ChatCompletionTool[] = [
@@ -253,18 +855,20 @@ export const SendMessage = async (data: SendMessageDTO) => {
       type: 'function',
       function: {
         name: 'update_task',
-        description: 'Update task details (title, description, deadline, priority, category).',
+        description: 'Update task details (title, description, deadline, priority, category). Prefer taskQuery when user gives a task name instead of taskid.',
         parameters: {
           type: 'object',
           properties: {
             taskid: { type: 'string' },
+            taskQuery: { type: 'string', description: 'Task name/title from user message when taskid is not provided.' },
+            currentTitle: { type: 'string' },
             title: { type: 'string' },
             description: { type: 'string' },
             deadline: { type: 'string', description: 'ISO datetime' },
             priority: { type: 'integer' },
             category: { type: 'string', enum: ['ACADEMIC', 'PERSONAL', 'WORK', 'HEALTH', 'OTHER'] },
           },
-          required: ['taskid'],
+          required: [],
         },
       },
     },
@@ -272,14 +876,16 @@ export const SendMessage = async (data: SendMessageDTO) => {
       type: 'function',
       function: {
         name: 'update_task_status',
-        description: 'Update task status.',
+        description: 'Update task status. Prefer taskQuery when user gives a task name instead of taskid.',
         parameters: {
           type: 'object',
           properties: {
             taskid: { type: 'string' },
+            taskQuery: { type: 'string', description: 'Task name/title from user message when taskid is not provided.' },
+            currentTitle: { type: 'string' },
             status: { type: 'string', enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE'] },
           },
-          required: ['taskid', 'status'],
+          required: ['status'],
         },
       },
     },
@@ -287,11 +893,15 @@ export const SendMessage = async (data: SendMessageDTO) => {
       type: 'function',
       function: {
         name: 'delete_task',
-        description: 'Delete a task by id.',
+        description: 'Delete a task. Prefer taskQuery when user gives a task name instead of taskid.',
         parameters: {
           type: 'object',
-          properties: { taskid: { type: 'string' } },
-          required: ['taskid'],
+          properties: {
+            taskid: { type: 'string' },
+            taskQuery: { type: 'string', description: 'Task name/title from user message when taskid is not provided.' },
+            currentTitle: { type: 'string' },
+          },
+          required: [],
         },
       },
     },
@@ -321,6 +931,23 @@ export const SendMessage = async (data: SendMessageDTO) => {
         name: 'list_task_lists',
         description: 'List task lists for the current user.',
         parameters: { type: 'object', properties: {} },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'update_task_list',
+        description: 'Update a task list name. Prefer listQuery when user gives a task list name instead of listid.',
+        parameters: {
+          type: 'object',
+          properties: {
+            listid: { type: 'string' },
+            listQuery: { type: 'string', description: 'Task list name from user message when listid is not provided.' },
+            currentName: { type: 'string' },
+            name: { type: 'string' },
+          },
+          required: ['name'],
+        },
       },
     },
     {
@@ -373,32 +1000,84 @@ export const SendMessage = async (data: SendMessageDTO) => {
     },
   ];
 
+  const updateIntent = isUpdateIntent(data.content);
+  const allowedTools = updateIntent
+    ? tools.filter((tool) => tool.type === 'function' && UPDATE_ONLY_TOOL_NAMES.has(tool.function.name))
+    : tools;
+
   const messages: ChatCompletionMessageParam[] = [
     { role: 'system', content: systemPrompt },
     ...historyMessages,
     { role: 'user', content: data.content },
   ];
 
-  let aiReply = 'Sorry, I could not generate a response.';
+  if (data.directchat && !updateIntent) {
+    const smartPlan = await createSmartTaskPlanFromPrompt(data.userid, data.content);
+    if (smartPlan) {
+      await ChatHistoryRepository.save(data.userid, 'USER', data.content);
+      await ChatHistoryRepository.save(data.userid, 'ASSISTANT', smartPlan.reply);
+      ExtractAndSaveMemory(data.userid, data.content, memory).catch(() => {});
+
+      return {
+        reply: smartPlan.reply,
+        language,
+        usedDocuments: ragContext.length > 0,
+        actions: smartPlan.actions,
+      };
+    }
+
+    const response = await createGeminiCompletion({
+      messages,
+      directchat: true,
+    });
+
+    const aiReply = response.choices[0]?.message?.content ?? "Sorry, I couldn't generate a response right now.";
+
+    await ChatHistoryRepository.save(data.userid, 'USER', data.content);
+    await ChatHistoryRepository.save(data.userid, 'ASSISTANT', aiReply);
+    ExtractAndSaveMemory(data.userid, data.content, memory).catch(() => {});
+
+    return {
+      reply: aiReply,
+      language,
+      usedDocuments: ragContext.length > 0,
+      actions: [],
+    };
+  }
+
+  let aiReply = "Sorry, I couldn't put together a response just yet.";
   let actions: string[] = [];
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gemini-2.0-flash',
+    const response = await createGeminiCompletion({
       messages,
-      tools,
-      tool_choice: 'auto',
-      max_tokens: 1000,
+      tools: allowedTools,
+      directchat: Boolean(data.directchat),
     });
 
     const assistantMessage = response.choices[0]?.message;
     aiReply = assistantMessage?.content ?? aiReply;
 
-    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
-      messages.push(assistantMessage as ChatCompletionMessageParam);
+    const nativeToolCalls = assistantMessage?.tool_calls ?? [];
+    const inlineToolCalls = nativeToolCalls.length === 0 ? parseInlineToolCalls(aiReply) : [];
+    const toolCallsToExecute = nativeToolCalls.length > 0 ? nativeToolCalls : inlineToolCalls;
 
-      for (const toolCall of assistantMessage.tool_calls) {
+    if (toolCallsToExecute.length > 0) {
+      if (assistantMessage) {
+        messages.push(assistantMessage as ChatCompletionMessageParam);
+      }
+
+      for (const toolCall of toolCallsToExecute) {
         if (toolCall.type !== 'function') continue;
+        if (updateIntent && !UPDATE_ONLY_TOOL_NAMES.has(toolCall.function.name)) {
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: JSON.stringify({ error: `Tool ${toolCall.function.name} is not allowed for update requests` }),
+          });
+          continue;
+        }
+
         const args = parseToolArguments(toolCall.function.arguments ?? '{}');
 
         try {
@@ -428,7 +1107,25 @@ export const SendMessage = async (data: SendMessageDTO) => {
             break;
           }
           case 'update_task': {
-            if (typeof args.taskid !== 'string') throw new Error('taskid is required');
+            const selector = pickFirstString(
+              args.taskQuery,
+              args.currentTitle,
+              args.taskTitle,
+              args.task_name,
+              args.name,
+              extractEntityQueryFromContent(data.content, 'task'),
+            );
+
+            const matchedTaskId = selector
+              ? await resolveTaskIdForUser(data.userid, selector) ?? undefined
+              : undefined;
+
+            let resolvedTaskId = matchedTaskId ?? (typeof args.taskid === 'string' ? args.taskid : undefined);
+            if (!resolvedTaskId && selector) {
+              resolvedTaskId = await resolveTaskIdForUser(data.userid, selector) ?? undefined;
+            }
+
+            if (!resolvedTaskId) throw new Error('taskid or taskQuery is required');
             const updateTaskData: UpdateTaskDTO = {};
             if (typeof args.title === 'string') updateTaskData.title = args.title;
             if (typeof args.description === 'string') updateTaskData.description = args.description;
@@ -437,21 +1134,53 @@ export const SendMessage = async (data: SendMessageDTO) => {
             const taskCategory = toTaskCategory(args.category);
             if (taskCategory) updateTaskData.category = taskCategory;
 
-            result = await UpdateTask(args.taskid, updateTaskData);
+            result = await UpdateTask(resolvedTaskId, updateTaskData);
             actions.push('update_task');
             break;
           }
           case 'update_task_status': {
-            if (typeof args.taskid !== 'string') throw new Error('taskid is required');
+            const selector = pickFirstString(
+              args.taskQuery,
+              args.currentTitle,
+              args.taskTitle,
+              args.task_name,
+              args.name,
+              extractEntityQueryFromContent(data.content, 'task'),
+            );
+
+            const matchedTaskId = selector
+              ? await resolveTaskIdForUser(data.userid, selector) ?? undefined
+              : undefined;
+
+            let resolvedTaskId = matchedTaskId ?? (typeof args.taskid === 'string' ? args.taskid : undefined);
+            if (!resolvedTaskId && selector) {
+              resolvedTaskId = await resolveTaskIdForUser(data.userid, selector) ?? undefined;
+            }
+
+            if (!resolvedTaskId) throw new Error('taskid or taskQuery is required');
             const status = toTaskStatus(args.status);
             if (!status) throw new Error('valid status is required');
-            result = await UpdateTaskStatus(args.taskid, { status });
+            result = await UpdateTaskStatus(resolvedTaskId, { status });
             actions.push('update_task_status');
             break;
           }
           case 'delete_task': {
-            if (typeof args.taskid !== 'string') throw new Error('taskid is required');
-            result = await DeleteTask(args.taskid);
+            const selector = pickFirstString(
+              args.taskQuery,
+              args.currentTitle,
+              args.taskTitle,
+              args.task_name,
+              args.name,
+              extractEntityQueryFromContent(data.content, 'task'),
+            );
+
+            const matchedTaskId = selector
+              ? await resolveTaskIdForUser(data.userid, selector) ?? undefined
+              : undefined;
+
+            const resolvedTaskId = matchedTaskId ?? (typeof args.taskid === 'string' ? args.taskid : undefined);
+            if (!resolvedTaskId) throw new Error('taskid or taskQuery is required');
+            result = await DeleteTask(resolvedTaskId);
             actions.push('delete_task');
             break;
           }
@@ -469,6 +1198,35 @@ export const SendMessage = async (data: SendMessageDTO) => {
           case 'list_task_lists': {
             result = await GetTaskList(data.userid);
             actions.push('list_task_lists');
+            break;
+          }
+          case 'update_task_list': {
+            const selector = pickFirstString(
+              args.listQuery,
+              args.currentName,
+              args.listName,
+              args.tasklist,
+              extractEntityQueryFromContent(data.content, 'tasklist'),
+            );
+
+            const matchedListId = selector
+              ? await resolveTaskListIdForUser(data.userid, selector) ?? undefined
+              : undefined;
+
+            let resolvedListId = matchedListId ?? (typeof args.listid === 'string' ? args.listid : undefined);
+            if (!resolvedListId && selector) {
+              resolvedListId = await resolveTaskListIdForUser(data.userid, selector) ?? undefined;
+            }
+
+            if (!resolvedListId) throw new Error('listid or listQuery is required');
+            if (typeof args.name !== 'string' || !args.name.trim()) throw new Error('name is required');
+
+            const updateTaskListData: UpdateTaskListDTO = {
+              name: args.name.trim(),
+            };
+
+            result = await UpdateTaskList(resolvedListId, updateTaskListData);
+            actions.push('update_task_list');
             break;
           }
           case 'create_focus_session': {
@@ -528,25 +1286,46 @@ export const SendMessage = async (data: SendMessageDTO) => {
         }
       }
 
-      const followUp = await openai.chat.completions.create({
-        model: 'gemini-2.0-flash',
+      const followUp = await createGeminiCompletion({
         messages,
-        max_tokens: 1000,
+        directchat: true,
       });
 
       aiReply = followUp.choices[0]?.message?.content ?? aiReply;
     }
-  } catch {
-    const fallback = await fallbackAssistantAction(data.userid, data.content);
-    aiReply = fallback.reply;
-    actions = fallback.actions;
+
+    if (isActionIntent(data.content)) {
+      const updateActions = new Set(['update_task', 'update_task_status', 'update_task_list', 'delete_task']);
+      const hasUpdateMutation = actions.some((action) => updateActions.has(action));
+      const shouldFallback = updateIntent ? !hasUpdateMutation : actions.length === 0;
+
+      if (shouldFallback) {
+        const fallback = await fallbackAssistantAction(data.userid, data.content);
+        aiReply = fallback.reply;
+        actions = fallback.actions;
+      }
+    }
+  } catch (error) {
+    if (data.directchat) {
+      const message = error instanceof Error ? error.message : 'Gemini request failed';
+      throw new Error(`Direct chat failed: ${message}`);
+    }
+
+    if (isActionIntent(data.content)) {
+      const fallback = await fallbackAssistantAction(data.userid, data.content);
+      aiReply = fallback.reply;
+      actions = fallback.actions;
+    } else {
+      const message = error instanceof Error ? error.message : 'Gemini request failed';
+      throw new Error(`Gemini request failed: ${message}`);
+    }
   }
 
-  // Persist both user and assistant messages.
+  // Save both sides of the conversation.
   await ChatHistoryRepository.save(data.userid, 'USER', data.content);
   await ChatHistoryRepository.save(data.userid, 'ASSISTANT', aiReply);
 
-  // Update long-term memory in the background.
+  // Refresh long-term memory in the background.
   ExtractAndSaveMemory(data.userid, data.content, memory).catch(() => {});
 
   return {

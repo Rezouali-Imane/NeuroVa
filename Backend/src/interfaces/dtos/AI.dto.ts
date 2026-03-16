@@ -6,6 +6,7 @@ export interface SendMessageDTO {
   year?: string;
   faithmode?: boolean;
   city?: string;
+  directchat?: boolean;
 }
 
 export interface GenerateStudyPlanDTO {
