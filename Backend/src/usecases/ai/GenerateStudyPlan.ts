@@ -7,7 +7,7 @@ import type { GenerateStudyPlanDTO } from '../../interfaces/dtos/AI.dto.js';
 export const GenerateStudyPlan = async (data: GenerateStudyPlanDTO) => {
   if (!data.userid) throw new Error('User ID is required');
 
-  // Fetch active tasks.
+  // Fetch active tasks first.
   const tasks = await prisma.task.findMany({
     where: { userid: data.userid, status: { in: ['PENDING', 'IN_PROGRESS'] } },
     orderBy: { deadline: 'asc' },
@@ -17,7 +17,7 @@ export const GenerateStudyPlan = async (data: GenerateStudyPlanDTO) => {
     return { plan: 'You have no pending tasks! Add some tasks first so I can create a study plan for you.' };
   }
 
-  // Load profile preferences for personalization.
+  // Load profile preferences so the plan feels personal.
   const memory = await StudentMemoryRepository.findByUser(data.userid);
 
   // Format tasks for the planning prompt.
@@ -37,7 +37,7 @@ export const GenerateStudyPlan = async (data: GenerateStudyPlanDTO) => {
 - Isha: ${prayers.Isha}`;
   }
 
-  // Build a compact student profile summary.
+  // Build a short profile summary for context.
   const profileBlock = [
     memory['major'] && `Major: ${memory['major']}`,
     memory['university'] && `University: ${memory['university']}`,
@@ -70,6 +70,6 @@ Format: **Day 1 — [Date]** then bullet points per time block.`;
     max_tokens: 1500,
   });
 
-  const plan = response.choices[0]?.message?.content ?? 'Could not generate study plan.';
+  const plan = response.choices[0]?.message?.content ?? "I couldn't build your study plan right now. Try again in a bit.";
   return { plan };
 };
