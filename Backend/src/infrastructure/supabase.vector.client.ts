@@ -18,7 +18,7 @@ const getSupabaseClient = (): any => {
   return supabaseClient;
 };
 
-// Search similar chunks using cosine similarity
+// Find similar chunks using cosine similarity.
 export const searchSimilarChunks = async (
   queryEmbedding: number[],
   userid: string,
@@ -35,7 +35,7 @@ export const searchSimilarChunks = async (
   return data ?? [];
 };
 
-// Insert embedding into existing chunk row
+// Save embedding values into an existing chunk row.
 export const insertChunkWithEmbedding = async (
   chunkid: string,
   embedding: number[]

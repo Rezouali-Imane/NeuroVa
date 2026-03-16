@@ -53,6 +53,6 @@ Rules:
       }
     }
   } catch {
-    // Ignore extraction failures so chat is never blocked.
+    // If memory extraction fails, do not block the chat response.
   }
 };

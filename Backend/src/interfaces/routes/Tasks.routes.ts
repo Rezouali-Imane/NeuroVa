@@ -3,22 +3,22 @@ import { TaskController } from '../controllers/TaskController.js';
 
 const router = Router();
 
-// Create a task
+// Add a new task.
 router.post('/', TaskController.create);
 
-// Get all tasks for a user
+// Get every task for one user.
 router.get('/user/:userid', TaskController.getAll);
 
-// Get one task by ID
+// Fetch a single task by ID.
 router.get('/:taskid', TaskController.getById);
 
-// Update a task
+// Update task fields.
 router.put('/:taskid', TaskController.update);
 
-// Update task status only
+// Update only task status.
 router.patch('/:taskid/status', TaskController.updateStatus);
 
-// Delete a task
+// Remove a task.
 router.delete('/:taskid', TaskController.remove);
 
 export default router;

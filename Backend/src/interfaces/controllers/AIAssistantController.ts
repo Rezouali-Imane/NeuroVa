@@ -13,7 +13,7 @@ import { GetKnowledgeBase, DeleteDocument } from '../../usecases/ai/Knowledgebas
 import { ScheduleFocusSession } from '../../usecases/ai/Schedulefocussession.js';
 import { SendTaskReminders } from '../../usecases/ai/Sendtaskreminders.js';
 
-// Store uploaded files in memory before processing.
+// Keep uploaded files in memory so we can process them immediately.
 export const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
@@ -26,7 +26,7 @@ export const upload = multer({
 
 export const AIAssistantController = {
 
-  // Chat
+  // Chat endpoints.
 
   async sendMessage(req: Request, res: Response) {
     try {
@@ -57,7 +57,7 @@ export const AIAssistantController = {
     }
   },
 
-  // Study planning and analysis
+  // Study planning and analysis endpoints.
 
   async generateStudyPlan(req: Request, res: Response) {
     try {
@@ -80,7 +80,7 @@ export const AIAssistantController = {
     }
   },
 
-  // Memory
+  // Student memory endpoints.
 
   async getMemory(req: Request, res: Response) {
     try {
@@ -102,7 +102,7 @@ export const AIAssistantController = {
     }
   },
 
-  // Knowledge base
+  // Knowledge base endpoints.
 
   async uploadDocument(req: Request, res: Response) {
     try {
@@ -143,7 +143,7 @@ export const AIAssistantController = {
     }
   },
 
-  // Automation actions
+  // Automation helpers.
 
   async scheduleFocusSession(req: Request, res: Response) {
     try {

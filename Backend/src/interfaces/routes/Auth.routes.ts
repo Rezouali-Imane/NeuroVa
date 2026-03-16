@@ -3,22 +3,22 @@ import { AuthController } from '../controllers/AuthController.js';
 
 const router = Router();
 
-// Sign up
+// Create a new account.
 router.post('/signup', AuthController.signUp);
 
-// Login
+// Sign in to an existing account.
 router.post('/login', AuthController.login);
 
-// Verify email
+// Confirm email with the verification code.
 router.post('/verify-email', AuthController.verifyEmail);
 
-// Forgot password
+// Send password reset code.
 router.post('/forgot-password', AuthController.forgotPassword);
 
-// Verify reset code
+// Check password reset code.
 router.post('/verify-reset-code', AuthController.verifyResetCode);
 
-// Reset password
+// Set a new password.
 router.post('/reset-password', AuthController.resetPassword);
 
 export default router;

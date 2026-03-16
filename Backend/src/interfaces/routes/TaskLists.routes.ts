@@ -3,16 +3,16 @@ import { TaskListController } from '../controllers/TaskListController.js';
 
 const router = Router();
 
-// Create a task list
+// Create a new task list.
 router.post('/', TaskListController.create);
 
-// Get all task lists for a user
+// Get all task lists for one user.
 router.get('/user/:userid', TaskListController.getAll);
 
-// Update a task list
+// Rename or update a task list.
 router.put('/:listid', TaskListController.update);
 
-// Delete a task list
+// Remove a task list.
 router.delete('/:listid', TaskListController.remove);
 
 export default router;

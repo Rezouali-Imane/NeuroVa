@@ -1,4 +1,4 @@
-// Create a default timer configuration for a session.
+// Create default timer settings for a session.
 import { TimerRepository } from "../../interfaces/repositories/TimerRepository.js";
 import { TimerType } from "../../entities/timer.js";
 import type { CreateTimerDTO } from "../../interfaces/dtos/Timer.dto.js";

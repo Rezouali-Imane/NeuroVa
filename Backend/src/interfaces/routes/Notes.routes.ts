@@ -3,19 +3,19 @@ import { NoteController } from '../controllers/NoteController.js';
 
 const router = Router();
 
-// Create a note
+// Add a new note.
 router.post('/', NoteController.create);
 
-// Get all notes for a user
+// Get every note for one user.
 router.get('/user/:userid', NoteController.getAll);
 
-// Get one note by ID
+// Fetch a single note by ID.
 router.get('/:noteid', NoteController.getById);
 
-// Update a note
+// Update note content.
 router.put('/:noteid', NoteController.update);
 
-// Delete a note
+// Remove a note.
 router.delete('/:noteid', NoteController.remove);
 
 export default router;
