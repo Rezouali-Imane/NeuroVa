@@ -14,7 +14,7 @@ export const TaskRepository = {
         deadline: data.deadline ?? null,
         priority: data.priority ?? 0,
         category: data.category ?? 'PERSONAL',
-        syncwithgoogle: data.syncwithgoogle ?? false,
+        syncedwithgoogle: data.syncwithgoogle ?? false,
       },
     });
   },

@@ -1,20 +1,37 @@
 import type { Request, Response } from 'express';
-import { SignUp } from '../../usecases/auth/SignUp.js';
+import type { AuthRequest } from '../../infrastructure/middleware/authMiddleware.js';
+import { Register } from '../../usecases/auth/Register.js';
 import { Login } from '../../usecases/auth/Login.js';
 import { VerifyEmail } from '../../usecases/auth/VerifyEmail.js';
 import { ForgotPassword } from '../../usecases/auth/ForgotPassword.js';
-import { VerifyResetCode } from '../../usecases/auth/VerifyResetCode.js';
 import { ResetPassword } from '../../usecases/auth/ResetPassword.js';
+import { Logout } from '../../usecases/auth/Logout.js';
+import { RefreshToken } from '../../usecases/auth/RefreshToken.js';
 
 export const AuthController = {
-  async signUp(req: Request, res: Response) {
+  me(req: AuthRequest, res: Response) {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized.',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      user: req.user,
+    });
+  },
+
+  async register(req: Request, res: Response) {
     try {
-      const result = await SignUp(req.body);
+      const result = await Register(req.body);
       res.status(201).json(result);
     } catch (error: any) {
       res.status(400).json({
         success: false,
-        message: error.message || "A technical error occurred.",
+        message: error.message || 'A technical error occurred.',
       });
     }
   },
@@ -31,19 +48,20 @@ export const AuthController = {
     } catch (error: any) {
       res.status(401).json({
         success: false,
-        message: error.message || "Login failed.",
+        message: error.message || 'Login failed.',
       });
     }
   },
 
   async verifyEmail(req: Request, res: Response) {
     try {
-      const result = await VerifyEmail(req.body);
+      const token = String(req.query.token || '');
+      const result = await VerifyEmail({ token });
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({
         success: false,
-        message: error.message || "Verification failed.",
+        message: error.message || 'Verification failed.',
       });
     }
   },
@@ -55,19 +73,7 @@ export const AuthController = {
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        message: "An error occurred.",
-      });
-    }
-  },
-
-  async verifyResetCode(req: Request, res: Response) {
-    try {
-      const result = await VerifyResetCode(req.body);
-      res.status(200).json(result);
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        message: error.message || "Invalid code.",
+        message: 'An error occurred.',
       });
     }
   },
@@ -79,8 +85,32 @@ export const AuthController = {
     } catch (error: any) {
       res.status(400).json({
         success: false,
-        message: error.message || "Password reset failed.",
+        message: error.message || 'Password reset failed.',
       });
     }
-  }
+  },
+
+  async logout(req: Request, res: Response) {
+    try {
+      const result = await Logout(req.body);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Logout failed.',
+      });
+    }
+  },
+
+  async refreshToken(req: Request, res: Response) {
+    try {
+      const result = await RefreshToken(req.body);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(401).json({
+        success: false,
+        message: error.message || 'Refresh token failed.',
+      });
+    }
+  },
 };

@@ -772,7 +772,7 @@ const fallbackAssistantAction = async (userid: string, content: string) => {
       .sort((a, b) => (b.priority - a.priority) || ((a.deadline?.getTime() ?? Number.MAX_SAFE_INTEGER) - (b.deadline?.getTime() ?? Number.MAX_SAFE_INTEGER)));
 
     if (pending.length > 0) {
-      await prisma.task_focussession.create({
+      await prisma.sessiontask.create({
         data: { taskid: pending[0]!.taskid, sessionid: session.sessionid },
       });
     }
@@ -1240,7 +1240,7 @@ export const SendMessage = async (data: SendMessageDTO) => {
             });
 
             if (typeof args.taskid === 'string' && args.taskid) {
-              await prisma.task_focussession.create({
+              await prisma.sessiontask.create({
                 data: { taskid: args.taskid, sessionid: session.sessionid },
               });
             }

@@ -65,7 +65,7 @@ Return ONLY valid JSON, no explanation.`;
 
   const selectedTaskId = data.taskid ?? suggestion.taskid ?? null;
   if (selectedTaskId) {
-    await prisma.task_focussession.create({
+    await prisma.sessiontask.create({
       data: { taskid: selectedTaskId, sessionid: focusSession.sessionid },
     });
   }
