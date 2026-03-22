@@ -26,7 +26,6 @@ import type { CreateTaskDTO, UpdateTaskDTO } from '../../interfaces/dtos/Task.dt
 import type { UpdateTaskListDTO } from '../../interfaces/dtos/TaskList.dto.js';
 import { ExtractAndSaveMemory } from './Extractandsavememory.js';
 
-// Small helpers used throughout the flow.
 
 const detectLanguage = (text: string): string => {
   if (/[\u0600-\u06FF]/.test(text)) return 'Arabic';
@@ -790,22 +789,18 @@ const fallbackAssistantAction = async (userid: string, content: string) => {
   };
 };
 
-// Main request flow.
 
 export const SendMessage = async (data: SendMessageDTO) => {
   if (!data.content?.trim()) throw new Error('Message content is required');
   if (!data.userid) throw new Error('User ID is required');
 
-  // Make sure this user has an assistant profile ready.
   const assistant = await AssistantRepository.findOrCreate(data.userid, data.major);
 
-  // Pull saved memory and refresh any profile fields sent in this request.
   const memory = await StudentMemoryRepository.findByUser(data.userid);
   if (data.major) { await StudentMemoryRepository.upsert(data.userid, 'major', data.major); memory['major'] = data.major; }
   if (data.university) { await StudentMemoryRepository.upsert(data.userid, 'university', data.university); memory['university'] = data.university; }
   if (data.year) { await StudentMemoryRepository.upsert(data.userid, 'year', data.year); memory['year'] = data.year; }
 
-  // Try to bring in relevant snippets from indexed documents.
   let ragContext = '';
   try {
     const queryEmbedding = await getEmbedding(data.content);
@@ -815,20 +810,16 @@ export const SendMessage = async (data: SendMessageDTO) => {
       ragContext = goodChunks.map((c, i) => `[Source ${i + 1}]\n${c.content}`).join('\n\n');
     }
   } catch {
-    // If retrieval fails, continue without document context.
   }
 
-  // Add recent conversation history for continuity.
   const history = await ChatHistoryRepository.findByUser(data.userid, 10);
   const historyMessages = history.reverse().map(h => ({
     role: h.role === 'USER' ? 'user' as const : 'assistant' as const,
     content: h.content,
   }));
 
-  // Reply in the same language the user is speaking.
   const language = detectLanguage(data.content);
 
-  // Build the system prompt and send the request.
   const systemPrompt = buildSystemPrompt(memory, ragContext, language, data.faithmode ?? false);
 
   const tools: ChatCompletionTool[] = [
@@ -1321,11 +1312,9 @@ export const SendMessage = async (data: SendMessageDTO) => {
     }
   }
 
-  // Save both sides of the conversation.
   await ChatHistoryRepository.save(data.userid, 'USER', data.content);
   await ChatHistoryRepository.save(data.userid, 'ASSISTANT', aiReply);
 
-  // Refresh long-term memory in the background.
   ExtractAndSaveMemory(data.userid, data.content, memory).catch(() => {});
 
   return {

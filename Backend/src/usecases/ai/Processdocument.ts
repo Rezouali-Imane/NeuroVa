@@ -9,10 +9,8 @@ export const ProcessDocument = async (data: UploadDocumentDTO) => {
   if (!data.userid) throw new Error('User ID is required');
   if (!data.fileBuffer) throw new Error('File is required');
 
-  // Make sure this user already has an assistant record.
   const assistant = await AssistantRepository.findOrCreate(data.userid, data.major);
 
-  // Save basic document metadata.
   const doc = await KnowledgeBaseRepository.create({
     assistantid: assistant.assistantid,
     filename: data.filename,
@@ -21,7 +19,6 @@ export const ProcessDocument = async (data: UploadDocumentDTO) => {
     ...(data.subject ? { subject: data.subject } : {}),
   });
 
-  // Extract raw text from the uploaded file.
   let rawText: string;
   if (data.mimetype === 'application/pdf') {
     rawText = await extractTextFromPDF(data.fileBuffer);
@@ -29,13 +26,11 @@ export const ProcessDocument = async (data: UploadDocumentDTO) => {
     rawText = extractTextFromFile(data.fileBuffer.toString('utf-8'));
   }
 
-  // Clean the text and split it into chunks.
   const cleanedText = cleanText(rawText);
   const chunks = chunkText(cleanedText, 500, 50);
 
   if (chunks.length === 0) throw new Error("I couldn't read any text from this file. Please try a clearer document.");
 
-  // Save chunk text in the database.
   const savedChunks = await Promise.all(
     chunks.map((content, index) =>
       prisma.documentchunk.create({
@@ -44,7 +39,6 @@ export const ProcessDocument = async (data: UploadDocumentDTO) => {
     )
   );
 
-  // Create embeddings and push them to vector storage.
   const embeddings = await getEmbeddings(chunks);
   await Promise.all(
     savedChunks.map((chunk, index) =>

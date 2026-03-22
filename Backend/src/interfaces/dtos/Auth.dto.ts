@@ -42,7 +42,6 @@ export interface RefreshTokenDTO {
   refreshToken: string;
 }
 
-// Backward compatibility aliases.
 export type RegisterUserDTO = RegisterDTO;
 export type LoginUserDTO = LoginDTO;
 export type EmailVerificationDTO = VerifyEmailDTO;

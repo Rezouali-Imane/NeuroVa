@@ -11,6 +11,7 @@ coverage/
 
 # Generated artifacts
 src/generated/prisma/
+prisma/migrations/
 
 # Local development noise
 tempCodeRunnerFile.ts

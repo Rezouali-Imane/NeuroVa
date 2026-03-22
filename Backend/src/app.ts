@@ -15,12 +15,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Lightweight health endpoint.
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// API route registration.
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', authMiddleware, taskRoutes);
 app.use('/api/tasklists', authMiddleware, taskListRoutes);

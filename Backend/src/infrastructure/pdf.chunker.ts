@@ -1,18 +1,15 @@
 import { PDFParse } from 'pdf-parse';
 
-// Read text from a PDF buffer.
 export const extractTextFromPDF = async (buffer: Buffer): Promise<string> => {
   const parser = new PDFParse({ data: buffer });
   const data = await parser.getText();
   return data.text;
 };
 
-// Read text from a plain text file.
 export const extractTextFromFile = (content: string): string => {
   return content.trim();
 };
 
-// Clean up extracted text.
 export const cleanText = (text: string): string => {
   return text
     .replace(/\n{3,}/g, '\n\n')
@@ -20,7 +17,6 @@ export const cleanText = (text: string): string => {
     .trim();
 };
 
-// Split text into overlapping chunks (about 500 words each).
 export const chunkText = (
   text: string,
   chunkSize: number = 500,
