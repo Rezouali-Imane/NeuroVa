@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_theme.dart'; // ← Importe ton thème
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -49,74 +50,67 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
       if (response.statusCode == 200) {
         setState(() {
-          _successMessage =
-              responseData['message'] ??
-              "Lien de réinitialisation envoyé ! Vérifiez votre boîte mail.";
+          _successMessage = responseData['message'] ??
+              "A password reset link has been sent to your email.";
         });
 
-        // Retour automatique vers login après 3 secondes
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) context.go('/login');
         });
       } else {
-        // Erreur backend (400, 500, etc.)
-        final errorMsg = responseData['message'] ?? 'Erreur lors de l\'envoi.';
-        throw Exception(errorMsg);
+        throw Exception(responseData['message'] ?? 'Failed to send reset link.');
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
       });
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
+      backgroundColor: const Color(0xFF0F0F1A), // Fond sombre comme tes captures
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Bouton retour
+              // ← Back to login
               TextButton.icon(
                 onPressed: () => context.pop(),
-                icon: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white70,
-                  size: 20,
-                ),
-                label: const Text(
-                  "Retour à la connexion",
-                  style: TextStyle(color: Colors.white70, fontSize: 15),
+                icon: Icon(Icons.arrow_back_ios_new_rounded,
+                    color: theme.colorScheme.onSurfaceVariant, size: 20),
+                label: Text(
+                  "Back to login",
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: 60),
 
-              // Titre
-              const Text(
-                "Mot de passe oublié ?",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
+              // Titre principal (comme dans tes captures)
+              Text(
+                "Forgot Password?",
+                style: theme.textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  letterSpacing: -0.5,
                 ),
               ),
 
               const SizedBox(height: 12),
 
-              const Text(
-                "Entrez votre email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
-                style: TextStyle(
-                  fontSize: 15,
+              // Texte explicatif
+              Text(
+                "Enter your email and we'll send you\na reset link",
+                style: theme.textTheme.bodyLarge?.copyWith(
                   color: Colors.white70,
                   height: 1.5,
                 ),
@@ -124,6 +118,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
               const SizedBox(height: 48),
 
+              // Champ email stylisé avec ton thème
               Form(
                 key: _formKey,
                 child: TextFormField(
@@ -132,47 +127,33 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   textInputAction: TextInputAction.send,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    labelText: "Email",
-                    labelStyle: const TextStyle(color: Colors.white60),
-                    prefixIcon: const Icon(
-                      Icons.mail_outline_rounded,
-                      color: Colors.white70,
-                    ),
+                    labelText: "Email address",
+                    labelStyle: TextStyle(color: Colors.white70),
+                    prefixIcon: Icon(Icons.mail_outline, color: Colors.white70),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.06),
+                    fillColor: Colors.white.withOpacity(0.08),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFBB86FC),
+                      borderSide: BorderSide(
+                        color: AppTheme._brandAccent, // ← Couleur accent de ton thème
                         width: 2,
                       ),
                     ),
                     errorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Colors.redAccent,
-                        width: 1.5,
-                      ),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+                      borderSide: const BorderSide(color: Colors.redAccent),
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return "Veuillez entrer votre email";
+                      return "Please enter your email";
                     }
-                    final emailRegex = RegExp(
-                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                      caseSensitive: false,
-                    );
-                    if (!emailRegex.hasMatch(value.trim())) {
-                      return "Format d'email invalide";
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+                      return "Please enter a valid email";
                     }
                     return null;
                   },
@@ -181,16 +162,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
               const SizedBox(height: 32),
 
-              // Messages d'erreur ou de succès
+              // Messages feedback
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
                     _errorMessage!,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -200,46 +178,40 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
                     _successMessage!,
-                    style: const TextStyle(
-                      color: Colors.greenAccent,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.greenAccent, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                 ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // Bouton principal
+              // Bouton principal (utilise le style de ton thème)
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _sendResetLink,
+                  icon: _isLoading
+                      ? const SizedBox.shrink()
+                      : const Icon(Icons.arrow_forward, size: 20),
+                  label: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(color: Colors.white),
+                        )
+                      : const Text(
+                          "Send Reset Link",
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBB86FC),
+                    backgroundColor: AppTheme._brandPrimary, // Bleu foncé de ton thème
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),
                     elevation: 0,
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : const Text(
-                          "Envoyer le lien",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                 ),
               ),
             ],
