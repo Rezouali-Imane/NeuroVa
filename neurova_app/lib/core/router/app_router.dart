@@ -4,15 +4,16 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/forgot_password_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/auth/register_page.dart';
-import '../../features/onboarding/onboarding_page.dart';
+import '../../features/onboarding/onboarding1.dart';
+ 
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/login',
+  initialLocation: '/onboarding',
   routes: <RouteBase>[
     GoRoute(
       path: '/onboarding',
       builder: (BuildContext context, GoRouterState state) {
-        return const OnboardingPage();
+        return const Onboarding1();
       },
     ),
     GoRoute(
