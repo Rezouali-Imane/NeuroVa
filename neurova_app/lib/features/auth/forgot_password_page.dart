@@ -106,6 +106,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       const Text(
                         "Forgot Password",
                         style: TextStyle(
+                          fontFamily: 'syne',
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
