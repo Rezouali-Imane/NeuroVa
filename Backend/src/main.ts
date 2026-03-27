@@ -41,5 +41,5 @@ const PORT = process.env.PORT || 3000;
 
 httpServer.listen(PORT, () => {
   console.log(`🚀 Neurova Server running on port ${PORT}`);
-  console.log(`📍 Study Room Socket Namespace active at /studyroom`);
+  
 });

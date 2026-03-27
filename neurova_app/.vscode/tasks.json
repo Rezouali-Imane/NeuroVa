@@ -1,0 +1,18 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run forgot password page",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"run",
+				"-d",
+				"emulator-5554",
+				"--route",
+				"/forgot-password"
+			],
+			"isBackground": true
+		}
+	]
+}
