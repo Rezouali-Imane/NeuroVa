@@ -2,7 +2,7 @@ import { StudyRoomRepository } from "../../interfaces/repositories/StudyRoomRepo
 import type { CreateRoomDTO } from "../../interfaces/dtos/StudyRoom.dto.js";
 
 export const CreateStudyRoom = async (data: CreateRoomDTO) => {
-  // Ensure we are working with Date objects
+
   const start = new Date(data.starttime);
   const end = new Date(data.endtime);
   const now = new Date();
@@ -19,7 +19,6 @@ export const CreateStudyRoom = async (data: CreateRoomDTO) => {
     throw new Error("Cannot create a study room for a time that has already passed.");
   }
   
-  // Pass the sanitized dates to the repository
   const newRoom = await StudyRoomRepository.create({
     ...data,
     starttime: start,
