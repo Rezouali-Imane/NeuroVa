@@ -2,25 +2,29 @@ import { StudyRoomRepository } from "../../interfaces/repositories/StudyRoomRepo
 import type { CreateRoomDTO } from "../../interfaces/dtos/StudyRoom.dto.js";
 
 export const CreateStudyRoom = async (data: CreateRoomDTO) => {
-  if (data.sessionduration <= 15 || data.sessionduration > 240) //time in minute
-  {
+  // Ensure we are working with Date objects
+  const start = new Date(data.starttime);
+  const end = new Date(data.endtime);
+  const now = new Date();
+
+  if (data.sessionduration <= 15 || data.sessionduration > 240) {
     throw new Error("Please set a valid focus duration.");
   }
 
-  if (data.starttime >= data.endtime) {
+  if (start >= end) {
     throw new Error("Start time must be before the end time.");
   }
 
- 
-  // Prevents scheduling a session for time that has already passed.
-  const now = new Date();
-  if (data.starttime < now) {
-    throw new Error(
-      "Cannot create a study room for a time that has already passed.",
-    );
+  if (start < now) {
+    throw new Error("Cannot create a study room for a time that has already passed.");
   }
-
-  const newRoom = await StudyRoomRepository.create(data);
+  
+  // Pass the sanitized dates to the repository
+  const newRoom = await StudyRoomRepository.create({
+    ...data,
+    starttime: start,
+    endtime: end
+  });
 
   return {
     success: true,

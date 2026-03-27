@@ -17,6 +17,7 @@ export interface JoinRoomDTO {
 export interface SendMessageDTO {
     roomid: string;
     content: string;
+    senderid: string;
 }
 
 
