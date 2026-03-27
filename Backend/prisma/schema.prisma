@@ -147,8 +147,8 @@ model focussession {
   userid             String
   scheduleid         String?
   roomid             String?
-  starttime          DateTime            @db.Timestamptz(6)
-  endtime            DateTime            @db.Timestamptz(6)
+  starttime          DateTime?           @db.Timestamptz(6)
+  endtime            DateTime?           @db.Timestamptz(6)
   allowbreakminutes  Int                 @default(0)
   focusscore         Float               @default(0)
   status             sessionstatus       @default(SCHEDULED)

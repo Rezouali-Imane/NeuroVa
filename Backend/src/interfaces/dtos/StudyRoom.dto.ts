@@ -3,9 +3,7 @@ export interface CreateRoomDTO {
     roomname: string;
     sessionduration: number;
     ownerid: string;    
-    // for FocusSession
-    starttime: Date;
-    endtime: Date;
+   
 }
 
 

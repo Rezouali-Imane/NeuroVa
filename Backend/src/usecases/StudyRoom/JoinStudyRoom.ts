@@ -2,48 +2,51 @@ import { StudyRoomRepository } from "../../interfaces/repositories/StudyRoomRepo
 import type { JoinRoomDTO } from "../../interfaces/dtos/StudyRoom.dto.js";
 
 export const JoinStudyRoom = async (data: JoinRoomDTO) => {
-  
-   
-    const room = await StudyRoomRepository.findById(data.roomid);
-    
-    if (!room) {
-        throw new Error("This study room no longer exists.");
-    }
+  const room = await StudyRoomRepository.findById(data.roomid);
 
-   
-    if (room.studyroommember.length >= 10) { 
-        throw new Error("This room is full.");
-    }
+  if (!room) {
+    throw new Error("This study room no longer exists.");
+  }
 
-    // Prevent duplicate entry
-    const alreadyMember = room.studyroommember.some(m => m.userid === data.userid);
-    if (alreadyMember) {
-        throw new Error("You are already in this room.");
-    }
+  if (room.studyroommember.length >= 10) {
+    throw new Error("This room is full.");
+  }
 
-    //  Get the owner's session to sync timing
-    const ownerMember = room.studyroommember.find(m => m.isowner);
-    const ownerSession = room.focussession.find(s => s.userid === ownerMember?.userid);
-    
-    if (!ownerSession) {
-        throw new Error("The session timing could not be synchronized.");
-    }
+  const alreadyMember = room.studyroommember.some(
+    (m) => m.userid === data.userid,
+  );
+  if (alreadyMember) {
+    throw new Error("You are already in this room.");
+  }
 
-    //Prevent joining after the session starts
-    const now = new Date();
-    if (now > ownerSession.starttime) {
-        throw new Error("The session has already started. You cannot join a live focus session.");
-    }
-   
-    
-    const result = await StudyRoomRepository.join(data, ownerSession.starttime, ownerSession.endtime);
+  if (room.isactive) {
+    throw new Error(
+      "The study session has already started and is locked for new members.",
+    );
+  }
 
-    const updatedRoom = await StudyRoomRepository.findById(data.roomid);
+  const ownerMember = room.studyroommember.find((m) => m.isowner);
+  const ownerSession = room.focussession.find(
+    (s) => s.userid === ownerMember?.userid,
+  );
 
-    return {
-        success: true,
-        message: "Joined the StudyRoom successfully.",
-        roomData: updatedRoom, 
-        newMember: result
-    };
+  if (!ownerSession) {
+    throw new Error("The session timing could not be synchronized.");
+  }
+
+  const result = await StudyRoomRepository.join(
+    data,
+    ownerSession.starttime,
+    ownerSession.endtime,
+  );
+
+  const updatedRoom = await StudyRoomRepository.findById(data.roomid);
+
+  return {
+    success: true,
+    message: "Joined the StudyRoom successfully.",
+    roomData: updatedRoom,
+    userName: result.users.username,
+    newMember: result,
+  };
 };
