@@ -16,8 +16,6 @@ export const LeaveStudyRoom = async (data: LeaveRoomDTO) => {
         throw new Error("User is not a member of this room.");
     }
 
-   
-    // it will be used on the controler meaning that the owner left the session and the session is closed
     const isOwner = member.isowner;
 
     const result = await StudyRoomRepository.leave(data);
