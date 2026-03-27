@@ -5,10 +5,11 @@ import '../../features/auth/forgot_password_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/auth/register_page.dart';
 import '../../features/onboarding/onboarding1.dart';
- 
+import '../../features/auth/ResetPassword_Page.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/onboarding',
+  initialLocation:'/resetpassword',
+  
   routes: <RouteBase>[
     GoRoute(
       path: '/onboarding',
@@ -32,6 +33,12 @@ final GoRouter appRouter = GoRouter(
       path: '/forgot-password',
       builder: (BuildContext context, GoRouterState state) {
         return const ForgotPasswordPage();
+      },
+    ),
+       GoRoute(
+      path: '/resetpassword',
+      builder: (BuildContext context, GoRouterState state) {
+        return const   ResetPasswordPage();
       },
     ),
   ],

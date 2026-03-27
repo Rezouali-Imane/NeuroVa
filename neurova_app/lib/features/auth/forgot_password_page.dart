@@ -1,10 +1,6 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
-
-import '../../../core/constants/app_constants.dart';
+  import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'confirm_mail.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -36,41 +32,35 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       _successMessage = null;
     });
 
-    try {
-      final url = Uri.parse('${AppConstants.apiBaseUrl}/forgot-password');
+    await Future.delayed(const Duration(seconds: 1));
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': _emailController.text.trim()}),
-      );
+    if (!mounted) return;
 
-      final responseData = jsonDecode(response.body);
+    setState(() {
+      _isLoading = false;
+      _successMessage = "Email sent successfully!";
+    });
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _successMessage = "A password reset link has been sent to your email.";
-        });
+    await Future.delayed(const Duration(milliseconds: 500));
 
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) context.go('/login');
-        });
-      } else {
-        throw Exception(responseData['message'] ?? 'Failed to send reset link.');
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
-      });
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ConfirmEmailPage(
+          email: _emailController.text.trim(),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final hintColor = Colors.white.withOpacity(0.4);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF13111A),
+      backgroundColor: const Color(0xFF1A1625),
       body: SafeArea(
         child: Stack(
           children: [
@@ -78,135 +68,191 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               top: 16,
               left: 16,
               child: TextButton.icon(
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70, size: 20),
-                label: const Text("Back to login", style: TextStyle(color: Colors.white70, fontSize: 15)),
+                onPressed: () => Navigator.pop(context),
+                icon: SvgPicture.asset(
+                  'lib/features/onboarding/assets/fleche2.svg',
+                  width: 18,
+                  height: 18,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white70,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                label: const Text(
+                  "Back to login",
+                  style: TextStyle(color: Colors.white70, fontSize: 15),
+                ),
+              ),
+            ),
+
+            Positioned(
+              top: 80,
+              left: 0,
+              right: 0,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  const Text(
+                    "NEUROVA",
+                    style: TextStyle(
+                      fontFamily: 'Syne',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Positioned(
+                    left: MediaQuery.of(context).size.width / 2 - 80,
+                    top: -25,
+                    child: SvgPicture.asset(
+                      'lib/features/onboarding/assets/logo.svg',
+                      width: 51,
+                      height: 39,
+                    ),
+                  ),
+                ],
               ),
             ),
 
             Center(
               child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        "NEUROVA",
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFFFFF0),
-                          letterSpacing: 2.0,
-                        ),
-                      ),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 120),
 
-                      const SizedBox(height: 60),
-
-                      const Text(
-                        "Forgot Password",
-                        style: TextStyle(
-                          fontFamily: 'syne',
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                        textAlign: TextAlign.center,
+                    const Text(
+                      "Forgot",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFFFFFF0),
+                        fontSize: 47,
+                        fontFamily: 'Syne',
+                        fontWeight: FontWeight.w800,
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        "Enter your email and we'll send you\na reset link",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFFAFAFAF),
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 48),
+                    ),
 
-                      Form(
-                        key: _formKey,
-                        child: TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.send,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: "Email address",
-                            labelStyle: const TextStyle(color: Color(0xFFAFAFAF)),
-                            prefixIcon: const Icon(Icons.mail_outline, color: Color(0xFFAFAFAF)),
-                            filled: true,
-                            fillColor: const Color(0xFF1E1E1E),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
+                    const Text(
+                      "Password",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFFFFFF0),
+                        fontSize: 47,
+                        fontFamily: 'Syne',
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    const Text(
+                      "Enter your email and we'll send you a reset link",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFFFFFF0),
+                        fontSize: 16,
+                        fontFamily: 'Syne',
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    Form(
+                      key: _formKey,
+                      child: TextFormField(
+                        controller: _emailController,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: "Email address",
+                          labelStyle: TextStyle(color: hintColor),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: SvgPicture.asset(
+                              'lib/features/onboarding/assets/Icon2.svg',
+                              width: 20,
+                              height: 20,
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white70,
+                                BlendMode.srcIn,
+                              ),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF05BFDB), width: 2),
-                            ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) return "Please enter your email";
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) return "Please enter a valid email";
-                            return null;
-                          },
                         ),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) {
+                            return "Email is required";
+                          }
+                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                              .hasMatch(v)) {
+                            return "Enter a valid email";
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    if (_errorMessage != null)
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.redAccent),
                       ),
 
-                      const SizedBox(height: 32),
+                    if (_successMessage != null)
+                      Text(
+                        _successMessage!,
+                        style: const TextStyle(color: Colors.greenAccent),
+                      ),
 
-                      if (_errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(_errorMessage!, style: const TextStyle(color: Colors.redAccent, fontSize: 14), textAlign: TextAlign.center),
-                        ),
+                    const SizedBox(height: 30),
 
-                      if (_successMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(_successMessage!, style: const TextStyle(color: Colors.greenAccent, fontSize: 14), textAlign: TextAlign.center),
-                        ),
-
-                      const SizedBox(height: 24),
-
-                      Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFC8A2C8), Color(0xFFB07AB0)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                    SizedBox(
+                      width: 345,
+                      height: 68,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _sendResetLink,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(188, 241, 224, 228),
+                          foregroundColor: const Color.fromARGB(255, 255, 255, 255),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                          borderRadius: BorderRadius.circular(28),
                         ),
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _sendResetLink,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "Send Reset Link",
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.black,
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    "Send Reset Link",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
                                     ),
-                                    SizedBox(width: 8),
-                                    Icon(Icons.arrow_forward, size: 20, color: Colors.white),
-                                  ],
-                                ),
-                        ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SvgPicture.asset(
+                                    'lib/features/onboarding/assets/fleche.svg',
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                ],
+                              ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
