@@ -8,9 +8,14 @@ import '../../features/onboarding/onboarding1.dart';
 import '../../features/auth/ResetPassword_Page.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation:'/resetpassword',
+  initialLocation: '/onboarding',
   
   routes: <RouteBase>[
+    // Redirect root to onboarding
+    GoRoute(
+      path: '/',
+      redirect: (BuildContext context, GoRouterState state) => '/onboarding',
+    ),
     GoRoute(
       path: '/onboarding',
       builder: (BuildContext context, GoRouterState state) {
