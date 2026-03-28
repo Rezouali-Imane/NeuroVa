@@ -1,6 +1,7 @@
  import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../auth/signup_page.dart';
+import 'background.dart';
 
 class Onboarding4 extends StatelessWidget {
   const Onboarding4({super.key});
@@ -11,11 +12,12 @@ class Onboarding4 extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: colorScheme.primary,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Stack(
-            children: [
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Stack(
+              children: [
               //--- Ellipses superposées au centre ---
               Align(
                 alignment: Alignment.center,
@@ -170,6 +172,8 @@ class Onboarding4 extends StatelessWidget {
                 ),
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),

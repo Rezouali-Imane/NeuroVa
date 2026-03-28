@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'onboarding4.dart';
+import 'background.dart';
 
 class Onboarding3 extends StatelessWidget {
   const Onboarding3({super.key});
@@ -10,13 +11,14 @@ class Onboarding3 extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.primary,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
                 const SizedBox(height: 40),
                 Center(
                   child: Stack(
@@ -219,7 +221,6 @@ class Onboarding3 extends StatelessWidget {
                 ),     const SizedBox(height: 10),
               ],
             ),
-              
           ),
         ),
       ),

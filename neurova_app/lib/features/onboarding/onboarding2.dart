@@ -1,6 +1,7 @@
  import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'onboarding3.dart';
+import 'background.dart';
 
 class Onboarding2 extends StatelessWidget {
   const Onboarding2({super.key});
@@ -10,11 +11,12 @@ class Onboarding2 extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF13111A),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
               const SizedBox(height: 40),
               Stack(
                 clipBehavior: Clip.none,
