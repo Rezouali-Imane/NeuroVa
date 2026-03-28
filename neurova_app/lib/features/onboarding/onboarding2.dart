@@ -179,7 +179,7 @@ class Onboarding2 extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildTaskCard({

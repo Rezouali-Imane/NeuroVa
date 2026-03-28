@@ -171,17 +171,25 @@ class Onboarding3 extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-               const SizedBox(height: 10), Transform.translate( offset: const Offset(-35, 0),
-                child: SizedBox(
-                   width: 343, 
-                   height: 80,
-                    child: const Text( 'Get concept explanations, personalized study plans, and weakness analysis tailored to your major.',
-                     style: TextStyle( color: Color(0xFFFFFFF0), 
-                     fontSize: 16,
-                     fontFamily: 'Inter', 
-                     fontWeight: FontWeight.w700,
-                      height: 1.25, 
-               letterSpacing: 0.35, ), ), ), ),
+                const SizedBox(height: 10),
+                Transform.translate(
+                  offset: const Offset(-35, 0),
+                  child: SizedBox(
+                    width: 343,
+                    height: 80,
+                    child: const Text(
+                      'Get concept explanations, personalized study plans, and weakness analysis tailored to your major.',
+                      style: TextStyle(
+                        color: Color(0xFFFFFFF0),
+                        fontSize: 16,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                        letterSpacing: 0.35,
+                      ),
+                    ),
+                  ),
+                ),
 
 
 
@@ -224,6 +232,6 @@ class Onboarding3 extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }
