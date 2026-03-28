@@ -2,51 +2,32 @@ import { StudyRoomRepository } from "../../interfaces/repositories/StudyRoomRepo
 import type { JoinRoomDTO } from "../../interfaces/dtos/StudyRoom.dto.js";
 
 export const JoinStudyRoom = async (data: JoinRoomDTO) => {
-  const room = await StudyRoomRepository.findById(data.roomid);
+  const room = await StudyRoomRepository.findByCode(data.roomcode);
 
   if (!room) {
-    throw new Error("This study room no longer exists.");
+    throw new Error("Room not found. Check the room code and try again.");
   }
 
-  if (room.studyroommember.length >= 10) {
-    throw new Error("This room is full.");
+  if(room.isactive){
+    throw new Error("Session already started. You cannot join at this time.");
   }
 
   const alreadyMember = room.studyroommember.some(
-    (m) => m.userid === data.userid,
+      (m) => m.userid === data.userid
   );
-  if (alreadyMember) {
+
+  if(alreadyMember){
     throw new Error("You are already in this room.");
   }
 
-  if (room.isactive) {
-    throw new Error(
-      "The study session has already started and is locked for new members.",
-    );
-  }
-
-  const ownerMember = room.studyroommember.find((m) => m.isowner);
-  const ownerSession = room.focussession.find(
-    (s) => s.userid === ownerMember?.userid,
-  );
-
-  if (!ownerSession) {
-    throw new Error("The session timing could not be synchronized.");
-  }
-
-  const result = await StudyRoomRepository.join(
-    data,
-    ownerSession.starttime,
-    ownerSession.endtime,
-  );
-
-  const updatedRoom = await StudyRoomRepository.findById(data.roomid);
+  const member = await StudyRoomRepository.join(data, room.roomid);
 
   return {
     success: true,
-    message: "Joined the StudyRoom successfully.",
-    roomData: updatedRoom,
-    userName: result.users.username,
-    newMember: result,
+    message: "Joined the Study Room successfully.",
+    roomid: room.roomid,
+    roomname: room.name,
+    roomcode: room.code,
+    username: member.users.username,
   };
 };

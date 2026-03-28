@@ -1,9 +1,10 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../../infrastructure/middleware/authMiddleware.js";
-import { CreateStudyRoom } from "../../usecases/StudyRoom/CreatRoom.js";
+import { CreateStudyRoom } from "../../usecases/StudyRoom/CreateRoom.js";
 import { JoinStudyRoom } from "../../usecases/StudyRoom/JoinStudyRoom.js";
 import { LeaveStudyRoom } from "../../usecases/StudyRoom/LeaveStudyRoom.js";
-import { SendMessage } from "../../usecases/StudyRoom/SendMessage.js";
+import { StartGroupSession } from "../../usecases/StudyRoom/StartGroupSession.js";
+import { EndGroupSession } from "../../usecases/StudyRoom/EndGroupSession.js";
 
 export class StudyRoomController {
   // Create Room
@@ -18,19 +19,9 @@ export class StudyRoomController {
       const data = {
         ...req.body,
         ownerid: userid,
-        starttime: req.body.starttime
-          ? new Date(req.body.starttime)
-          : undefined,
-        endtime: req.body.endtime ? new Date(req.body.endtime) : undefined,
       };
 
       const result = await CreateStudyRoom(data);
-      const io = req.app.get("io");
-
-      io.emit("room_created", {
-        message: `${result.userName} has created a new study room!`,
-        room: result.data,
-      });
 
       return res.status(201).json(result);
     } catch (error: any) {
@@ -42,54 +33,27 @@ export class StudyRoomController {
   static join = async (req: AuthRequest, res: Response) => {
     try {
       const userid = req.user?.userid;
-      const { roomid } = req.params;
+      const { roomcode } = req.params;
 
       if (!userid)
         return res.status(401).json({ message: "User not authenticated" });
 
-      if (typeof roomid !== "string") {
-        return res.status(400).json({ message: "Invalid Room ID" });
+      if (!roomcode) {
+        return res.status(400).json({ message: "Room code is required." });
       }
 
       const result = await JoinStudyRoom({
-        roomid: roomid,
-        userid: userid,
+        roomcode,
+        userid,
       });
 
       const io = req.app.get("io");
-      io.to(roomid).emit("user_joined_notice", {
+      io.to(result.roomid).emit("room:member-joined", {
         userName: result.userName,
-        message: "has joined the study group!",
+        message: `${result.username} has joined the room`,
       });
 
       return res.status(200).json(result);
-    } catch (error: any) {
-      return res.status(400).json({ message: error.message });
-    }
-  };
-
-  // Send Message
-  static sendMessage = async (req: AuthRequest, res: Response) => {
-    try {
-      const userid = req.user?.userid;
-      const { roomid } = req.params;
-
-      if (!userid)
-        return res.status(401).json({ message: "User not authenticated" });
-
-      if (typeof roomid !== "string") {
-        return res.status(400).json({ message: "Invalid Room ID" });
-      }
-
-      const validatedMsg = await SendMessage(userid, {
-        ...req.body,
-        roomid: roomid,
-      });
-
-      const io = req.app.get("io");
-      io.to(roomid).emit("new_chat_message", validatedMsg);
-
-      return res.status(200).json(validatedMsg);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }
@@ -101,30 +65,66 @@ export class StudyRoomController {
       const userid = req.user?.userid;
       const { roomid } = req.params;
 
-      if (!userid)
-        return res.status(401).json({ message: "User not authenticated" });
+      if (!userid) return res.status(401).json({ message: "User not authenticated." });
+      if (!roomid) return res.status(400).json({ message: "Room ID is required." });
 
-      if (!roomid || typeof roomid !== "string") {
-        return res.status(400).json({ message: "Invalid or missing Room ID" });
-      }
-
-      const result = await LeaveStudyRoom({
-        roomid: roomid,
-        userid: userid,
-      });
+      const result = await LeaveStudyRoom({ roomid, userid });
 
       const io = req.app.get("io");
-
-      io.to(roomid).emit("user_left_notice", {
-        userName: result.userName,
-        message: "has left the study group.",
+      io.to(roomid).emit("room:member-left", {
+        username: result.username,
+        message: `${result.username} has left the room.`,
       });
 
-      if (result.wasOwner) {
-        io.to(roomid).emit("session_terminated", {
-          reason: `The owner ${result.userName} has ended the session. The room is now closed.`,
+      if (result.isOwner) {
+        io.to(roomid).emit("room:closed", {
+          message: "Owner closed the room.",
         });
       }
+
+      return res.status(200).json(result);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  };
+
+  static startSession = async (req: AuthRequest, res: Response) => {
+    try {
+      const userid = req.user?.userid;
+      const { roomid } = req.params;
+
+      if (!userid) return res.status(401).json({ message: "User not authenticated." });
+      if (!roomid) return res.status(400).json({ message: "Room ID is required." });
+
+      const result = await StartGroupSession({ roomid, userid });
+
+      const io = req.app.get("io");
+      io.to(roomid).emit("session:start", {
+        message: "Session has started. Focus!",
+        startedat: result.startedat,
+      });
+
+      return res.status(200).json(result);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  };
+
+  static endSession = async (req: AuthRequest, res: Response) => {
+    try {
+      const userid = req.user?.userid;
+      const { roomid } = req.params;
+
+      if (!userid) return res.status(401).json({ message: "User not authenticated." });
+      if (!roomid) return res.status(400).json({ message: "Room ID is required." });
+
+      const result = await EndGroupSession({ roomid, userid });
+
+      const io = req.app.get("io");
+      io.to(roomid).emit("session:end", {
+        message: "Session has ended. Room is now closed.",
+        endedat: result.endedat,
+      });
 
       return res.status(200).json(result);
     } catch (error: any) {

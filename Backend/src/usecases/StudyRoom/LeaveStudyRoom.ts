@@ -8,17 +8,22 @@ export const LeaveStudyRoom = async (data: LeaveRoomDTO) => {
     const member = room.studyroommember.find(m => m.userid === data.userid);
     if (!member) throw new Error("User is not a member of this room");
 
-    const wasOwner = member.isowner;
+    if (room.isactive) throw new Error("Session is ongoing. You cannot leave mid-session.");
 
-    const result = await StudyRoomRepository.leave(data);
+    const isOwner = member.isowner;
 
-    if (wasOwner) {
+    const result = await StudyRoomRepository.leave(data.roomid, data.userid);
+
+    if (isOwner) {
         await StudyRoomRepository.closeRoom(data.roomid);
     }
 
     return {
         success: true,
-        userName: result.users.username,
-        wasOwner: wasOwner
+        message: isOwner
+        ? "Room closed by owner ."
+        : "Left the study room successfully!",
+        username: result.users.username,
+        isOwner,
     };
 };

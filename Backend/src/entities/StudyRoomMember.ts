@@ -4,5 +4,5 @@ export interface StudyRoomMember {
     roomid: string;
     isowner: boolean;
     joinedat: Date;
-    leftat?: Date | null;
+    leftat: Date | null;
 }

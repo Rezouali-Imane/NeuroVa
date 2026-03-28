@@ -4,15 +4,23 @@ import type {
   JoinRoomDTO,
   LeaveRoomDTO,
 } from "../dtos/StudyRoom.dto.js";
+import { randomBytes } from "crypto";
+
+const generateRoomCode = (): string => {
+  return randomBytes(3).toString("hex").toUpperCase();
+}
 
 export const StudyRoomRepository = {
   async create(data: CreateRoomDTO) {
     return await prisma.$transaction(async (tx) => {
+      const roomcode =  generateRoomCode();
+
       //  Create StudyRoom
       const room = await tx.studyroom.create({
         data: {
           roomname: data.roomname,
           sessionduration: data.sessionduration,
+          roomcode,
           isactive: false,
         },
       });
@@ -31,85 +39,12 @@ export const StudyRoomRepository = {
         data: {
           userid: data.ownerid,
           roomid: room.roomid,
-          starttime: null,
-          endtime: null,
           status: "SCHEDULED",
         },
       });
 
       return room;
     });
-  },
-
-  async join(data: JoinRoomDTO, starttime: Date | null, endtime: Date | null) {
-    return await prisma.$transaction(async (tx) => {
-      const member = await tx.studyroommember.create({
-        data: {
-          userid: data.userid,
-          roomid: data.roomid,
-          isowner: false,
-        },
-        include: {
-          users: {
-            select: { username: true },
-          },
-        },
-      });
-
-      await tx.focussession.create({
-        data: {
-          userid: data.userid,
-          roomid: data.roomid,
-          starttime: starttime,
-          endtime: endtime,
-          status: "SCHEDULED",
-        },
-      });
-
-      return member;
-    });
-  },
-
-  async leave(data: LeaveRoomDTO) {
-    return await prisma.studyroommember.update({
-      where: {
-        userid_roomid: {
-          userid: data.userid,
-          roomid: data.roomid,
-        },
-      },
-      data: {
-        leftat: new Date(),
-      },
-      include: {
-        users: {
-          select: { username: true },
-        },
-      },
-    });
-  },
-
-  async closeRoom(roomid: string) {
-    const now = new Date();
-    return await prisma.$transaction([
-      prisma.studyroom.update({
-        where: { roomid },
-        data: { isactive: false },
-      }),
-      prisma.focussession.updateMany({
-        where: { roomid, status: "SCHEDULED" },
-        data: { status: "CANCELED" },
-      }),
-      prisma.studyroommember.updateMany({
-        where: {
-          roomid,
-          leftat: null,
-        },
-        data: {
-          leftat: now,
-        },
-      }),
-    ]);
   },
 
   async findById(roomid: string) {
@@ -126,5 +61,79 @@ export const StudyRoomRepository = {
         focussession: true,
       },
     });
+  },
+
+  async findByCode(roomcode: string) {
+    return await prisma.studyroom.findUnique({
+      where: { roomcode },
+      include: {
+        studyroommember: {
+          include: {
+            users: {
+              select: { username: true },
+            },
+          },
+        },
+        focussession: true,
+      },
+    });
+  },
+
+  async join(data: JoinRoomDTO, roomid: string) {
+    return await prisma.studyroommember.create({
+      data: {
+        userid: data.userid,
+        roomid,
+        isowner: false,
+      },
+      include: {
+        users: {
+          select: { username: true },
+        },
+      },
+    });
+  },
+
+  async leave(roomid: string, userid: string) {
+    return await prisma.studyroommember.update({
+      where: {
+        userid_roomid: { userid, roomid },
+      },
+      data: { leftat: new Date() },
+      include: {
+        users: { select: { username: true },},
+      },
+    });
+  },
+
+  async startSession(roomid: string) {
+    return await prisma.$transaction([
+      prisma.studyroom.update({
+        where: {roomid},
+        data: {isactive: true},
+      }),
+      prisma.focussession.updateMany({
+        where: { roomid, status: "SCHEDULED" },
+        data: { status: "ACTIVE", starttime: new Date() },
+      }),
+    ]);
+  },
+
+  async closeRoom(roomid: string) {
+    const now = new Date();
+    return await prisma.$transaction([
+      prisma.studyroom.update({
+        where: { roomid },
+        data: { isactive: false },
+      }),
+      prisma.focussession.updateMany({
+        where: { roomid, status: { in: ["SCHEDULED", "ACTIVE"]} },
+        data: { status: "CANCELED", endtime: now },
+      }),
+      prisma.studyroommember.updateMany({
+        where: { roomid, leftat: null, },
+        data: { leftat: now },
+      }),
+    ]);
   },
 };

@@ -198,6 +198,7 @@ model ambientsound {
 
 model studyroom {
   roomid          String            @id @default(cuid())
+  roomcode        String            @unique
   roomname        String
   sessionduration Int
   isactive        Boolean           @default(false)

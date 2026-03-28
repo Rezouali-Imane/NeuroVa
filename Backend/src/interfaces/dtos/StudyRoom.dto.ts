@@ -8,18 +8,21 @@ export interface CreateRoomDTO {
 
 
 export interface JoinRoomDTO {
+    roomcode: string;
+    userid: string;
+}
+
+export interface LeaveRoomDTO {
     roomid: string;
     userid: string;
 }
 
-export interface SendMessageDTO {
+export interface StartGroupSessionDTO {
     roomid: string;
-    content: string;
-    senderid: string;
+    userid: string;
 }
 
-
-export interface LeaveRoomDTO {
+export interface EndGroupSessionDTO {
     roomid: string;
     userid: string;
 }
