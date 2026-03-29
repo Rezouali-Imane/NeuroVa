@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Reusable onboarding background widget.
 class OnboardingBackground extends StatelessWidget {
   final Widget child;
-  const OnboardingBackground({Key? key, required this.child}) : super(key: key);
+  const OnboardingBackground({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +19,7 @@ class OnboardingBackground extends StatelessWidget {
             height: size.height * 0.6,
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                colors: [const Color(0xFF5A80FA).withOpacity(0.32), const Color(0xFF181526).withOpacity(0.0)],
+                colors: [Color.fromRGBO(90, 128, 250, 0.32), Color.fromRGBO(24, 21, 38, 0.0)],
                 radius: 0.85,
                 center: Alignment(-0.7, -0.7),
                 stops: const [0.0, 1.0],
@@ -37,7 +36,7 @@ class OnboardingBackground extends StatelessWidget {
             height: size.height * 0.45,
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                colors: [const Color(0xFFF8B878).withOpacity(0.28), const Color(0xFF181526).withOpacity(0.0)],
+                colors: [Color.fromRGBO(248, 184, 120, 0.28), Color.fromRGBO(24, 21, 38, 0.0)],
                 radius: 0.8,
                 center: Alignment(0.7, -0.2),
                 stops: const [0.0, 1.0],
@@ -54,7 +53,7 @@ class OnboardingBackground extends StatelessWidget {
             height: size.height * 0.45,
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                colors: [const Color(0xFFC8A2C8).withOpacity(0.25), const Color(0xFF181526).withOpacity(0.0)],
+                colors: [Color.fromRGBO(200, 162, 200, 0.25), Color.fromRGBO(24, 21, 38, 0.0)],
                 radius: 0.8,
                 center: Alignment(-0.7, 0.2),
                 stops: const [0.0, 1.0],
@@ -71,7 +70,7 @@ class OnboardingBackground extends StatelessWidget {
             height: size.height * 0.4,
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                colors: [const Color(0xFFF093FB).withOpacity(0.28), const Color(0xFF181526).withOpacity(0.0)],
+                colors: [Color.fromRGBO(240, 147, 251, 0.28), Color.fromRGBO(24, 21, 38, 0.0)],
                 radius: 0.8,
                 center: Alignment(-0.7, 0.7),
                 stops: const [0.0, 1.0],
@@ -88,7 +87,7 @@ class OnboardingBackground extends StatelessWidget {
             height: size.height * 0.4,
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                colors: [const Color(0xFFF5576C).withOpacity(0.28), const Color(0xFF181526).withOpacity(0.0)],
+                colors: [Color.fromRGBO(245, 87, 108, 0.28), Color.fromRGBO(24, 21, 38, 0.0)],
                 radius: 0.8,
                 center: Alignment(0.7, 0.7),
                 stops: const [0.0, 1.0],
@@ -96,7 +95,7 @@ class OnboardingBackground extends StatelessWidget {
             ),
           ),
         ),
-        // Foreground child widget
+      
         child,
       ],
     );

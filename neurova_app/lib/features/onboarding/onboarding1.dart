@@ -22,62 +22,68 @@ class _Onboarding1State extends State<Onboarding1> {
       body: OnboardingBackground(
         child: Stack(
           children: [
-            // Gradient title
             Positioned(
-              left: 31,
+              left: 0,
+              right: 0,
               top: 140,
-              child: SizedBox(
-                width: 340,
-                height: 60,
-                child: ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [
-                      Color(0xFFECEBBD), // Lemon Chiffon
-                      Color(0xFFC8A2C8), // Lilac
-                      Color(0xFFF8B878), // Light Caramel
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ).createShader(bounds),
-                  child: Text(
-                    "Neurova",
-                    textAlign: TextAlign.left,
-                    style: const TextStyle(
-                      fontFamily: 'Syne',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 50,
-                      height: 1.0,
-                      letterSpacing: 0,
-                      color: Colors.white,
+              child: Align(
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: 340,
+                  height: 60,
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [
+                        Color(0xFFECEBBD), 
+                        Color(0xFFC8A2C8), 
+                        Color(0xFFF8B878), 
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds),
+                    child: Text(
+                      "Neurova",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'Syne',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 50,
+                        height: 1.0,
+                        letterSpacing: 0,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          // Static logo (animation removed)
           Positioned(
-            left: 69,
+            left: 0,
+            right: 0,
             top: 210,
-            child: ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [
-                  Color(0xFFECEBBD), // Lemon Chiffon
-                  Color(0xFFC8A2C8), // Lilac
-                  Color(0xFFF8B878), // Light Caramel
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds),
-              blendMode: BlendMode.srcIn,
-              child: SvgPicture.asset(
-                'lib/features/onboarding/assets/logo.svg',
-                width: 263,
-                height: 199,
-                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+            child: Align(
+              alignment: Alignment.center,
+              child: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Color(0xFFECEBBD), 
+                    Color(0xFFC8A2C8), 
+                    Color(0xFFF8B878), 
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                blendMode: BlendMode.srcIn,
+                child: SvgPicture.asset(
+                  'lib/features/onboarding/assets/logo.svg',
+                  width: 263,
+                  height: 199,
+                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                ),
               ),
             ),
           ),
-          // Headline — per design
+          
           Positioned(
             left: -12,
             top: 474,
@@ -92,15 +98,14 @@ class _Onboarding1State extends State<Onboarding1> {
                     fontFamily: 'Syne',
                     fontWeight: FontWeight.w800,
                     fontSize: 60,
-                    height: 1.0, // 60px line height
+                    height: 1.0,
                     letterSpacing: 0.35,
-                    color: Color(0xFFFFFFF0), // #FFFFF0
+                    color: Color(0xFFFFFFF0), 
                   ),
                 ),
               ),
             ),
           ),
-          // Description — per design
           Positioned(
             left: 20,
             top: 658,
@@ -108,56 +113,58 @@ class _Onboarding1State extends State<Onboarding1> {
               width: 343,
               height: 80,
               child: Text(
-                "AI-powered academic companion for students who want to own their time, silence distractions, and actually achieve.",
+                "AI-powered academic companion for\nstudents who want to own their time,\nsilence distractions, and actually achieve.",
                 textAlign: TextAlign.left,
                 style: const TextStyle(
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
-                  height: 20/16, // 20px line height
+                  height: 20/16, 
                   letterSpacing: 0.35,
                   color: Color(0xFFFFFFF0),
                 ),
               ),
             ),
           ),
-          // Next button — per design
+          
           Positioned(
-            left: 168.96,
-            top: 734,
-            child: SizedBox(
-              width: 63.99,
-              height: 63.99,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const Onboarding2(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  backgroundColor: const Color(0xFFECEBBD),
-                  padding: EdgeInsets.zero,
-                  elevation: 0,
-                ),
-                child: const Icon(
-                  Icons.arrow_forward_outlined,
-                  color: Colors.black,
-                  size: 28,
+            left: 0,
+            right: 0,
+            top: 754, 
+            child: Align(
+              alignment: Alignment.center,
+              child: SizedBox(
+                width: 63.99,
+                height: 63.99,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const Onboarding2(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    backgroundColor: const Color(0xFFECEBBD),
+                    padding: EdgeInsets.zero,
+                    elevation: 0,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_outlined,
+                    color: Colors.black,
+                    size: 28,
+                  ),
                 ),
               ),
             ),
           ),
-            // Page indicator — centered
             Positioned(
-              top: 845.98,
+              top: 734 + 63.99 + 58, 
               left: 0,
               right: 0,
-              child: Container(
-                width: double.infinity,
+              child: Align(
                 alignment: Alignment.center,
                 child: SizedBox(
                   width: 381.92,

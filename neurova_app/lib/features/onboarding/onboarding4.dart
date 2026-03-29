@@ -8,7 +8,6 @@ class Onboarding4 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -18,19 +17,18 @@ class Onboarding4 extends StatelessWidget {
           child: SingleChildScrollView(
             child: Stack(
               children: [
-              //--- Ellipses superposées au centre ---
+              
               Align(
                 alignment: Alignment.center,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Ellipse 2 en dessous
                     SvgPicture.asset(
                       'lib/features/onboarding/assets/ellipse42.svg',
                       width: 308,
                       height: 308,
                     ),
-                    // Ellipse 1 au-dessus (comme tu voulais)
+
                     SvgPicture.asset(
                       'lib/features/onboarding/assets/ellipse41.svg',
                       width: 308,
@@ -40,14 +38,13 @@ class Onboarding4 extends StatelessWidget {
                 ),
               ),
 
-                // Contenu principal
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
                       const SizedBox(height: 60),
 
-                      //--- Logo NEUROVA ---
+
                       Center(
                         child: Stack(
                           clipBehavior: Clip.none,
@@ -103,7 +100,7 @@ class Onboarding4 extends StatelessWidget {
 
                       const SizedBox(height: 24),
 
-                      //--- Description ---
+
                       Align(
                         alignment: Alignment.centerLeft,
                         child: SizedBox(
@@ -124,7 +121,7 @@ class Onboarding4 extends StatelessWidget {
 
                       const SizedBox(height: 60),
 
-                      //--- Bouton GET STARTED ---
+
                       Center(
                         child: GestureDetector(
                           onTap: () {
@@ -147,7 +144,7 @@ class Onboarding4 extends StatelessWidget {
                               borderRadius: BorderRadius.circular(30),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
+                                  color: Color.fromRGBO(0, 0, 0, 0.2),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
