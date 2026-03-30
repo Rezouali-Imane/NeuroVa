@@ -8,6 +8,9 @@ export interface CreateNotificationDTO {
   sessionid?: string;
   taskid?: string;
   scheduledtime?: Date;
+  isread: boolean;
+  createdat: Date;
+  schedulestime?: Date;
 }
 
 export interface UpdateNotificationSettingsDTO {
@@ -20,7 +23,6 @@ export interface UpdateNotificationSettingsDTO {
   studyroominvites?: boolean;
   reminderminutesbefore?: number;
 }
-
 
 export interface NotificationResponseDTO {
   notificationid: string;
