@@ -1,0 +1,1 @@
+export const markAllNotificationsRead = "MARK ALL NOTIFICATIONS READ";

@@ -25,4 +25,5 @@ app.use('/api/tasklists', authMiddleware, taskListRoutes);
 app.use('/api/notes', authMiddleware, noteRoutes);
 app.use('/api/ai', authMiddleware, aiRoutes);
 app.use('/api/focus-sessions', authMiddleware, focusSessionRoutes);
+
 export default app;

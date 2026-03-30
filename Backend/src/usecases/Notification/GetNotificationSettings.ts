@@ -1,0 +1,1 @@
+export const getNotificationSettings = "GET NOTIFICATION SETTINGS";

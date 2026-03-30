@@ -1,0 +1,1 @@
+export const markNotificationRead = "MARK NOTIFICATION READ";

@@ -1,0 +1,1 @@
+export const getUSerNotification = "GET USER NOTIFICATION";

@@ -1,0 +1,1 @@
+export const UpdateNotificationSettings = "UPDATE NOTIFICATION SETTINGS";
