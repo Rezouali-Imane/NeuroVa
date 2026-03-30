@@ -213,5 +213,69 @@ export const MailService = {
         </html>
       `,
     });
+  },
+
+  async sendNotification(email: string, title: string, message: string) {
+    await resend.emails.send({
+      from: 'Neurova <onboarding@resend.dev>',
+      to: email,
+      subject: title,
+      html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              margin: 0; 
+              padding: 0; 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              background-color: #f5f5f5;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 40px auto; 
+              background: white; 
+              border-radius: 12px; 
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .header { 
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+              padding: 40px 20px; 
+              text-align: center;
+            }
+            .content { 
+              padding: 40px 30px; 
+              text-align: center;
+            }
+            .footer { 
+              background: #f8f9fa; 
+              padding: 20px; 
+              text-align: center; 
+              color: #6c757d; 
+              font-size: 14px;
+            }
+            h1 { color: white; margin: 0; font-size: 24px; font-weight: 600; }
+            p { color: #495057; line-height: 1.6; margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>${title}</h1>
+            </div>
+            <div class="content">
+              <p style="font-size: 16px;">${message}</p>
+            </div>
+            <div class="footer">
+              <p>© 2026 Neurova. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    });
   }
 };

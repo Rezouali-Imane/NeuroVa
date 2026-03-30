@@ -1,1 +1,0 @@
-export const sendEmailMessages = "SEND EMAIL MESSAGES";
