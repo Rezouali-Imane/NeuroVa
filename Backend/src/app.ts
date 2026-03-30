@@ -8,6 +8,7 @@ import aiRoutes from './interfaces/routes/AIAssistant.routes.js';
 import focusSessionRoutes from './interfaces/routes/FocusSession.routes.js';
 import noteRoutes from './interfaces/routes/Notes.routes.js';
 import { authMiddleware } from './infrastructure/middleware/authMiddleware.js';
+import notificationRoutes from './interfaces/routes/Notification.Routes.js';
 
 const app: Application = express();
 
@@ -25,5 +26,6 @@ app.use('/api/tasklists', authMiddleware, taskListRoutes);
 app.use('/api/notes', authMiddleware, noteRoutes);
 app.use('/api/ai', authMiddleware, aiRoutes);
 app.use('/api/focus-sessions', authMiddleware, focusSessionRoutes);
+app.use('/api/notifications', authMiddleware, notificationRoutes);
 
 export default app;

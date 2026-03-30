@@ -77,7 +77,7 @@ export const NotificationController = {
 
 
 
-  async getSettings(req: Request, res: Response) {
+  async getNotificationSettings(req: Request, res: Response) {
     try {
       const { userid } = req.params;
       const settings = await getNotificationSettings(userid as string);
@@ -90,7 +90,7 @@ export const NotificationController = {
 
 
 
-  async updateSettings(req: Request, res: Response) {
+  async updateNotificationSettings(req: Request, res: Response) {
     try {
     
       const { settingsid, userid } = req.params;
@@ -109,7 +109,7 @@ export const NotificationController = {
 
 
 
-  async sendEmail(req: Request, res: Response) {
+  async sendEmailMessages(req: Request, res: Response) {
     try {
       const { userId, subject, message } = req.body;
       await sendEmailMessages(userId, subject, message);
@@ -123,7 +123,7 @@ export const NotificationController = {
 
 
 
-  async sendPush(req: Request, res: Response) {
+  async sendPushNotification(req: Request, res: Response) {
     try {
       const { userId, title, message } = req.body;
       await sendPushNotification(userId, title, message);
