@@ -10,7 +10,6 @@ export interface CreateNotificationDTO {
   scheduledtime?: Date;
   isread: boolean;
   createdat: Date;
-  schedulestime?: Date;
 }
 
 export interface UpdateNotificationSettingsDTO {

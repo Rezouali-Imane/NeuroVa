@@ -92,11 +92,9 @@ export const NotificationController = {
 
   async updateNotificationSettings(req: Request, res: Response) {
     try {
-    
-      const { settingsid, userid } = req.params;
+      const { userid } = req.params;
       const settingsData = req.body;
       const updatedSettings = await UpdateNotificationSettings(
-        settingsid as string,
         userid as string,
         settingsData,
       );
