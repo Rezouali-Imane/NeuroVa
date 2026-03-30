@@ -1,30 +1,34 @@
+import { NotificationType } from "../../entities/Notification.js";
+
 export interface CreateNotificationDTO {
-notificationid: string;
-userid: string;
-sessionid?: string;
-taskid?: string;
-type: string;
-title: string;
-message: string;
-scheduledtime?: Date;
-isread: boolean;
-createdat: Date;
+  userid: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  sessionid?: string;
+  taskid?: string;
+  scheduledtime?: Date;
 }
-export interface UpdateNotificationsettingsDTO {
-settingsid: string;
-userid:string;
-pushenabled?: boolean;
-emailenabled?: boolean;
-taskreminders?: boolean;
-sessionreminders?: boolean;
-achievementalerts?: boolean;
-dailychallengealerts?: boolean;
-studyroominvites?: boolean;
-reminderminutesbefore?: number;
-updatedat: Date;
+
+export interface UpdateNotificationSettingsDTO {
+  pushenabled?: boolean;
+  emailenabled?: boolean;
+  taskreminders?: boolean;
+  sessionreminders?: boolean;
+  achievementalerts?: boolean;
+  dailychallengealerts?: boolean;
+  studyroominvites?: boolean;
+  reminderminutesbefore?: number;
 }
+
+
 export interface NotificationResponseDTO {
-notificationid: string;
-userid: string;
-isread: boolean;
+  notificationid: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  isread: boolean;
+  createdat: Date;
+  sessionid?: string;
+  taskid?: string;
 }
