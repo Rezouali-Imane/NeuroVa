@@ -33,7 +33,7 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-    final hintColor = Colors.white.withOpacity(0.4);
+    final hintColor = Colors.white.withValues(alpha: 0.4);
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1625),
@@ -195,8 +195,8 @@ class _SignupPageState extends State<SignupPage> {
                         height: 16,
                         decoration: BoxDecoration(
                           color: _agreeTerms
-                              ? Colors.white
-                              : Colors.white.withOpacity(0.05),
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: _agreeTerms
@@ -213,7 +213,7 @@ class _SignupPageState extends State<SignupPage> {
                       child: RichText(
                         text: TextSpan(
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 12,
                           ),
                           children: [
@@ -300,15 +300,15 @@ class _SignupPageState extends State<SignupPage> {
                   children: [
                     Expanded(
                       child: Container(
-                        height: 1,
-                        color: Colors.white.withOpacity(0.10),
-                      ),
+                          height: 1,
+                          color: Colors.white.withValues(alpha: 0.10),
+                        ),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       'or sign up with',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.40),
+                        color: Colors.white.withValues(alpha: 0.40),
                         fontSize: 14,
                       ),
                     ),
@@ -316,7 +316,7 @@ class _SignupPageState extends State<SignupPage> {
                     Expanded(
                       child: Container(
                         height: 1,
-                        color: Colors.white.withOpacity(0.10),
+                        color: Colors.white.withValues(alpha: 0.10),
                       ),
                     ),
                   ],
@@ -342,7 +342,7 @@ class _SignupPageState extends State<SignupPage> {
                       TextSpan(
                         text: 'Already have an account? ',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 14,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w400,
@@ -397,7 +397,7 @@ class _SignupPageState extends State<SignupPage> {
         labelText: label,
         labelStyle: TextStyle(color: hintColor),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
+        fillColor: Colors.white.withValues(alpha: 0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(24),
           borderSide: BorderSide.none,
@@ -430,8 +430,8 @@ class _SignupPageState extends State<SignupPage> {
       width: 166.92,
       height: 51.988,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        border: Border.all(color: Colors.white.withOpacity(0.10), width: 0.752),
+        color: Colors.white.withValues(alpha: 0.05),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10), width: 0.752),
         borderRadius: BorderRadius.circular(24),
       ),
       child: TextButton.icon(

@@ -329,7 +329,7 @@ class _SetupProfil2State extends State<SetupProfil2> {
       width: 6,
       height: 6,
       decoration: BoxDecoration(
-        color: active ? Colors.white : Colors.white.withOpacity(0.3),
+        color: active ? Colors.white : Colors.white.withValues(alpha: 0.3),
         shape: BoxShape.circle,
       ),
     );

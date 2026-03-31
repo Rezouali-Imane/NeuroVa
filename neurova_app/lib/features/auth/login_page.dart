@@ -26,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final hintColor = Colors.white.withOpacity(0.4);
+    final hintColor = Colors.white.withValues(alpha: 0.4);
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1625),
@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
                   labelText: "Email address",
                   labelStyle: TextStyle(color: hintColor),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
+                  fillColor: Colors.white.withValues(alpha: 0.1),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -120,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                   labelText: "Password",
                   labelStyle: TextStyle(color: hintColor),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
+                  fillColor: Colors.white.withValues(alpha: 0.1),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -168,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: Text(
                     'Forgot password?',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.60),
+                      color: Colors.white.withValues(alpha: 0.60),
                       fontSize: 14,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w400,
@@ -220,14 +220,14 @@ class _LoginPageState extends State<LoginPage> {
                   Expanded(
                     child: Container(
                       height: 1,
-                      color: Colors.white.withOpacity(0.10),
+                      color: Colors.white.withValues(alpha: 0.10),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Text(
                     'or continue with',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.40),
+                      color: Colors.white.withValues(alpha: 0.40),
                       fontSize: 14,
                     ),
                   ),
@@ -235,7 +235,7 @@ class _LoginPageState extends State<LoginPage> {
                   Expanded(
                     child: Container(
                       height: 1,
-                      color: Colors.white.withOpacity(0.10),
+                      color: Colors.white.withValues(alpha: 0.10),
                     ),
                   ),
                 ],
@@ -258,13 +258,13 @@ class _LoginPageState extends State<LoginPage> {
               Text.rich(
                 TextSpan(
                   children: [
-                    TextSpan(
-                      text: 'Don’t have an account? ',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 14,
+                      TextSpan(
+                        text: 'Don’t have an account? ',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
                     TextSpan(
                       text: 'Sign Up',
                       style: const TextStyle(
@@ -296,9 +296,9 @@ class _LoginPageState extends State<LoginPage> {
       width: 166.92,
       height: 51.988,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         border:
-            Border.all(color: Colors.white.withOpacity(0.10), width: 0.75),
+            Border.all(color: Colors.white.withValues(alpha: 0.10), width: 0.75),
         borderRadius: BorderRadius.circular(24),
       ),
       child: TextButton.icon(

@@ -6,16 +6,6 @@ import 'setup_profil2.dart';
 class SetupProfil extends StatelessWidget {
   const SetupProfil({super.key});
 
-  static Widget _dot() {
-    return Container(
-      width: 6,
-      height: 6,
-      decoration: const BoxDecoration(
-        color: Color(0xFFA2ADD0),
-        shape: BoxShape.circle,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +31,8 @@ class SetupProfil extends StatelessWidget {
                           top: 0,
                           child: SvgPicture.asset(
                             'lib/features/onboarding/assets/logo.svg',
-                            width: 51,
-                            height: 39,
+                            width: 51.0,
+                            height: 39.0,
                             colorFilter: const ColorFilter.mode(
                               Colors.white,
                               BlendMode.srcIn,
@@ -80,7 +70,7 @@ class SetupProfil extends StatelessWidget {
                         width: 6,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -89,7 +79,7 @@ class SetupProfil extends StatelessWidget {
                         width: 6,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -162,8 +152,8 @@ class SetupProfil extends StatelessWidget {
                           child: Center(
                             child: SvgPicture.asset(
                               'lib/features/onboarding/assets/SVG.svg',
-                              width: 14,
-                              height: 14,
+                              width: 14.0,
+                              height: 14.0,
                               colorFilter: const ColorFilter.mode(
                                 Colors.white,
                                 BlendMode.srcIn,

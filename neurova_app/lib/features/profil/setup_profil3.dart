@@ -59,7 +59,7 @@ class SetupProfile3Page extends StatelessWidget {
                           width: 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
+                            color: Colors.white.withValues(alpha: 0.3),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -68,7 +68,7 @@ class SetupProfile3Page extends StatelessWidget {
                           width: 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
+                            color: Colors.white.withValues(alpha: 0.3),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -220,7 +220,7 @@ class _SettingTileState extends State<SettingTile> {
             height: 32,
             padding: const EdgeInsets.symmetric(horizontal: 8.5),
             decoration: ShapeDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -253,7 +253,7 @@ class _SettingTileState extends State<SettingTile> {
                 Text(
                   widget.subtitle,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
+                    color: Colors.white.withValues(alpha: 0.4),
                     fontSize: 11,
                   ),
                 ),
@@ -292,9 +292,9 @@ class _FocusShieldCardState extends State<FocusShieldCard> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFFB284BE).withOpacity(0.2),
-            const Color(0xFF8C64A0).withOpacity(0.1),
-          ],
+              const Color(0xFFB284BE).withValues(alpha: 0.2),
+              const Color(0xFF8C64A0).withValues(alpha: 0.1),
+            ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0x33B284BE)),

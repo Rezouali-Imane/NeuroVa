@@ -57,7 +57,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final hintColor = Colors.white.withOpacity(0.4);
+    final hintColor = Colors.white.withValues(alpha: 0.4);
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1625),
@@ -168,7 +168,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           labelText: "Email address",
                           labelStyle: TextStyle(color: hintColor),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
+                          fillColor: Colors.white.withValues(alpha: 0.1),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide.none,
