@@ -5,7 +5,7 @@ import '../../features/auth/forgot_password_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/auth/register_page.dart';
 import '../../features/onboarding/onboarding1.dart';
-import '../../features/auth/ResetPassword_Page.dart';
+import '../../features/auth/reset_password_page.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/onboarding',

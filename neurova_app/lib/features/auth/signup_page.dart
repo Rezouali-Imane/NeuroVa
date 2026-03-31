@@ -226,7 +226,7 @@ class _SignupPageState extends State<SignupPage> {
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
-                                  print("Terms clicked");
+                                  debugPrint("Terms clicked");
                                 },
                             ),
                             const TextSpan(text: ' and '),
@@ -238,7 +238,7 @@ class _SignupPageState extends State<SignupPage> {
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
-                                  print("Privacy clicked");
+                                  debugPrint("Privacy clicked");
                                 },
                             ),
                           ],
@@ -436,7 +436,7 @@ class _SignupPageState extends State<SignupPage> {
       ),
       child: TextButton.icon(
         onPressed: () {
-          print("$label SignIn Clicked");
+          debugPrint("$label SignIn Clicked");
         },
         icon: SvgPicture.asset(
           iconPath,

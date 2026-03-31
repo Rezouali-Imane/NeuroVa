@@ -267,7 +267,7 @@ class _SettingTileState extends State<SettingTile> {
                 active = val;
               });
             },
-            activeColor: const Color(0xFFB284BE),
+            activeThumbColor: const Color(0xFFB284BE),
           ),
         ],
       ),
@@ -365,7 +365,7 @@ class _FocusShieldCardState extends State<FocusShieldCard> {
                 active = val;
               });
             },
-            activeColor: const Color(0xFFB284BE),
+            activeThumbColor: const Color(0xFFB284BE),
           ),
         ],
       ),
