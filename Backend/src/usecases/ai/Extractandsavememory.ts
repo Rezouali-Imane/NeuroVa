@@ -53,6 +53,5 @@ Rules:
       }
     }
   } catch {
-    // If memory extraction fails, do not block the chat response.
   }
 };

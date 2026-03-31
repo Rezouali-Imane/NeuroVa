@@ -7,11 +7,9 @@ import { CreateSession } from '../sessions/CreateSession.js';
 export const ScheduleFocusSession = async (data: ScheduleFocusSessionDTO) => {
   if (!data.userid) throw new Error('User ID is required');
 
-  // Load memory so we can respect study preferences.
   const memory = await StudentMemoryRepository.findByUser(data.userid);
   const preferredTime = memory['preferred_study_time'] ?? 'morning';
 
-  // Pull pending tasks and rank by urgency.
   const pendingTasks = await prisma.task.findMany({
     where: {
       userid: data.userid,
@@ -25,7 +23,6 @@ export const ScheduleFocusSession = async (data: ScheduleFocusSessionDTO) => {
     `- ID: ${t.taskid} | ${t.title} | Priority: ${t.priority}/3 | Deadline: ${t.deadline ? new Date(t.deadline).toLocaleDateString() : 'None'}`
   ).join('\n');
 
-  // Ask the model which task and session length make the most sense.
   const prompt = `A student wants to start a focus session. Suggest which task to focus on and the best duration.
 
 Pending tasks:
@@ -51,7 +48,6 @@ Return ONLY valid JSON, no explanation.`;
   const clean = raw.replace(/```json|```/g, '').trim();
   const suggestion = JSON.parse(clean);
 
-  // Create the session through the existing session usecase.
   const durationMinutes = data.durationMinutes ?? suggestion.durationMinutes ?? 25;
   const start = new Date();
   const end = new Date(start.getTime() + durationMinutes * 60_000);
@@ -65,7 +61,7 @@ Return ONLY valid JSON, no explanation.`;
 
   const selectedTaskId = data.taskid ?? suggestion.taskid ?? null;
   if (selectedTaskId) {
-    await prisma.task_focussession.create({
+    await prisma.sessiontask.create({
       data: { taskid: selectedTaskId, sessionid: focusSession.sessionid },
     });
   }

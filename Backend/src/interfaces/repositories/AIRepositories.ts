@@ -1,11 +1,37 @@
 import prisma from '../../infrastructure/database/prisma.client.js';
 
+const ensureAssistantIdForUser = async (userid: string): Promise<string> => {
+  const existingProfile = await prisma.aiprofile.findUnique({
+    where: { userid },
+    include: { aiassistant: true },
+  });
+
+  if (existingProfile?.aiassistant?.assistantid) {
+    return existingProfile.aiassistant.assistantid;
+  }
+
+  const assistant = await prisma.aiassistant.create({ data: {} });
+
+  await prisma.aiprofile.create({
+    data: {
+      userid,
+      assistantid: assistant.assistantid,
+      supportedmajor: null,
+      university: null,
+    },
+  });
+
+  return assistant.assistantid;
+};
+
 
 export const ChatHistoryRepository = {
 
-  async save(userid: string, role: 'USER' | 'ASSISTANT', content: string) {
+  async save(userid: string, role: 'USER' | 'ASSISTANT', content: string, assistantid?: string) {
+    const resolvedAssistantId = assistantid ?? await ensureAssistantIdForUser(userid);
+
     return await prisma.chathistory.create({
-      data: { userid, role, content },
+      data: { userid, assistantid: resolvedAssistantId, role, content },
     });
   },
 
@@ -26,11 +52,13 @@ export const ChatHistoryRepository = {
 
 export const StudentMemoryRepository = {
 
-  async upsert(userid: string, key: string, value: string) {
+  async upsert(userid: string, key: string, value: string, assistantid?: string) {
+    const resolvedAssistantId = assistantid ?? await ensureAssistantIdForUser(userid);
+
     return await prisma.studentmemory.upsert({
       where: { userid_key: { userid, key } },
       update: { value },
-      create: { userid, key, value },
+      create: { userid, assistantid: resolvedAssistantId, key, value },
     });
   },
 
@@ -89,16 +117,27 @@ export const KnowledgeBaseRepository = {
 export const AssistantRepository = {
 
   async findByUser(userid: string) {
-    return await prisma.assistant.findFirst({
+    const profile = await prisma.aiprofile.findUnique({
       where: { userid },
-      include: { knowledgebase: true },
+      include: { aiassistant: { include: { knowledgebase: true } } },
     });
+
+    return profile?.aiassistant ?? null;
   },
 
   async create(userid: string, supportmajor?: string) {
-    return await prisma.assistant.create({
-      data: { userid, supportmajor: supportmajor ?? null },
+    const assistant = await prisma.aiassistant.create({ data: {} });
+
+    await prisma.aiprofile.create({
+      data: {
+        userid,
+        assistantid: assistant.assistantid,
+        supportedmajor: supportmajor ?? null,
+        university: null,
+      },
     });
+
+    return assistant;
   },
 
   async findOrCreate(userid: string, major?: string) {

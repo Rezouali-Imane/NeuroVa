@@ -1,6 +1,5 @@
 import 'dotenv/config';
 
-// Create 768-dimensional vectors with Gemini text-embedding-004.
 
 export const getEmbedding = async (text: string): Promise<number[]> => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -27,7 +26,6 @@ export const getEmbedding = async (text: string): Promise<number[]> => {
   return data.embedding.values as number[];
 };
 
-// Embed many texts in sequence with a short delay to avoid rate limits.
 export const getEmbeddings = async (texts: string[]): Promise<number[][]> => {
   const embeddings: number[][] = [];
   for (const text of texts) {

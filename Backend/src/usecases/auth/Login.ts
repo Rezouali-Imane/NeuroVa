@@ -1,11 +1,11 @@
-import type { LoginUserDTO } from '../../interfaces/dtos/Auth.dto.js';
+import type { LoginDTO } from '../../interfaces/dtos/Auth.dto.js';
 import { UserRepository } from '../../interfaces/repositories/UserRepository.js';
 import { SendVerificationCode } from './SendVerificationCode.js';
 import { PasswordService } from '../../infrastructure/auth/passwordService.js';
-import { JWTService } from '../../infrastructure/auth/jwtService.js';
+import { JwtClient } from '../../infrastructure/jwt.client.js';
 import { AuthValidators } from '../../infrastructure/auth/validators.js';
 
-export const Login = async (data: LoginUserDTO) => {
+export const Login = async (data: LoginDTO) => {
   const normalizedIdentifier = AuthValidators.normalizeEmail(data.identifier);
 
   const user = await UserRepository.findByEmailOrUsername(normalizedIdentifier);
@@ -34,24 +34,28 @@ export const Login = async (data: LoginUserDTO) => {
   }
 
   if (!user.isverified) {
-    await SendVerificationCode(user.userid, user.email);
+    const verification = await SendVerificationCode(user.userid, user.email);
 
     return {
       success: false,
       requiresVerification: true,
       userid: user.userid,
+      verificationToken: verification.verificationToken,
       message: "Please verify your email. A new code has been sent.",
     };
   }
 
-  const token = JWTService.generateToken({
+  const accessToken = JwtClient.signAccessToken({
     userid: user.userid,
-    role: user.userrole
+    role: user.userrole,
   });
+
+  const refreshToken = JwtClient.signRefreshToken({ userid: user.userid });
 
   return {
     success: true,
-    token,
+    accessToken,
+    refreshToken,
     user: {
       id: user.userid,
       username: user.username,

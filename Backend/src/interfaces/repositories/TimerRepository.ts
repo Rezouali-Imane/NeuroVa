@@ -10,7 +10,7 @@ export const TimerRepository = {
                 durationminutes: data.durationminutes,
                 breakminutes: data.breakminutes,
                 longbreakminutes: data.longbreakminutes,
-                pomodoroscycle: data.pomodoroscycle,
+                pomodorocycles: data.pomodoroscycle,
                 remainingseconds: data.remainingseconds, 
                 isrunning: data.isrunning ?? false
             },
@@ -43,7 +43,7 @@ export const TimerRepository = {
             ...(data.durationminutes !== undefined ? { durationminutes: data.durationminutes } : {}),
             ...(data.breakminutes !== undefined ? { breakminutes: data.breakminutes } : {}),
             ...(data.longbreakminutes !== undefined ? { longbreakminutes: data.longbreakminutes } : {}),
-            ...(data.pomodoroscycle !== undefined ? { pomodoroscycle: data.pomodoroscycle } : {}),
+            ...(data.pomodoroscycle !== undefined ? { pomodorocycles: data.pomodoroscycle } : {}),
             ...(data.remainingseconds !== undefined ? { remainingseconds: data.remainingseconds } : {}),
             ...(data.isrunning !== undefined ? { isrunning: data.isrunning } : {}),
             ...(data.starttime !== undefined ? { starttime: data.starttime } : {}),

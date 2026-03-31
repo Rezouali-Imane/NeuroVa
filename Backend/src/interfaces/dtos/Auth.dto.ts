@@ -1,6 +1,6 @@
 import { UserRole } from '../../entities/User.js';
 
-export interface RegisterUserDTO {
+export interface RegisterDTO {
   name: string;
   lastname: string;
   username: string;
@@ -9,14 +9,13 @@ export interface RegisterUserDTO {
   role?: UserRole;
 }
 
-export interface LoginUserDTO {
+export interface LoginDTO {
   identifier: string; // email or username
   password: string;
 }
 
-export interface EmailVerificationDTO {
-  userid: string;
-  verificationcode: string;
+export interface VerifyEmailDTO {
+  token: string;
 }
 
 export interface ForgotPasswordDTO {
@@ -33,3 +32,16 @@ export interface ResetPasswordDTO {
   resetcode: string;
   newPassword: string;
 }
+
+export interface LogoutDTO {
+  userId?: string;
+  refreshToken?: string;
+}
+
+export interface RefreshTokenDTO {
+  refreshToken: string;
+}
+
+export type RegisterUserDTO = RegisterDTO;
+export type LoginUserDTO = LoginDTO;
+export type EmailVerificationDTO = VerifyEmailDTO;

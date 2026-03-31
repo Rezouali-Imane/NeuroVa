@@ -39,6 +39,7 @@ export const UserRepository = {
   },
 
   async create(data: {
+    userid?: string;
     name: string;
     lastname: string;
     username: string;

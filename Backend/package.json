@@ -28,7 +28,8 @@
     "pdf-parse": "^2.4.5",
     "prisma": "^5.22.0",
     "resend": "^6.9.3",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
