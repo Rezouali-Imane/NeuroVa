@@ -3,31 +3,22 @@ import { NotificationController } from "../controllers/NotificationController.js
 
 const router = Router();
 
-// Create a new notification
-router.post("/", NotificationController.CreateNotification);
-
-// Delete a notification
-router.delete("/:notificationid", NotificationController.DeleteNotification);
-
-// Get notifications for a user
-router.get("/user/:userid", NotificationController.getUserNotifications);
+// Get all notifications for user
+router.get("/", NotificationController.getUserNotifications);
 
 // Mark a notification as read
-router.post("/:notificationid/read", NotificationController.markAsRead);
+router.patch("/:id/read", NotificationController.markAsRead);
 
-// Mark all notifications as read for a user
-router.post("/user/:userid/read", NotificationController.markAllAsRead);
+// Mark all notifications as read
+router.patch("/read-all", NotificationController.markAllAsRead);
 
-// get notifications Settings for a user
-router.get("/user/:userid/settings", NotificationController.getNotificationSettings);
+// Delete a notification
+router.delete("/:id", NotificationController.deleteNotification);
 
-// update notifications Settings for a user
-router.post("/user/:userid/settings", NotificationController.updateNotificationSettings);
+// Get notification settings
+router.get("/settings", NotificationController.getSettings);
 
-// send email notifications to users
-router.post("/send-email", NotificationController.sendEmailMessages);
-
-// send push notifications to users
-router.post("/send-push", NotificationController.sendPushNotification);
+// Update notification settings
+router.put("/settings", NotificationController.updateSettings);
 
 export default router;
