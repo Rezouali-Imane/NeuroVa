@@ -95,7 +95,7 @@ describe('ai usecases', () => {
     vi.spyOn(prisma.task, 'findMany').mockResolvedValue([{ taskid: 'tsk1', title: 'Study', priority: 3, deadline: new Date('2026-01-02') }] as any);
     vi.spyOn(openai.chat.completions, 'create').mockResolvedValue({ choices: [{ message: { content: '{"taskid":"tsk1","durationMinutes":50,"reason":"Highest priority"}' } }] } as any);
     vi.spyOn(FocusSessionRepository, 'create').mockResolvedValue({ sessionid: 'ssn1' } as any);
-    vi.spyOn(prisma.task_focussession, 'create').mockResolvedValue({} as any);
+    vi.spyOn(prisma.sessiontask, 'create').mockResolvedValue({} as any);
     await expect(ScheduleFocusSession({ userid: 'usr1' })).resolves.toEqual({ sessionid: 'ssn1', suggestedTaskid: 'tsk1', durationMinutes: 50, reason: 'Highest priority', message: 'Focus session created! Open Neurova to start.' });
   });
 
@@ -108,7 +108,7 @@ describe('ai usecases', () => {
     vi.spyOn(pdfChunker, 'extractTextFromFile').mockReturnValue('Hello world');
     vi.spyOn(pdfChunker, 'cleanText').mockReturnValue('Hello world');
     vi.spyOn(pdfChunker, 'chunkText').mockReturnValue(['chunk 1', 'chunk 2']);
-    vi.spyOn(prisma.documentchunk, 'create').mockImplementation(async ({ data }: any) => ({ chunkid: `chk-${data.chunkindex}` }) as any);
+    vi.spyOn(prisma.documentchunk, 'create').mockResolvedValue({ chunkid: 'chk-1' } as any);
     vi.spyOn(embeddingClient, 'getEmbeddings').mockResolvedValue([[0.1], [0.2]] as any);
     vi.spyOn(vectorClient, 'insertChunkWithEmbedding').mockResolvedValue(undefined as any);
 

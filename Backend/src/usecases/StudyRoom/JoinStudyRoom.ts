@@ -12,8 +12,9 @@ export const JoinStudyRoom = async (data: JoinRoomDTO) => {
     throw new Error("Session already started. You cannot join at this time.");
   }
 
-  const alreadyMember = room.studyroommember.some(
-      (m) => m.userid === data.userid
+  const alreadyMember = await StudyRoomRepository.isActiveMember(
+    room.roomid,
+    data.userid
   );
 
   if(alreadyMember){
@@ -26,8 +27,8 @@ export const JoinStudyRoom = async (data: JoinRoomDTO) => {
     success: true,
     message: "Joined the Study Room successfully.",
     roomid: room.roomid,
-    roomname: room.name,
-    roomcode: room.code,
+    roomname: room.roomname,
+    roomcode: data.roomcode,
     username: member.users.username,
   };
 };

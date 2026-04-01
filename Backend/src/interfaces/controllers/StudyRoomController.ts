@@ -33,7 +33,9 @@ export class StudyRoomController {
   static join = async (req: AuthRequest, res: Response) => {
     try {
       const userid = req.user?.userid;
-      const { roomcode } = req.params;
+      const roomcode = Array.isArray(req.params.roomcode)
+        ? req.params.roomcode[0]
+        : req.params.roomcode;
 
       if (!userid)
         return res.status(401).json({ message: "User not authenticated" });
@@ -49,7 +51,7 @@ export class StudyRoomController {
 
       const io = req.app.get("io");
       io.to(result.roomid).emit("room:member-joined", {
-        userName: result.userName,
+        userName: result.username,
         message: `${result.username} has joined the room`,
       });
 
@@ -63,7 +65,9 @@ export class StudyRoomController {
   static leave = async (req: AuthRequest, res: Response) => {
     try {
       const userid = req.user?.userid;
-      const { roomid } = req.params;
+      const roomid = Array.isArray(req.params.roomid)
+        ? req.params.roomid[0]
+        : req.params.roomid;
 
       if (!userid) return res.status(401).json({ message: "User not authenticated." });
       if (!roomid) return res.status(400).json({ message: "Room ID is required." });
@@ -91,7 +95,9 @@ export class StudyRoomController {
   static startSession = async (req: AuthRequest, res: Response) => {
     try {
       const userid = req.user?.userid;
-      const { roomid } = req.params;
+      const roomid = Array.isArray(req.params.roomid)
+        ? req.params.roomid[0]
+        : req.params.roomid;
 
       if (!userid) return res.status(401).json({ message: "User not authenticated." });
       if (!roomid) return res.status(400).json({ message: "Room ID is required." });
@@ -113,7 +119,9 @@ export class StudyRoomController {
   static endSession = async (req: AuthRequest, res: Response) => {
     try {
       const userid = req.user?.userid;
-      const { roomid } = req.params;
+      const roomid = Array.isArray(req.params.roomid)
+        ? req.params.roomid[0]
+        : req.params.roomid;
 
       if (!userid) return res.status(401).json({ message: "User not authenticated." });
       if (!roomid) return res.status(400).json({ message: "Room ID is required." });
