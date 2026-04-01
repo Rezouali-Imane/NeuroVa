@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'setup_profil3.dart';
+import '../onboarding/background.dart';
+import '../../shared/widgets/entry_reveal.dart';
 
 class SetupProfil2 extends StatefulWidget {
   const SetupProfil2({super.key});
@@ -17,142 +19,146 @@ class _SetupProfil2State extends State<SetupProfil2> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF13111A),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: EntryReveal(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: 160,
-                    height: 48,
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 0,
-                          top: 0,
-                          child: SvgPicture.asset(
-                            'lib/features/onboarding/assets/logo.svg',
-                            width: 51,
-                            height: 39,
-                            colorFilter: const ColorFilter.mode(
-                              Colors.white,
-                              BlendMode.srcIn,
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      SizedBox(
+                        width: 160,
+                        height: 48,
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              left: 0,
+                              top: 0,
+                              child: SvgPicture.asset(
+                                'lib/features/onboarding/assets/logo.svg',
+                                width: 51,
+                                height: 39,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const Positioned(
-                          left: 30,
-                          top: 28,
-                          child: Text(
-                            'NEUROVA',
-                            style: TextStyle(
-                              color: Color(0xFFFFFFF0),
-                              fontSize: 15,
-                              fontFamily: 'Syne',
-                              fontWeight: FontWeight.w800,
+                            const Positioned(
+                              left: 30,
+                              top: 28,
+                              child: Text(
+                                'NEUROVA',
+                                style: TextStyle(
+                                  color: Color(0xFFFFFFF0),
+                                  fontSize: 15,
+                                  fontFamily: 'Syne',
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
+                      Row(
+                        children: [
+                          dot(false),
+                          const SizedBox(width: 6),
+                          bar(),
+                          const SizedBox(width: 6),
+                          dot(false),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  const Text(
+                    'Your Academics',
+                    style: TextStyle(
+                      color: Color(0xFFFFFFF0),
+                      fontSize: 32,
+                      fontFamily: 'Syne',
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  Row(
-                    children: [
-                      dot(false),
-                      const SizedBox(width: 6),
-                      bar(),
-                      const SizedBox(width: 6),
-                      dot(false),
-                    ],
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Helps your AI assistant find the right resources',
+                    style: TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Field of study',
+                    style: TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 14,
+                      fontFamily: 'Syne',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  buildFieldDropdown(),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'University',
+                    style: TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 12,
+                      fontFamily: 'Syne',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  buildSearchField(),
+                  const SizedBox(height: 20),
+                  buildCard(0, "Université de Béjaïa", "Béjaïa, Algeria"),
+                  const SizedBox(height: 10),
+                  buildCard(1, "USTHB", "Alger, Algeria"),
+                  const SizedBox(height: 10),
+                  buildCard(2, "Université Tizi Ouzou", "Tizi Ouzou, Algeria"),
+                  const SizedBox(height: 10),
+                  buildCard(3, "ESI Alger", "Alger, Algeria"),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFC8A2C8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SetupProfile3Page(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Continue",
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Color(0xFFFFFFF0),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 40),
-              const Text(
-                'Your Academics',
-                style: TextStyle(
-                  color: Color(0xFFFFFFF0),
-                  fontSize: 32,
-                  fontFamily: 'Syne',
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Helps your AI assistant find the right resources',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Field of study',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 14,
-                  fontFamily: 'Syne',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 10),
-              buildFieldDropdown(),
-              const SizedBox(height: 20),
-              const Text(
-                'University',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 12,
-                  fontFamily: 'Syne',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 10),
-              buildSearchField(),
-              const SizedBox(height: 20),
-              buildCard(0, "Université de Béjaïa", "Béjaïa, Algeria"),
-              const SizedBox(height: 10),
-              buildCard(1, "USTHB", "Alger, Algeria"),
-              const SizedBox(height: 10),
-              buildCard(2, "Université Tizi Ouzou", "Tizi Ouzou, Algeria"),
-              const SizedBox(height: 10),
-              buildCard(3, "ESI Alger", "Alger, Algeria"),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC8A2C8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SetupProfile3Page(),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "Continue",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Color(0xFFFFFFF0),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -189,25 +195,19 @@ class _SetupProfil2State extends State<SetupProfil2> {
             'lib/features/onboarding/assets/vector1.svg',
             width: 17,
             height: 9,
-            colorFilter: const ColorFilter.mode(
-              Colors.white,
-              BlendMode.srcIn,
-            ),
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           ),
-          items: [
-            "Computer Science",
-            "Medicine",
-            "Engineering",
-            "Business",
-          ].map((field) {
-            return DropdownMenuItem(
-              value: field,
-              child: Text(
-                field,
-                style: const TextStyle(color: Colors.white),
-              ),
-            );
-          }).toList(),
+          items: ["Computer Science", "Medicine", "Engineering", "Business"]
+              .map((field) {
+                return DropdownMenuItem(
+                  value: field,
+                  child: Text(
+                    field,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              })
+              .toList(),
           onChanged: (value) {
             setState(() {
               selectedField = value;
@@ -223,9 +223,7 @@ class _SetupProfil2State extends State<SetupProfil2> {
       width: double.infinity,
       decoration: ShapeDecoration(
         color: const Color(0x5B2A2440),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: TextField(
         controller: searchController,
@@ -234,7 +232,10 @@ class _SetupProfil2State extends State<SetupProfil2> {
           hintText: "Search university...",
           hintStyle: const TextStyle(color: Color(0xFF6B7280)),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           prefixIcon: Padding(
             padding: const EdgeInsets.all(12),
             child: SvgPicture.asset(

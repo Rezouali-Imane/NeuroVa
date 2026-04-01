@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../onboarding/background.dart';
+import '../../shared/widgets/entry_reveal.dart';
 
 class SetupProfile3Page extends StatelessWidget {
   const SetupProfile3Page({super.key});
@@ -7,159 +9,163 @@ class SetupProfile3Page extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF13111A),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: Colors.transparent,
+      body: OnboardingBackground(
+        child: SafeArea(
+          child: EntryReveal(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: 160,
-                      height: 48,
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            left: 0,
-                            top: 0,
-                            child: SvgPicture.asset(
-                              'lib/features/onboarding/assets/logo.svg',
-                              width: 51,
-                              height: 39,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                          ),
-                          const Positioned(
-                            left: 27,
-                            top: 28,
-                            child: Text(
-                              'NEUROVA',
-                              style: TextStyle(
-                                color: Color(0xFFFFFFF0),
-                                fontSize: 15,
-                                fontFamily: 'Syne',
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    const SizedBox(height: 20),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            shape: BoxShape.circle,
+                        SizedBox(
+                          width: 160,
+                          height: 48,
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                left: 0,
+                                top: 0,
+                                child: SvgPicture.asset(
+                                  'lib/features/onboarding/assets/logo.svg',
+                                  width: 51,
+                                  height: 39,
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.white,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                              ),
+                              const Positioned(
+                                left: 27,
+                                top: 28,
+                                child: Text(
+                                  'NEUROVA',
+                                  style: TextStyle(
+                                    color: Color(0xFFFFFFF0),
+                                    fontSize: 15,
+                                    fontFamily: 'Syne',
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 32,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFFFF0),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 32,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFFFF0),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 30),
-                const SizedBox(
-                  width: 299,
-                  child: Text(
-                    'Almost there !',
-                    style: TextStyle(
-                      color: Color(0xFFFFFFF0),
-                      fontSize: 32,
-                      fontFamily: 'Syne',
-                      fontWeight: FontWeight.w800,
-                      height: 1.13,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Customize your Neurova experience",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                const SectionTitle(title: "FOCUS"),
-                const SizedBox(height: 12),
-                const SettingTile(
-                  title: "Focus Reminders",
-                  subtitle: "Daily study reminders",
-                  icon: 'Icon6.svg',
-                ),
-                const SettingTile(
-                  title: "Faith Mode",
-                  subtitle: "Include prayer blocks in plans",
-                  icon: 'Icon7.svg',
-                ),
-                const SizedBox(height: 20),
-                const SectionTitle(title: "NOTIFICATIONS"),
-                const SizedBox(height: 12),
-                const SettingTile(
-                  title: "Notifications",
-                  subtitle: "Focus reminders & alerts",
-                  icon: 'Icon8.svg',
-                ),
-                const SettingTile(
-                  title: "Haptic Feedback",
-                  subtitle: "Vibrations on actions",
-                  icon: 'Icon9.svg',
-                ),
-                const SizedBox(height: 20),
-                const SectionTitle(title: "DIGITAL DISCIPLINE"),
-                const SizedBox(height: 12),
-                const FocusShieldCard(),
-                const SizedBox(height: 30),
-                Container(
-                  width: double.infinity,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(26),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFC8A2C8), Color(0xFFB284BE)],
-                    ),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      "Start Learning",
-                      style: TextStyle(
-                        color: Color(0xFFFFFFF0),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 30),
+                    const SizedBox(
+                      width: 299,
+                      child: Text(
+                        'Almost there !',
+                        style: TextStyle(
+                          color: Color(0xFFFFFFF0),
+                          fontSize: 32,
+                          fontFamily: 'Syne',
+                          fontWeight: FontWeight.w800,
+                          height: 1.13,
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Customize your Neurova experience",
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    const SectionTitle(title: "FOCUS"),
+                    const SizedBox(height: 12),
+                    const SettingTile(
+                      title: "Focus Reminders",
+                      subtitle: "Daily study reminders",
+                      icon: 'Icon6.svg',
+                    ),
+                    const SettingTile(
+                      title: "Faith Mode",
+                      subtitle: "Include prayer blocks in plans",
+                      icon: 'Icon7.svg',
+                    ),
+                    const SizedBox(height: 20),
+                    const SectionTitle(title: "NOTIFICATIONS"),
+                    const SizedBox(height: 12),
+                    const SettingTile(
+                      title: "Notifications",
+                      subtitle: "Focus reminders & alerts",
+                      icon: 'Icon8.svg',
+                    ),
+                    const SettingTile(
+                      title: "Haptic Feedback",
+                      subtitle: "Vibrations on actions",
+                      icon: 'Icon9.svg',
+                    ),
+                    const SizedBox(height: 20),
+                    const SectionTitle(title: "DIGITAL DISCIPLINE"),
+                    const SizedBox(height: 12),
+                    const FocusShieldCard(),
+                    const SizedBox(height: 30),
+                    Container(
+                      width: double.infinity,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(26),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFC8A2C8), Color(0xFFB284BE)],
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          "Start Learning",
+                          style: TextStyle(
+                            color: Color(0xFFFFFFF0),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                  ],
                 ),
-                const SizedBox(height: 30),
-              ],
+              ),
             ),
           ),
         ),
@@ -292,9 +298,9 @@ class _FocusShieldCardState extends State<FocusShieldCard> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-              const Color(0xFFB284BE).withValues(alpha: 0.2),
-              const Color(0xFF8C64A0).withValues(alpha: 0.1),
-            ],
+            const Color(0xFFB284BE).withValues(alpha: 0.2),
+            const Color(0xFF8C64A0).withValues(alpha: 0.1),
+          ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0x33B284BE)),
@@ -319,7 +325,7 @@ class _FocusShieldCardState extends State<FocusShieldCard> {
                   color: Color(0x47B284BE),
                   blurRadius: 8.16,
                   offset: Offset(0, 0),
-                )
+                ),
               ],
             ),
             child: Center(
@@ -350,10 +356,7 @@ class _FocusShieldCardState extends State<FocusShieldCard> {
                 SizedBox(height: 4),
                 Text(
                   "Blocking 4 apps right now",
-                  style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
               ],
             ),
