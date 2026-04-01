@@ -5,7 +5,6 @@ import { authMiddleware } from '../../infrastructure/middleware/authMiddleware.j
 const router = Router();
 
 router.post('/register', AuthController.register);
-
 router.post('/login', AuthController.login);
 router.get('/me', authMiddleware, AuthController.me);
 router.post('/logout', AuthController.logout);

@@ -5,7 +5,8 @@
     "start": "npm --prefix Backend run start"
   },
   "devDependencies": {
-    "@types/node": "^25.3.3"
+    "@types/node": "^25.3.3",
+    "@types/uuid": "^10.0.0"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

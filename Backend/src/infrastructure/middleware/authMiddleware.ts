@@ -20,9 +20,15 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
       });
     }
 
-    const decoded = JwtClient.verifyAccessToken(token);
-
+    const decoded = JwtClient.verifyAccessToken(token) as any;
     req.user = decoded;
+
+
+    if (req.body) {
+      req.body.userid = decoded.userid; 
+      req.body.ownerid = decoded.userid; 
+    }
+
     next();
   } catch (error: any) {
     return res.status(401).json({
