@@ -34,17 +34,17 @@ export const StudyRoomRepository = {
 				},
 			});
 
-			// Create initial Focus Session
+      // Create initial Focus Session
 			const now = new Date();
-			await tx.focussession.create({
-				data: {
-					userid: data.ownerid,
-					roomid: room.roomid,
+      await tx.focussession.create({
+        data: {
+          userid: data.ownerid,
+          roomid: room.roomid,
 					starttime: now,
 					endtime: now,
-					status: "SCHEDULED",
-				},
-			});
+          status: "SCHEDULED",
+        },
+      });
 
 			return room;
 		});
@@ -66,36 +66,36 @@ export const StudyRoomRepository = {
 		});
 	},
 
-	async findByCode(roomcode: string) {
+  async findByCode(roomcode: string) {
 		return await prisma.studyroom.findFirst({
 			where: { roomcode } as any,
-			include: {
-				studyroommember: {
-					include: {
-						users: {
-							select: { username: true },
-						},
-					},
-				},
-				focussession: true,
-			},
-		});
-	},
+      include: {
+        studyroommember: {
+          include: {
+            users: {
+              select: { username: true },
+            },
+          },
+        },
+        focussession: true,
+      },
+    });
+  },
 
-	async join(data: JoinRoomDTO, roomid: string) {
-		return await prisma.studyroommember.create({
-			data: {
-				userid: data.userid,
-				roomid,
-				isowner: false,
-			},
-			include: {
-				users: {
-					select: { username: true },
-				},
-			},
-		});
-	},
+  async join(data: JoinRoomDTO, roomid: string) {
+    return await prisma.studyroommember.create({
+      data: {
+        userid: data.userid,
+        roomid,
+        isowner: false,
+      },
+      include: {
+        users: {
+          select: { username: true },
+        },
+      },
+    });
+  },
 
 	async isActiveMember(roomid: string, userid: string) {
 		const member = await prisma.studyroommember.findFirst({

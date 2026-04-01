@@ -1,0 +1,15 @@
+{
+  "java.import.gradle.enabled": false,
+  "gradle.java.home": "C:\\Program Files\\Microsoft\\jdk-17.0.18.8-hotspot",
+  "java.import.gradle.java.home": "C:\\Program Files\\Microsoft\\jdk-17.0.18.8-hotspot",
+  "java.jdt.ls.java.home": "C:\\Program Files\\Microsoft\\jdk-17.0.18.8-hotspot",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "C:\\Program Files\\Microsoft\\jdk-17.0.18.8-hotspot",
+      "default": true
+    }
+  ],
+  "cmake.sourceDirectory": "C:/Users/thinkpad/Desktop/Neurova/neurova_app/linux",
+  "java.configuration.updateBuildConfiguration": "interactive"
+}
