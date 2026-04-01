@@ -8,6 +8,7 @@ class OnboardingBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Stack(
+      fit: StackFit.expand,
       children: [
         Container(color: const Color(0xFF181526)),
         // Top-left purple radial gradient
@@ -96,7 +97,7 @@ class OnboardingBackground extends StatelessWidget {
           ),
         ),
       
-        child,
+        SizedBox.expand(child: child),
       ],
     );
   }

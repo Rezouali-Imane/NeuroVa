@@ -1,12 +1,75 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'onboarding4.dart';
 import 'background.dart';
 import 'chat_bubbles.dart';
 
-class Onboarding3 extends StatelessWidget {
+class Onboarding3 extends StatefulWidget {
   const Onboarding3({super.key});
+
+  @override
+  State<Onboarding3> createState() => _Onboarding3State();
+}
+
+class _Onboarding3State extends State<Onboarding3>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entranceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _entranceController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildAnimatedHeadline(Widget child) {
+    return AnimatedBuilder(
+      animation: _entranceController,
+      child: child,
+      builder: (context, headlineChild) {
+        final anim = CurvedAnimation(
+          parent: _entranceController,
+          curve: const Interval(0.35, 0.70, curve: Curves.easeOutCubic),
+        );
+        return Opacity(
+          opacity: anim.value,
+          child: Transform.translate(
+            offset: Offset(0, 40 * (1 - anim.value)),
+            child: headlineChild,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedSubtitle(Widget child) {
+    return AnimatedBuilder(
+      animation: _entranceController,
+      child: child,
+      builder: (context, subtitleChild) {
+        final anim = CurvedAnimation(
+          parent: _entranceController,
+          curve: const Interval(0.60, 0.85, curve: Curves.easeIn),
+        );
+        return Opacity(
+          opacity: anim.value,
+          child: subtitleChild,
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,26 +79,7 @@ class Onboarding3 extends StatelessWidget {
         child: SafeArea(
           child: Stack(
             children: [
-                            
-                            Positioned(
-                              left: 19,
-                              top: 18 + 48 + 516,
-                              child: SizedBox(
-                                width: 343,
-                                height: 80,
-                                child: const Text(
-                                  'Get concept explanations, personalized study plans, and weakness analysis tailored to your major.',
-                                  style: TextStyle(
-                                    color: Color(0xFFFFFFF0),
-                                    fontFamily: 'Inter',
-                                    fontWeight: FontWeight.w700, 
-                                    fontSize: 15,
-                                    height: 20/16,
-                                    letterSpacing: 0.35,
-                                  ),
-                                ),
-                              ),
-                            ),
+              // Logo + NEUROVA text (match onboarding2)
               Positioned(
                 left: MediaQuery.of(context).size.width / 2 - 147 / 2,
                 top: 18,
@@ -77,100 +121,84 @@ class Onboarding3 extends StatelessWidget {
                   ),
                 ),
               ),
-
+              // Chat message bubbles (custom Flutter widgets for animation)
+              // First message (left, dark, with tail)
               Positioned(
-                left: 19,
-                top: 110,
+                left: 50,
+                top: 142,
                 child: ChatBubble(
-                  text: "Merge sort runs in O(n log n) here's why that beats bubble sort every time…",
+                  text: "Merge sort runs in O(n log n)\n here's why that beats\n bubble sort every time…",
                   time: '12:55',
                   isMe: false,
+                  delay: Duration.zero,
                 ),
               ),
+              // Second message (right, purple, with tail)
               Positioned(
-                right: 19,
-                top: 230,
+                right: 50,
+                top: 262,
                 child: ChatBubble(
-                  text: "Can you make me a 7-day study plan?",
+                  text: "Can you make me a 7-day\n study plan?",
                   time: '1:43',
                   isMe: true,
+                  delay: Duration(milliseconds: 1100),
                 ),
               ),
-
+              // Typing indicator (left, three dots)
               Positioned(
-                left: 19,
-                top: 330,
-                child: TypingBubble(),
+                left: 50,
+                top: 362,
+                child: TypingBubble(
+                  delay: Duration(milliseconds: 2300),
+                ),
               ),
+              // Big text (201px above indicator, 424px below NEUROVA text)
               Positioned(
                 left: 19,
-            
+                // NEUROVA text top (18) + height (48) + 424 = 490
+                // or indicator top - 201
                 top: 18 + 48 + 424,
                 child: SizedBox(
                   width: 411,
                   height: 97,
-                  child: const Text(
-                    'AI Assistant',
-                    style: TextStyle(
-                      color: Color(0xFFFFFFF0),
-                      fontFamily: 'Syne',
-                      fontWeight: FontWeight.w800, 
-                      fontStyle: FontStyle.normal,
-                      fontSize: 50,
-                      height: 40/50,
-                      letterSpacing: 0.35,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 168.96,
-                top: 413 + 189 - 12 + 80, 
-                child: SizedBox(
-                  width: 63.99,
-                  height: 63.99,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const Onboarding4(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      shape: const CircleBorder(),
-                      backgroundColor: const Color(0xFFB284BE),
-                      padding: EdgeInsets.zero,
-                      elevation: 0,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_forward_outlined,
-                      color: Colors.black,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ),
-              
-              Positioned(
-                top: 413 + 189 - 12 + 80 + 63.99 + 38, 
-                left: 0,
-                right: 0,
-                child: Container(
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width: 74,
-                    height: 6,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(1000),
+                  child: _buildAnimatedHeadline(
+                    const Text(
+                      'AI Assistant',
+                      style: TextStyle(
+                        color: Color(0xFFFFFFF0),
+                        fontFamily: 'Syne',
+                        fontWeight: FontWeight.w800, // ExtraBold
+                        fontStyle: FontStyle.normal,
+                        fontSize: 50,
+                        height: 40 / 50,
+                        letterSpacing: 0.35,
                       ),
                     ),
                   ),
                 ),
               ),
+              Positioned(
+                left: 19,
+                top: 18 + 48 + 516,
+                child: SizedBox(
+                  width: 343,
+                  height: 80,
+                  child: _buildAnimatedSubtitle(
+                    const Text(
+                      'Get concept explanations, personalized study plans, and weakness analysis tailored to your major.',
+                      style: TextStyle(
+                        color: Color(0xFFFFFFF0),
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700, // Bold
+                        fontSize: 17,
+                        height: 20 / 16,
+                        letterSpacing: 0.35,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // ...existing code...
             ],
           ),
         ),
