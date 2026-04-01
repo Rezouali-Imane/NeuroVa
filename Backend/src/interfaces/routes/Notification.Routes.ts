@@ -13,12 +13,12 @@ router.patch("/:id/read", NotificationController.markAsRead);
 router.patch("/read-all", NotificationController.markAllAsRead);
 
 // Delete a notification
-router.delete("/:id", NotificationController.deleteNotification);
+router.delete("/:id", NotificationController.DeleteNotification);
 
 // Get notification settings
-router.get("/settings", NotificationController.getSettings);
+router.get("/settings", NotificationController.getNotificationSettings);
 
 // Update notification settings
-router.put("/settings", NotificationController.updateSettings);
+router.put("/settings", NotificationController.updateNotificationSettings);
 
 export default router;

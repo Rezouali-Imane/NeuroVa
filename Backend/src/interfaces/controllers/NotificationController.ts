@@ -1,14 +1,15 @@
 import type { Request, Response } from "express";
+import type { AuthRequest } from "../middleware/authMiddleware.js";
 
 import { CreateNotification } from "../../usecases/Notification/CreatNotification.js";
 import { DeleteNotification } from "../../usecases/Notification/DeleteNotification.js";
-import { getUSerNotification } from "../../usecases/Notification/GetUserNotification.js";
-import { markNotificationRead } from "../../usecases/Notification/MarkNotificationRead.js";
-import { markAllNotificationsRead } from "../../usecases/Notification/MarkallNotificationRead.js";
+import { GetUserNotification } from "../../usecases/Notification/GetUserNotification.js";
+import { MarkNotificationRead } from "../../usecases/Notification/MarkNotificationRead.js";
+import { MarkAllNotificationsRead } from "../../usecases/Notification/MarkallNotificationRead.js";
 import { getNotificationSettings } from "../../usecases/Notification/GetNotificationSettings.js";
 import { UpdateNotificationSettings } from "../../usecases/Notification/UpdateNotificationSettings.js";
-import { sendEmailMessages } from "../../usecases/Notification/SendEmailMessages.js";
-import { sendPushNotification } from "../../usecases/Notification/SendPushNotification.js";
+import { sendEmailNotification } from "../../usecases/Notification/SendEmailNotification.js";
+import { SendPushNotification } from "../../usecases/Notification/SendPushNotification.js";
 
 export const NotificationController = {
 
@@ -24,8 +25,9 @@ export const NotificationController = {
 
   async DeleteNotification(req: Request, res: Response) {
     try {
-      const { notificationid } = req.params as { notificationid: string };
-      await DeleteNotification(notificationid);
+      const { userid } = (req as AuthRequest).user!;
+      const { id } = req.params;
+      await DeleteNotification(id, userid);
       res
         .status(200)
         .json({ success: true, message: "Notification deleted successfully" });
@@ -38,8 +40,8 @@ export const NotificationController = {
 
   async getUserNotifications(req: Request, res: Response) {
     try {
-      const { userid } = req.params;
-      const notifications = await getUSerNotification(userid as string);
+      const { userid } = (req as AuthRequest).user!;
+      const notifications = await GetUserNotification(userid as string);
       res.status(200).json({ success: true, data: notifications });
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
@@ -50,8 +52,9 @@ export const NotificationController = {
 
   async markAsRead(req: Request, res: Response) {
     try {
-      const { notificationid } = req.params as { notificationid: string };
-      await markNotificationRead(notificationid);
+      const { userid } = (req as AuthRequest).user!;
+      const { id } = req.params;
+      await MarkNotificationRead(id, userid);
       res
         .status(200)
         .json({ success: true, message: "Notification marked as read" });
@@ -65,8 +68,8 @@ export const NotificationController = {
 
   async markAllAsRead(req: Request, res: Response) {
     try {
-      const { userid } = req.params as { userid: string };
-      await markAllNotificationsRead(userid as string);
+      const { userid } = (req as AuthRequest).user!;
+      await MarkAllNotificationsRead(userid as string);
       res
         .status(200)
         .json({ success: true, message: "All notifications marked as read" });
@@ -79,7 +82,7 @@ export const NotificationController = {
 
   async getNotificationSettings(req: Request, res: Response) {
     try {
-      const { userid } = req.params;
+      const { userid } = (req as AuthRequest).user!;
       const settings = await getNotificationSettings(userid as string);
       res.status(200).json({ success: true, data: settings });
     } catch (error: any) {
@@ -92,7 +95,7 @@ export const NotificationController = {
 
   async updateNotificationSettings(req: Request, res: Response) {
     try {
-      const { userid } = req.params;
+      const { userid } = (req as AuthRequest).user!;
       const settingsData = req.body;
       const updatedSettings = await UpdateNotificationSettings(
         userid as string,
@@ -110,7 +113,7 @@ export const NotificationController = {
   async sendEmailMessages(req: Request, res: Response) {
     try {
       const { userId, subject, message } = req.body;
-      await sendEmailMessages(userId, subject, message);
+      await sendEmailNotification(userId, subject, message);
       res
         .status(200)
         .json({ success: true, message: "Email sent successfully" });
@@ -124,7 +127,7 @@ export const NotificationController = {
   async sendPushNotification(req: Request, res: Response) {
     try {
       const { userId, title, message } = req.body;
-      await sendPushNotification(userId, title, message);
+      await SendPushNotification(userId, title, message);
       res
         .status(200)
         .json({
@@ -135,7 +138,4 @@ export const NotificationController = {
       res.status(400).json({ success: false, error: error.message });
     }
   },
-
-
-
 };

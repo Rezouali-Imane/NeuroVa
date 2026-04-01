@@ -1,6 +1,6 @@
-import { NotificationRepository } from "../../interfaces/repositories/NotificationRepositoryjs";
+import { NotificationRepository } from "../../interfaces/repositories/NotificationRepository.js";
 
-export const GetUSerNotification = async (userId: string) => {
+export const GetUserNotification = async (userId: string) => {
     if (!userId) throw new Error("User ID is required");
 
     return await NotificationRepository.findAllByUser(userId);

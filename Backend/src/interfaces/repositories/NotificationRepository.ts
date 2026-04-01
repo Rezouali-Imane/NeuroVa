@@ -92,9 +92,13 @@ export const NotificationRepository = {
 
     updateData.updatedat = new Date();
 
-    return await prisma.notificationsettings.update({
+    return await prisma.notificationsettings.upsert({
       where: { userid },
-      data: updateData,
+      update: updateData,
+      create: {
+        userid,
+        ...updateData,
+      },
     });
   },
 };

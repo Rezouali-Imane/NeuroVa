@@ -5,7 +5,7 @@ export const MarkNotificationRead = async (notificationId: string, userid: strin
 
     const notification = await NotificationRepository.findById(notificationId);
     if (!notification) throw new Error("Notification non found");
-    if (notification.userId !== userid) throw new Error("Unauthorized");
+    if (notification.userid !== userid) throw new Error("Unauthorized");
 
     return await NotificationRepository.markAsRead(notificationId);
 }
