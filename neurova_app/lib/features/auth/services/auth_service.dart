@@ -85,12 +85,14 @@ class AuthService {
 
   String _extractToken(dynamic data) {
     if (data is Map<String, dynamic>) {
-      final token = data['token'] ?? data['accessToken'] ?? data['jwt'];
+      final token = data['accessToken']; 
       if (token is String && token.isNotEmpty) {
+        print(' AccessToken extracted: ${token.substring(0, 10)}...'); 
         return token;
       }
     }
-
-    throw const FormatException('Token missing in auth response payload.');
+    print(' FAILED to extract token. Data: $data'); 
+    throw const FormatException('AccessToken missing in backend response.');
   }
 }
+

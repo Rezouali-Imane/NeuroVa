@@ -5,20 +5,25 @@ import 'forgot_password_page.dart';
 import 'signup_page.dart';
 import '../onboarding/background.dart';
 import '../../shared/widgets/entry_reveal.dart';
+import '../auth/state/auth_notifier.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage>
+class _LoginPageState extends ConsumerState<LoginPage>
     with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
   late final AnimationController _entranceController;
 
   @override
@@ -34,6 +39,35 @@ class _LoginPageState extends State<LoginPage>
     });
   }
 
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      await ref
+          .read(authNotifierProvider.notifier)
+          .signIn(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+      final authState = ref.read(authNotifierProvider);
+
+      if (authState.isAuthenticated) {
+        if (authState.isverified) {
+          context.go('/home');
+        } else {
+          context.go('/verify-email');
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _entranceController.dispose();
@@ -45,6 +79,7 @@ class _LoginPageState extends State<LoginPage>
   @override
   Widget build(BuildContext context) {
     final hintColor = Colors.white.withValues(alpha: 0.4);
+    final errorMessage = ref.watch(authNotifierProvider).errorMessage;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -53,281 +88,347 @@ class _LoginPageState extends State<LoginPage>
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: EntryReveal(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 360),
-                child: Column(
-                  children: [
-                    _buildStaggered(
-                      index: 0,
-                      child: const _BrandHeader(),
-                    ),
+              child: Form(
+                key: _formKey,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: Column(
+                    children: [
+                      _buildStaggered(index: 0, child: const _BrandHeader()),
 
-                    const SizedBox(height: 26),
+                      const SizedBox(height: 26),
 
-                    _buildStaggered(
-                      index: 1,
-                      child: const Text(
-                        'Welcome\nBack',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFFFFFF0),
-                          fontSize: 45,
-                          fontFamily: 'Syne',
-                          fontWeight: FontWeight.w900,
-                          height: 0.95,
-                          letterSpacing: -0.6,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    _buildStaggered(
-                      index: 2,
-                      child: const Text(
-                        'Continue your learning journey',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFFFFFF0),
-                          fontSize: 16,
-                          fontFamily: 'Syne',
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    _buildStaggered(
-                      index: 3,
-                      child: TextField(
-                        controller: _emailController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: "Email address",
-                          hintStyle: TextStyle(color: hintColor),
-                          floatingLabelBehavior: FloatingLabelBehavior.never,
-                          filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.1),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: SvgPicture.asset(
-                              'lib/features/onboarding/assets/Icon2.svg',
-                              width: 20,
-                              height: 20,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white70,
-                                BlendMode.srcIn,
-                              ),
-                            ),
+                      _buildStaggered(
+                        index: 1,
+                        child: const Text(
+                          'Welcome\nBack',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFFFFFF0),
+                            fontSize: 45,
+                            fontFamily: 'Syne',
+                            fontWeight: FontWeight.w900,
+                            height: 0.95,
+                            letterSpacing: -0.6,
                           ),
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 14),
 
-                    _buildStaggered(
-                      index: 4,
-                      child: TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: "Password",
-                          hintStyle: TextStyle(color: hintColor),
-                          floatingLabelBehavior: FloatingLabelBehavior.never,
-                          filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.1),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: SvgPicture.asset(
-                              'lib/features/onboarding/assets/Icon3.svg',
-                              width: 20,
-                              height: 20,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white70,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                          ),
-                          suffixIcon: _buildAnimatedEyeIcon(
-                            isObscured: _obscurePassword,
-                            onTap: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
+                      _buildStaggered(
+                        index: 2,
+                        child: const Text(
+                          'Continue your learning journey',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFFFFFF0),
+                            fontSize: 16,
+                            fontFamily: 'Syne',
                           ),
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 10),
+                      const SizedBox(height: 25),
 
-                    _buildStaggered(
-                      index: 5,
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ForgotPasswordPage(),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            'Forgot password?',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.60),
-                              fontSize: 14,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    _buildStaggered(
-                      index: 6,
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 67.99,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(
-                              188,
-                              241,
-                              224,
-                              228,
-                            ),
-                            foregroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
+                      _buildStaggered(
+                        index: 3,
+                        child: TextFormField(
+                          controller: _emailController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: "Email address",
+                            hintStyle: TextStyle(color: hintColor),
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.1),
+                            border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
                             ),
-                          ),
-                          onPressed: () {},
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                "Log In",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              SvgPicture.asset(
-                                'lib/features/onboarding/assets/fleche.svg',
+                            prefixIcon: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: SvgPicture.asset(
+                                'lib/features/onboarding/assets/Icon2.svg',
                                 width: 20,
                                 height: 20,
                                 colorFilter: const ColorFilter.mode(
-                                  Colors.black,
+                                  Colors.white70,
                                   BlendMode.srcIn,
                                 ),
+                              ),
+                            ),
+                          ),
+                           validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return "Email is required";
+                            }
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
+                              return "Enter a valid email";
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      _buildStaggered(
+                        index: 4,
+                        child: TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: "Password",
+                            hintStyle: TextStyle(color: hintColor),
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.1),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
+                            prefixIcon: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: SvgPicture.asset(
+                                'lib/features/onboarding/assets/Icon3.svg',
+                                width: 20,
+                                height: 20,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white70,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                            ),
+                            suffixIcon: _buildAnimatedEyeIcon(
+                              isObscured: _obscurePassword,
+                              onTap: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return "Password is required";
+                            }
+                            final passwordRegex = RegExp(
+                              r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$',
+                            );
+                            final emojiRegex = RegExp(
+                              r'[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]',
+                              unicode: true,
+                            );
+
+                            if (emojiRegex.hasMatch(v)) {
+                              return "Emojis are not allowed in the password.";
+                            }
+
+                            if (!passwordRegex.hasMatch(v)) {
+                              return "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character (@\$!%*?&#).";
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      _buildStaggered(
+                        index: 5,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ForgotPasswordPage(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Forgot password?',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.60),
+                                fontSize: 14,
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (errorMessage != null) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.red.withValues(alpha: 0.30),
+                            ),
+                          ),
+                          child: Text(
+                            errorMessage,
+                            style: const TextStyle(
+                              color: Color(0xFFFF8A8A),
+                              fontSize: 13,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 25),
+
+                      _buildStaggered(
+                        index: 6,
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 67.99,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(
+                                188,
+                                241,
+                                224,
+                                228,
+                              ),
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                            onPressed: _isSubmitting ? null : _submit,
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.black54,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        "Log In",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      SvgPicture.asset(
+                                        'lib/features/onboarding/assets/fleche.svg',
+                                        width: 20,
+                                        height: 20,
+                                        colorFilter: const ColorFilter.mode(
+                                          Colors.black,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      _buildStaggered(
+                        index: 7,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: Colors.white.withValues(alpha: 0.10),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'or continue with',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.40),
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: Colors.white.withValues(alpha: 0.10),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 15),
+
+                      _buildStaggered(
+                        index: 8,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _socialBtn(
+                              'lib/features/onboarding/assets/google.svg',
+                              'Google',
+                            ),
+                            _socialBtn(
+                              'lib/features/onboarding/assets/github.svg',
+                              'GitHub',
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      _buildStaggered(
+                        index: 9,
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Don’t have an account? ',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  fontSize: 14,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'Sign Up',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const SignupPage(),
+                                      ),
+                                    );
+                                  },
                               ),
                             ],
                           ),
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    _buildStaggered(
-                      index: 7,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: Colors.white.withValues(alpha: 0.10),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'or continue with',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.40),
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: Colors.white.withValues(alpha: 0.10),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 15),
-
-                    _buildStaggered(
-                      index: 8,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _socialBtn(
-                            'lib/features/onboarding/assets/google.svg',
-                            'Google',
-                          ),
-                          _socialBtn(
-                            'lib/features/onboarding/assets/github.svg',
-                            'GitHub',
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    _buildStaggered(
-                      index: 9,
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Don’t have an account? ',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
-                                fontSize: 14,
-                              ),
-                            ),
-                            TextSpan(
-                              text: 'Sign Up',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const SignupPage(),
-                                    ),
-                                  );
-                                },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

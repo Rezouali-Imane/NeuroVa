@@ -7,6 +7,7 @@ import '../../features/auth/register_page.dart';
 import '../../features/onboarding/onboarding_page.dart';
 import '../../features/auth/reset_password_page.dart';
 import '../../features/auth/reset_password_success_page.dart';
+import '../../features/auth/confirm_mail.dart';
 import '../../features/settings/settings_page.dart';
 import '../../features/home/home_page.dart';
 
@@ -31,6 +32,7 @@ final GoRouter appRouter = GoRouter(
         return const LoginPage();
       },
     ),
+
     GoRoute(
       path: '/register',
       builder: (BuildContext context, GoRouterState state) {
