@@ -7,6 +7,7 @@ const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 type AccessPayload = {
   userid: string;
   role: string;
+  isverified: boolean;
 };
 
 type RefreshPayload = {

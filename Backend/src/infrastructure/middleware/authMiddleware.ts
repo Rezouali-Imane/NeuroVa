@@ -5,6 +5,7 @@ export interface AuthRequest extends Request {
   user?: {
     userid: string;
     role: string;
+    isverified?: boolean;
   };
 }
 
@@ -37,6 +38,16 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
     return res.status(403).json({
       success: false,
       message: 'Access restricted to administrators.',
+    });
+  }
+  next();
+};
+
+export const requireVerified = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user || !req.user.isverified) {
+    return res.status(403).json({
+      success: false,
+      message: 'Please verify your email to access this feature.',
     });
   }
   next();
