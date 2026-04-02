@@ -1,11 +1,528 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
 }
 
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+model users {
+  userid                    String                     @id @default(uuid())
+  name                      String
+  lastname                  String
+  username                  String                     @unique
+  email                     String                     @unique
+  phonenumber               String?
+  passwordhash              String
+  bio                       String?
+  userrole                  userrole                   @default(STUDENT)
+  xppoints                  Int                        @default(0)
+  isverified                Boolean                    @default(false)
+  islocked                  Boolean                    @default(false)
+  failedloginattempts       Int                        @default(0)
+  createdat                 DateTime                   @default(now()) @db.Timestamptz(6)
+  achievement               achievement[]
+  admin                     admin?
+  aiprofile                 aiprofile?
+  badge                     badge[]
+  chathistory               chathistory[]
+  dailychallenge            dailychallenge[]
+  digitaldisciplinesettings digitaldisciplinesettings?
+  disciplinealert           disciplinealert[]
+  disciplinescore           disciplinescore[]
+  documentchunk             documentchunk[]
+  emailverificationtoken    emailverificationtoken[]
+  focussession              focussession[]
+  googlecalendarsync        googlecalendarsync?
+  googlecalendartoken       googlecalendartoken?
+  leaderboardentry          leaderboardentry[]
+  note                      note[]
+  notification              notification[]
+  notificationsettings      notificationsettings?
+  passwordresettoken        passwordresettoken[]
+  student                   student?
+  studentmemory             studentmemory[]
+  studyroommember           studyroommember[]
+  task                      task[]
+  tasklist                  tasklist[]
+  usagelog                  usagelog[]
+  xptransaction             xptransaction[]
+}
+
+model student {
+  userid             String  @id
+  major              String?
+  university         String?
+  focusstreak        Int     @default(0)
+  productivitypoints Int     @default(0)
+  focusmodeenabled   Boolean @default(false)
+  users              users   @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model admin {
+  userid String @id
+  users  users  @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model tasklist {
+  listid     String    @id @default(cuid())
+  userid     String
+  scheduleid String?
+  name       String
+  createdat  DateTime  @default(now()) @db.Timestamptz(6)
+  task       task[]
+  schedule   schedule? @relation(fields: [scheduleid], references: [scheduleid])
+  users      users     @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model task {
+  taskid             String              @id @default(cuid())
+  userid             String
+  listid             String
+  syncid             String?
+  title              String
+  description        String?
+  deadline           DateTime?           @db.Timestamptz(6)
+  priority           Int                 @default(0)
+  status             taskstatus          @default(PENDING)
+  category           taskcategory        @default(PERSONAL)
+  googleeventid      String?
+  syncedwithgoogle   Boolean             @default(false)
+  createdat          DateTime            @default(now()) @db.Timestamptz(6)
+  updatedat          DateTime            @updatedAt @db.Timestamptz(6)
+  notification       notification[]
+  sessiontask        sessiontask[]
+  tasklist           tasklist            @relation(fields: [listid], references: [listid], onDelete: Cascade)
+  googlecalendarsync googlecalendarsync? @relation(fields: [syncid], references: [syncid])
+  users              users               @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@index([userid, status])
+  @@index([deadline])
+}
+
+model schedule {
+  scheduleid   String         @id @default(cuid())
+  createdat    DateTime       @default(now()) @db.Timestamptz(6)
+  focussession focussession[]
+  tasklist     tasklist[]
+}
+
+model googlecalendartoken {
+  tokenid            String              @id @default(cuid())
+  userid             String              @unique
+  accesstoken        String
+  refreshtoken       String
+  expiresat          DateTime            @db.Timestamptz(6)
+  createdat          DateTime            @default(now()) @db.Timestamptz(6)
+  googlecalendarsync googlecalendarsync?
+  users              users               @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model googlecalendarsync {
+  syncid              String              @id @default(cuid())
+  userid              String              @unique
+  tokenid             String              @unique
+  googlecalendarid    String
+  lastsyncedat        DateTime?           @db.Timestamptz(6)
+  isenabled           Boolean             @default(true)
+  googlecalendartoken googlecalendartoken @relation(fields: [tokenid], references: [tokenid], onDelete: Cascade)
+  users               users               @relation(fields: [userid], references: [userid], onDelete: Cascade)
+  task                task[]
+}
+
+model note {
+  noteid    String   @id @default(cuid())
+  userid    String
+  title     String
+  content   String?
+  createdat DateTime @default(now()) @db.Timestamptz(6)
+  updatedat DateTime @updatedAt @db.Timestamptz(6)
+  users     users    @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model focussession {
+  sessionid          String              @id @default(cuid())
+  userid             String
+  scheduleid         String?
+  roomid             String?
+  starttime          DateTime?           @db.Timestamptz(6)
+  endtime            DateTime?           @db.Timestamptz(6)
+  allowbreakminutes  Int                 @default(0)
+  focusscore         Float               @default(0)
+  status             sessionstatus       @default(SCHEDULED)
+  focusaudiosettings focusaudiosettings?
+  studyroom          studyroom?          @relation(fields: [roomid], references: [roomid])
+  schedule           schedule?           @relation(fields: [scheduleid], references: [scheduleid])
+  users              users               @relation(fields: [userid], references: [userid], onDelete: Cascade)
+  notification       notification[]
+  sessiontask        sessiontask[]
+  timer              timer?
+
+  @@index([userid, status])
+}
+
+model timer {
+  timerid          String       @id @default(cuid())
+  sessionid        String       @unique
+  type             timertype    @default(POMODORO)
+  durationminutes  Int          @default(25)
+  breakminutes     Int          @default(5)
+  longbreakminutes Int          @default(15)
+  pomodorocycles   Int          @default(4)
+  isrunning        Boolean      @default(false)
+  remainingseconds Int          @default(0)
+  starttime        DateTime?    @db.Timestamptz(6)
+  endtime          DateTime?    @db.Timestamptz(6)
+  focussession     focussession @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
+}
+
+model focusaudiosettings {
+  settingsid        String         @id @default(cuid())
+  sessionid         String         @unique
+  volumelevel       Float          @default(1)
+  mixmultiplesounds Boolean        @default(false)
+  ambientsound      ambientsound[]
+  focussession      focussession   @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
+}
+
+model ambientsound {
+  soundid            String             @id @default(cuid())
+  settingsid         String
+  name               String
+  audiourl           String?
+  islooping          Boolean            @default(false)
+  focusaudiosettings focusaudiosettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
+}
+
+model studyroom {
+  roomid          String            @id @default(cuid())
+  roomcode        String            @unique
+  roomname        String
+  sessionduration Int
+  isactive        Boolean           @default(false)
+  createdat       DateTime          @default(now()) @db.Timestamptz(6)
+  focussession    focussession[]
+  studyroommember studyroommember[]
+}
+
+model studyroommember {
+  memberid  String    @id @default(cuid())
+  userid    String
+  roomid    String
+  isowner   Boolean   @default(false)
+  joinedat  DateTime  @default(now()) @db.Timestamptz(6)
+  leftat    DateTime? @db.Timestamptz(6)
+  studyroom studyroom @relation(fields: [roomid], references: [roomid], onDelete: Cascade)
+  users     users     @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@unique([userid, roomid])
+}
+
+model aiassistant {
+  assistantid   String          @id @default(cuid())
+  aiprofile     aiprofile[]
+  chathistory   chathistory[]
+  knowledgebase knowledgebase[]
+  studentmemory studentmemory[]
+}
+
+model aiprofile {
+  profileid      String      @id @default(cuid())
+  userid         String      @unique
+  assistantid    String
+  supportedmajor String?
+  university     String?
+  createdat      DateTime    @default(now()) @db.Timestamptz(6)
+  aiassistant    aiassistant @relation(fields: [assistantid], references: [assistantid], onDelete: Cascade)
+  users          users       @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model knowledgebase {
+  knowledgeid   String          @id @default(cuid())
+  assistantid   String
+  major         String?
+  university    String?
+  subject       String?
+  filename      String?
+  fileurl       String?
+  uploadedat    DateTime        @default(now()) @db.Timestamptz(6)
+  documentchunk documentchunk[]
+  aiassistant   aiassistant     @relation(fields: [assistantid], references: [assistantid], onDelete: Cascade)
+}
+
+model documentchunk {
+  chunkid       String        @id @default(cuid())
+  knowledgeid   String
+  userid        String
+  content       String
+  chunkindex    Int
+  uploadedat    DateTime      @default(now()) @db.Timestamptz(6)
+  knowledgebase knowledgebase @relation(fields: [knowledgeid], references: [knowledgeid], onDelete: Cascade)
+  users         users         @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@index([knowledgeid, chunkindex])
+}
+
+model chathistory {
+  chatid      String      @id @default(cuid())
+  userid      String
+  assistantid String
+  role        chatrole
+  content     String
+  createdat   DateTime    @default(now()) @db.Timestamptz(6)
+  aiassistant aiassistant @relation(fields: [assistantid], references: [assistantid], onDelete: Cascade)
+  users       users       @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model studentmemory {
+  memoryid    String      @id @default(cuid())
+  userid      String
+  assistantid String
+  key         String
+  value       String
+  updatedat   DateTime    @updatedAt @db.Timestamptz(6)
+  aiassistant aiassistant @relation(fields: [assistantid], references: [assistantid], onDelete: Cascade)
+  users       users       @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@unique([userid, key])
+}
+
+model digitaldisciplinesettings {
+  settingsid              String                   @id @default(cuid())
+  userid                  String                   @unique
+  filterlevel             contentfilterlevel       @default(NORMAL)
+  dailyfreeminutes        Int                      @default(0)
+  customblockingenabled   Boolean                  @default(false)
+  faithmodeenabled        Boolean                  @default(false)
+  blockedapp              blockedapp[]
+  blockedwebsite          blockedwebsite[]
+  contentmoderationpolicy contentmoderationpolicy?
+  users                   users                    @relation(fields: [userid], references: [userid], onDelete: Cascade)
+  usagelimit              usagelimit[]
+}
+
+model blockedapp {
+  appid                     String                    @id @default(cuid())
+  settingsid                String
+  appname                   String
+  digitaldisciplinesettings digitaldisciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
+}
+
+model blockedwebsite {
+  websiteid                 String                    @id @default(cuid())
+  settingsid                String
+  domain                    String
+  digitaldisciplinesettings digitaldisciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
+}
+
+model usagelimit {
+  limitid                   String                    @id @default(cuid())
+  settingsid                String
+  appname                   String
+  packagename               String?
+  dailylimitminutes         Int
+  isactive                  Boolean                   @default(true)
+  createdat                 DateTime                  @default(now()) @db.Timestamptz(6)
+  digitaldisciplinesettings digitaldisciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
+}
+
+model usagelog {
+  logid        String   @id @default(cuid())
+  userid       String
+  appname      String
+  packagename  String?
+  usageminutes Int
+  wasblocked   Boolean  @default(false)
+  logdate      DateTime @db.Timestamptz(6)
+  users        users    @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@index([userid, logdate])
+}
+
+model disciplinealert {
+  alertid    String   @id @default(cuid())
+  userid     String
+  appname    String?
+  identifier String?
+  alerttype  String
+  message    String
+  isread     Boolean  @default(false)
+  createdat  DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@index([userid, isread])
+}
+
+model disciplinescore {
+  scoreid        String   @id @default(cuid())
+  userid         String
+  score          Int
+  violationcount Int      @default(0)
+  streak         Int      @default(0)
+  scoredate      DateTime @db.Timestamptz(6)
+  users          users    @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@unique([userid, scoredate])
+}
+
+model contentmoderationpolicy {
+  policyid                        String                    @id @default(cuid())
+  settingsid                      String                    @unique
+  sensitivecontentblockingenabled Boolean                   @default(false)
+  sensitivitylevel                contentfilterlevel        @default(NORMAL)
+  aicontentdetector               aicontentdetector?
+  digitaldisciplinesettings       digitaldisciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
+}
+
+model aicontentdetector {
+  detectorid              String                  @id @default(cuid())
+  policyid                String                  @unique
+  contentmoderationpolicy contentmoderationpolicy @relation(fields: [policyid], references: [policyid], onDelete: Cascade)
+}
+
+model achievement {
+  achievementid String   @id @default(cuid())
+  userid        String
+  title         String
+  description   String?
+  pointsreward  Int      @default(0)
+  earnedat      DateTime @default(now()) @db.Timestamptz(6)
+  users         users    @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model badge {
+  badgeid     String   @id @default(cuid())
+  userid      String
+  name        String
+  description String?
+  iconurl     String?
+  condition   String?
+  earnedat    DateTime @default(now()) @db.Timestamptz(6)
+  users       users    @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model xptransaction {
+  transactionid String   @id @default(cuid())
+  userid        String
+  amount        Int
+  source        xpsource
+  description   String?
+  createdat     DateTime @default(now()) @db.Timestamptz(6)
+  users         users    @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@index([userid, createdat])
+}
+
+model dailychallengetemplate {
+  templateid     String           @id @default(cuid())
+  title          String
+  description    String?
+  xpreward       Int
+  createdat      DateTime         @default(now()) @db.Timestamptz(6)
+  dailychallenge dailychallenge[]
+}
+
+model dailychallenge {
+  challengeid            String                 @id @default(cuid())
+  userid                 String
+  templateid             String
+  iscompleted            Boolean                @default(false)
+  assignedat             DateTime               @default(now()) @db.Timestamptz(6)
+  completedat            DateTime?              @db.Timestamptz(6)
+  expiresat              DateTime               @db.Timestamptz(6)
+  dailychallengetemplate dailychallengetemplate @relation(fields: [templateid], references: [templateid], onDelete: Cascade)
+  users                  users                  @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@index([userid, assignedat])
+}
+
+model leaderboard {
+  leaderboardid    String             @id @default(cuid())
+  lastupdated      DateTime           @default(now()) @db.Timestamptz(6)
+  type             String
+  scope            String
+  leaderboardentry leaderboardentry[]
+}
+
+model leaderboardentry {
+  entryid       String      @id @default(cuid())
+  leaderboardid String
+  userid        String
+  rank          Int
+  xppoints      Int
+  recordedat    DateTime    @default(now()) @db.Timestamptz(6)
+  leaderboard   leaderboard @relation(fields: [leaderboardid], references: [leaderboardid], onDelete: Cascade)
+  users         users       @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@unique([leaderboardid, userid])
+  @@index([leaderboardid, rank])
+}
+
+model notification {
+  notificationid String           @id @default(cuid())
+  userid         String
+  sessionid      String?
+  taskid         String?
+  type           notificationtype @default(SYSTEM)
+  title          String
+  message        String
+  scheduledtime  DateTime?        @db.Timestamptz(6)
+  isread         Boolean          @default(false)
+  createdat      DateTime         @default(now()) @db.Timestamptz(6)
+  focussession   focussession?    @relation(fields: [sessionid], references: [sessionid])
+  task           task?            @relation(fields: [taskid], references: [taskid])
+  users          users            @relation(fields: [userid], references: [userid], onDelete: Cascade)
+
+  @@index([userid, isread])
+}
+
+model notificationsettings {
+  settingsid            String   @id @default(cuid())
+  userid                String   @unique
+  pushenabled           Boolean  @default(true)
+  emailenabled          Boolean  @default(true)
+  taskreminders         Boolean  @default(true)
+  sessionreminders      Boolean  @default(true)
+  achievementalerts     Boolean  @default(true)
+  dailychallengealerts  Boolean  @default(true)
+  studyroominvites      Boolean  @default(true)
+  reminderminutesbefore Int      @default(15)
+  updatedat             DateTime @updatedAt @db.Timestamptz(6)
+  users                 users    @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model emailverificationtoken {
+  tokenid    String    @id @default(cuid())
+  userid     String
+  token      String    @unique
+  expiresat  DateTime  @db.Timestamptz(6)
+  verifiedat DateTime? @db.Timestamptz(6)
+  isverified Boolean   @default(false)
+  createdat  DateTime  @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model passwordresettoken {
+  tokenid   String    @id @default(cuid())
+  userid    String
+  tokenhash String    @unique
+  expiresat DateTime  @db.Timestamptz(6)
+  usedat    DateTime? @db.Timestamptz(6)
+  createdat DateTime  @default(now()) @db.Timestamptz(6)
+  users     users     @relation(fields: [userid], references: [userid], onDelete: Cascade)
+}
+
+model sessiontask {
+  sessiontaskid String       @id @default(cuid())
+  sessionid     String
+  taskid        String
+  focussession  focussession @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
+  task          task         @relation(fields: [taskid], references: [taskid], onDelete: Cascade)
+
+  @@unique([sessionid, taskid])
 }
 
 enum userrole {
@@ -68,561 +585,4 @@ enum xpsource {
   CHALLENGE_COMPLETED
   ACHIEVEMENT_EARNED
   NOTE_CREATED
-}
-
-model users {
-  userid              String   @id @default(uuid())
-  name                String
-  lastname            String
-  username            String   @unique
-  email               String   @unique
-  phonenumber         String?
-  passwordhash        String
-  bio                 String?
-  userrole            userrole @default(STUDENT)
-  xppoints            Int      @default(0)
-  isverified          Boolean  @default(false)
-  islocked            Boolean  @default(false)
-  failedloginattempts Int      @default(0)
-  createdat           DateTime @default(now()) @db.Timestamptz(6)
-
-  student                   student?
-  admin                     admin?
-  task                      task[]
-  tasklist                  tasklist[]
-  note                      note[]
-  focussession              focussession[]
-  chathistory               chathistory[]
-  studentmemory             studentmemory[]
-  documentchunk             documentchunk[]
-  digitaldisciplinesettings digitaldisciplinesettings?
-  notificationsettings      notificationsettings?
-  notification              notification[]
-  achievement               achievement[]
-  badge                     badge[]
-  xptransaction             xptransaction[]
-  dailychallenge            dailychallenge[]
-  usagelog                  usagelog[]
-  disciplinealert           disciplinealert[]
-  disciplinescore           disciplinescore[]
-  studyroommember           studyroommember[]
-  leaderboardentry          leaderboardentry[]
-  aiprofile                 aiprofile?
-  googlecalendartoken       googlecalendartoken?
-  googlecalendarsync        googlecalendarsync?
-  emailverificationtoken    emailverificationtoken[]
-  passwordresettoken        passwordresettoken[]
-}
-
-model student {
-  userid             String  @id
-  major              String?
-  university         String?
-  focusstreak        Int     @default(0)
-  productivitypoints Int     @default(0)
-  focusmodeenabled   Boolean @default(false)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-}
-
-model admin {
-  userid String @id
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-}
-
-model tasklist {
-  listid     String   @id @default(cuid())
-  userid     String
-  scheduleid String?
-  name       String
-  createdat  DateTime @default(now()) @db.Timestamptz(6)
-
-  users    users     @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  schedule schedule? @relation(fields: [scheduleid], references: [scheduleid], onDelete: SetNull)
-  task     task[]
-}
-
-model task {
-  taskid           String       @id @default(cuid())
-  userid           String
-  listid           String
-  syncid           String?
-  title            String
-  description      String?
-  deadline         DateTime?    @db.Timestamptz(6)
-  priority         Int          @default(0)
-  status           taskstatus   @default(PENDING)
-  category         taskcategory @default(PERSONAL)
-  googleeventid    String?
-  syncedwithgoogle Boolean      @default(false)
-  createdat        DateTime     @default(now()) @db.Timestamptz(6)
-  updatedat        DateTime     @updatedAt @db.Timestamptz(6)
-
-  users              users               @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  tasklist           tasklist            @relation(fields: [listid], references: [listid], onDelete: Cascade)
-  googlecalendarsync googlecalendarsync? @relation(fields: [syncid], references: [syncid], onDelete: SetNull)
-  sessiontask        sessiontask[]
-  notification       notification[]
-
-  @@index([userid, status])
-  @@index([deadline])
-}
-
-model schedule {
-  scheduleid String   @id @default(cuid())
-  createdat  DateTime @default(now()) @db.Timestamptz(6)
-
-  tasklist     tasklist[]
-  focussession focussession[]
-}
-
-model googlecalendartoken {
-  tokenid      String   @id @default(cuid())
-  userid       String   @unique
-  accesstoken  String
-  refreshtoken String
-  expiresat    DateTime @db.Timestamptz(6)
-  createdat    DateTime @default(now()) @db.Timestamptz(6)
-
-  users              users               @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  googlecalendarsync googlecalendarsync?
-}
-
-model googlecalendarsync {
-  syncid           String    @id @default(cuid())
-  userid           String    @unique
-  tokenid          String    @unique
-  googlecalendarid String
-  lastsyncedat     DateTime? @db.Timestamptz(6)
-  isenabled        Boolean   @default(true)
-
-  users               users               @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  googlecalendartoken googlecalendartoken @relation(fields: [tokenid], references: [tokenid], onDelete: Cascade)
-  task                task[]
-}
-
-model note {
-  noteid    String   @id @default(cuid())
-  userid    String
-  title     String
-  content   String?
-  createdat DateTime @default(now()) @db.Timestamptz(6)
-  updatedat DateTime @updatedAt @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-}
-
-model focussession {
-  sessionid         String        @id @default(cuid())
-  userid            String
-  scheduleid        String?
-  roomid            String?
-  starttime         DateTime      @db.Timestamptz(6)
-  endtime           DateTime      @db.Timestamptz(6)
-  allowbreakminutes Int           @default(0)
-  focusscore        Float         @default(0)
-  status            sessionstatus @default(SCHEDULED)
-
-  users              users               @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  schedule           schedule?           @relation(fields: [scheduleid], references: [scheduleid], onDelete: SetNull)
-  studyroom          studyroom?          @relation(fields: [roomid], references: [roomid], onDelete: SetNull)
-  timer              timer?
-  focusaudiosettings focusaudiosettings?
-  sessiontask        sessiontask[]
-  notification       notification[]
-
-  @@index([userid, status])
-}
-
-model timer {
-  timerid          String    @id @default(cuid())
-  sessionid        String    @unique
-  type             timertype @default(POMODORO)
-  durationminutes  Int       @default(25)
-  breakminutes     Int       @default(5)
-  longbreakminutes Int       @default(15)
-  pomodorocycles   Int       @default(4)
-  isrunning        Boolean   @default(false)
-  remainingseconds Int       @default(0)
-  starttime        DateTime? @db.Timestamptz(6)
-  endtime          DateTime? @db.Timestamptz(6)
-
-  focussession focussession @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
-}
-
-model focusaudiosettings {
-  settingsid        String  @id @default(cuid())
-  sessionid         String  @unique
-  volumelevel       Float   @default(1)
-  mixmultiplesounds Boolean @default(false)
-
-  focussession focussession   @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
-  ambientsound ambientsound[]
-}
-
-model ambientsound {
-  soundid    String  @id @default(cuid())
-  settingsid String
-  name       String
-  audiourl   String?
-  islooping  Boolean @default(false)
-
-  focusaudiosettings focusaudiosettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
-}
-
-model studyroom {
-  roomid          String   @id @default(cuid())
-  roomname        String
-  sessionduration Int
-  isactive        Boolean  @default(false)
-  createdat       DateTime @default(now()) @db.Timestamptz(6)
-
-  focussession    focussession[]
-  studyroommember studyroommember[]
-}
-
-model studyroommember {
-  memberid String    @id @default(cuid())
-  userid   String
-  roomid   String
-  isowner  Boolean   @default(false)
-  joinedat DateTime  @default(now()) @db.Timestamptz(6)
-  leftat   DateTime? @db.Timestamptz(6)
-
-  users     users     @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  studyroom studyroom @relation(fields: [roomid], references: [roomid], onDelete: Cascade)
-
-  @@unique([userid, roomid])
-}
-
-model aiassistant {
-  assistantid String @id @default(cuid())
-
-  aiprofile     aiprofile[]
-  knowledgebase knowledgebase[]
-  chathistory   chathistory[]
-  studentmemory studentmemory[]
-}
-
-model aiprofile {
-  profileid      String   @id @default(cuid())
-  userid         String   @unique
-  assistantid    String
-  supportedmajor String?
-  university     String?
-  createdat      DateTime @default(now()) @db.Timestamptz(6)
-
-  users       users       @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  aiassistant aiassistant @relation(fields: [assistantid], references: [assistantid], onDelete: Cascade)
-}
-
-model knowledgebase {
-  knowledgeid String   @id @default(cuid())
-  assistantid String
-  major       String?
-  university  String?
-  subject     String?
-  filename    String?
-  fileurl     String?
-  uploadedat  DateTime @default(now()) @db.Timestamptz(6)
-
-  aiassistant   aiassistant     @relation(fields: [assistantid], references: [assistantid], onDelete: Cascade)
-  documentchunk documentchunk[]
-}
-
-model documentchunk {
-  chunkid     String   @id @default(cuid())
-  knowledgeid String
-  userid      String
-  content     String
-  chunkindex  Int
-  uploadedat  DateTime @default(now()) @db.Timestamptz(6)
-
-  users         users         @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  knowledgebase knowledgebase @relation(fields: [knowledgeid], references: [knowledgeid], onDelete: Cascade)
-
-  @@index([knowledgeid, chunkindex])
-}
-
-model chathistory {
-  chatid      String   @id @default(cuid())
-  userid      String
-  assistantid String
-  role        chatrole
-  content     String
-  createdat   DateTime @default(now()) @db.Timestamptz(6)
-
-  users       users       @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  aiassistant aiassistant @relation(fields: [assistantid], references: [assistantid], onDelete: Cascade)
-}
-
-model studentmemory {
-  memoryid    String   @id @default(cuid())
-  userid      String
-  assistantid String
-  key         String
-  value       String
-  updatedat   DateTime @updatedAt @db.Timestamptz(6)
-
-  users       users       @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  aiassistant aiassistant @relation(fields: [assistantid], references: [assistantid], onDelete: Cascade)
-
-  @@unique([userid, key])
-}
-
-model digitaldisciplinesettings {
-  settingsid            String             @id @default(cuid())
-  userid                String             @unique
-  filterlevel           contentfilterlevel @default(NORMAL)
-  dailyfreeminutes      Int                @default(0)
-  customblockingenabled Boolean            @default(false)
-  faithmodeenabled      Boolean            @default(false)
-
-  users                   users                    @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  blockedapp              blockedapp[]
-  blockedwebsite          blockedwebsite[]
-  usagelimit              usagelimit[]
-  contentmoderationpolicy contentmoderationpolicy?
-}
-
-model blockedapp {
-  appid      String @id @default(cuid())
-  settingsid String
-  appname    String
-
-  digitaldisciplinesettings digitaldisciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
-}
-
-model blockedwebsite {
-  websiteid  String @id @default(cuid())
-  settingsid String
-  domain     String
-
-  digitaldisciplinesettings digitaldisciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
-}
-
-model usagelimit {
-  limitid           String   @id @default(cuid())
-  settingsid        String
-  appname           String
-  packagename       String?
-  dailylimitminutes Int
-  isactive          Boolean  @default(true)
-  createdat         DateTime @default(now()) @db.Timestamptz(6)
-
-  digitaldisciplinesettings digitaldisciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
-}
-
-model usagelog {
-  logid        String   @id @default(cuid())
-  userid       String
-  appname      String
-  packagename  String?
-  usageminutes Int
-  wasblocked   Boolean  @default(false)
-  logdate      DateTime @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-
-  @@index([userid, logdate])
-}
-
-model disciplinealert {
-  alertid    String   @id @default(cuid())
-  userid     String
-  appname    String?
-  identifier String?
-  alerttype  String
-  message    String
-  isread     Boolean  @default(false)
-  createdat  DateTime @default(now()) @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-
-  @@index([userid, isread])
-}
-
-model disciplinescore {
-  scoreid        String   @id @default(cuid())
-  userid         String
-  score          Int
-  violationcount Int      @default(0)
-  streak         Int      @default(0)
-  scoredate      DateTime @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-
-  @@unique([userid, scoredate])
-}
-
-model contentmoderationpolicy {
-  policyid                        String             @id @default(cuid())
-  settingsid                      String             @unique
-  sensitivecontentblockingenabled Boolean            @default(false)
-  sensitivitylevel                contentfilterlevel @default(NORMAL)
-
-  digitaldisciplinesettings digitaldisciplinesettings @relation(fields: [settingsid], references: [settingsid], onDelete: Cascade)
-  aicontentdetector         aicontentdetector?
-}
-
-model aicontentdetector {
-  detectorid String @id @default(cuid())
-  policyid   String @unique
-
-  contentmoderationpolicy contentmoderationpolicy @relation(fields: [policyid], references: [policyid], onDelete: Cascade)
-}
-
-model achievement {
-  achievementid String   @id @default(cuid())
-  userid        String
-  title         String
-  description   String?
-  pointsreward  Int      @default(0)
-  earnedat      DateTime @default(now()) @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-}
-
-model badge {
-  badgeid     String   @id @default(cuid())
-  userid      String
-  name        String
-  description String?
-  iconurl     String?
-  condition   String?
-  earnedat    DateTime @default(now()) @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-}
-
-model xptransaction {
-  transactionid String   @id @default(cuid())
-  userid        String
-  amount        Int
-  source        xpsource
-  description   String?
-  createdat     DateTime @default(now()) @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-
-  @@index([userid, createdat])
-}
-
-model dailychallengetemplate {
-  templateid  String   @id @default(cuid())
-  title       String
-  description String?
-  xpreward    Int
-  createdat   DateTime @default(now()) @db.Timestamptz(6)
-
-  dailychallenge dailychallenge[]
-}
-
-model dailychallenge {
-  challengeid String    @id @default(cuid())
-  userid      String
-  templateid  String
-  iscompleted Boolean   @default(false)
-  assignedat  DateTime  @default(now()) @db.Timestamptz(6)
-  completedat DateTime? @db.Timestamptz(6)
-  expiresat   DateTime  @db.Timestamptz(6)
-
-  users                  users                  @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  dailychallengetemplate dailychallengetemplate @relation(fields: [templateid], references: [templateid], onDelete: Cascade)
-
-  @@index([userid, assignedat])
-}
-
-model leaderboard {
-  leaderboardid String   @id @default(cuid())
-  lastupdated   DateTime @default(now()) @db.Timestamptz(6)
-  type          String
-  scope         String
-
-  leaderboardentry leaderboardentry[]
-}
-
-model leaderboardentry {
-  entryid       String   @id @default(cuid())
-  leaderboardid String
-  userid        String
-  rank          Int
-  xppoints      Int
-  recordedat    DateTime @default(now()) @db.Timestamptz(6)
-
-  leaderboard leaderboard @relation(fields: [leaderboardid], references: [leaderboardid], onDelete: Cascade)
-  users       users       @relation(fields: [userid], references: [userid], onDelete: Cascade)
-
-  @@unique([leaderboardid, userid])
-  @@index([leaderboardid, rank])
-}
-
-model notification {
-  notificationid String           @id @default(cuid())
-  userid         String
-  sessionid      String?
-  taskid         String?
-  type           notificationtype @default(SYSTEM)
-  title          String
-  message        String
-  scheduledtime  DateTime?        @db.Timestamptz(6)
-  isread         Boolean          @default(false)
-  createdat      DateTime         @default(now()) @db.Timestamptz(6)
-
-  users        users         @relation(fields: [userid], references: [userid], onDelete: Cascade)
-  focussession focussession? @relation(fields: [sessionid], references: [sessionid], onDelete: SetNull)
-  task         task?         @relation(fields: [taskid], references: [taskid], onDelete: SetNull)
-
-  @@index([userid, isread])
-}
-
-model notificationsettings {
-  settingsid            String   @id @default(cuid())
-  userid                String   @unique
-  pushenabled           Boolean  @default(true)
-  emailenabled          Boolean  @default(true)
-  taskreminders         Boolean  @default(true)
-  sessionreminders      Boolean  @default(true)
-  achievementalerts     Boolean  @default(true)
-  dailychallengealerts  Boolean  @default(true)
-  studyroominvites      Boolean  @default(true)
-  reminderminutesbefore Int      @default(15)
-  updatedat             DateTime @updatedAt @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-}
-
-model emailverificationtoken {
-  tokenid    String    @id @default(cuid())
-  userid     String
-  token      String    @unique
-  expiresat  DateTime  @db.Timestamptz(6)
-  verifiedat DateTime? @db.Timestamptz(6)
-  isverified Boolean   @default(false)
-  createdat  DateTime  @default(now()) @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-}
-
-model passwordresettoken {
-  tokenid   String    @id @default(cuid())
-  userid    String
-  tokenhash String    @unique
-  expiresat DateTime  @db.Timestamptz(6)
-  usedat    DateTime? @db.Timestamptz(6)
-  createdat DateTime  @default(now()) @db.Timestamptz(6)
-
-  users users @relation(fields: [userid], references: [userid], onDelete: Cascade)
-}
-
-model sessiontask {
-  sessiontaskid String @id @default(cuid())
-  sessionid     String
-  taskid        String
-
-  focussession focussession @relation(fields: [sessionid], references: [sessionid], onDelete: Cascade)
-  task         task         @relation(fields: [taskid], references: [taskid], onDelete: Cascade)
-
-  @@unique([sessionid, taskid])
 }
