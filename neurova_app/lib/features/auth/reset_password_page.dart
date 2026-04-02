@@ -11,7 +11,8 @@ class ResetPasswordPage extends StatefulWidget {
   State<ResetPasswordPage> createState() => _ResetPasswordPageState();
 }
 
-class _ResetPasswordPageState extends State<ResetPasswordPage> {
+class _ResetPasswordPageState extends State<ResetPasswordPage>
+  with SingleTickerProviderStateMixin {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -19,9 +20,24 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  late final AnimationController _entranceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1450),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _entranceController.forward();
+    });
+  }
 
   @override
   void dispose() {
+    _entranceController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -38,7 +54,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     setState(() => _isLoading = false);
 
-    context.go('/login');
+    context.go('/resetpassword-success');
   }
 
   @override
@@ -54,20 +70,24 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               Positioned(
                 top: 16,
                 left: 16,
-                child: TextButton.icon(
-                  onPressed: () => context.pop(),
-                  icon: SvgPicture.asset(
-                    'lib/features/onboarding/assets/fleche2.svg',
-                    width: 18,
-                    height: 18,
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white70,
-                      BlendMode.srcIn,
+                child: _buildStaggered(
+                  index: 0,
+                  fromY: 10,
+                  child: TextButton.icon(
+                    onPressed: () => context.go('/login'),
+                    icon: SvgPicture.asset(
+                      'lib/features/onboarding/assets/fleche2.svg',
+                      width: 18,
+                      height: 18,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white70,
+                        BlendMode.srcIn,
+                      ),
                     ),
-                  ),
-                  label: const Text(
-                    "Back to login",
-                    style: TextStyle(color: Colors.white70, fontSize: 15),
+                    label: const Text(
+                      "Back to login",
+                      style: TextStyle(color: Colors.white70, fontSize: 15),
+                    ),
                   ),
                 ),
               ),
@@ -76,33 +96,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 top: 60,
                 left: 0,
                 right: 0,
-                child: Column(
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Text(
-                          "NEUROVA",
-                          style: TextStyle(
-                            fontFamily: 'Syne',
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Positioned(
-                          left: -30,
-                          top: -25,
-                          child: SvgPicture.asset(
-                            'lib/features/onboarding/assets/logo.svg',
-                            width: 51,
-                            height: 39,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                child: _buildStaggered(
+                  index: 1,
+                  fromY: 16,
+                  child: const _BrandHeader(),
                 ),
               ),
 
@@ -116,202 +113,197 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         children: [
                           const SizedBox(height: 120),
 
-                          const Text(
-                            "Reset",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Color(0xFFFFFFF0),
-                              fontSize: 54,
-                              fontFamily: 'Syne',
-                              fontWeight: FontWeight.w800,
-                              height: 0.95,
-                              letterSpacing: -0.6,
+                          _buildStaggered(
+                            index: 2,
+                            child: const Text(
+                              "Reset",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFFFFFFF0),
+                                fontSize: 50,
+                                fontFamily: 'Syne',
+                                fontWeight: FontWeight.w800,
+                                height: 0.95,
+                                letterSpacing: -0.6,
+                              ),
                             ),
                           ),
 
-                          const Text(
-                            "Password",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Color(0xFFFFFFF0),
-                              fontSize: 54,
-                              fontFamily: 'Syne',
-                              fontWeight: FontWeight.w800,
-                              height: 0.95,
-                              letterSpacing: -0.6,
+                          _buildStaggered(
+                            index: 3,
+                            child: const Text(
+                              "Password",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFFFFFFF0),
+                                fontSize: 42,
+                                fontFamily: 'Syne',
+                                fontWeight: FontWeight.w800,
+                                height: 0.95,
+                                letterSpacing: -0.6,
+                              ),
                             ),
                           ),
 
                           const SizedBox(height: 30),
 
-                          Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                TextFormField(
-                                  controller: _passwordController,
-                                  obscureText: _obscurePassword,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    labelText: "New Password",
-                                    labelStyle: TextStyle(color: hintColor),
-                                    filled: true,
-                                    fillColor: Colors.white.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(24),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 18,
-                                      horizontal: 16,
-                                    ),
-                                    prefixIcon: Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: SvgPicture.asset(
-                                        'lib/features/onboarding/assets/Icon3.svg',
-                                        width: 20,
-                                        height: 20,
-                                        colorFilter: const ColorFilter.mode(
-                                          Colors.white70,
-                                          BlendMode.srcIn,
+                          _buildStaggered(
+                            index: 4,
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                children: [
+                                  TextFormField(
+                                    controller: _passwordController,
+                                    obscureText: _obscurePassword,
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: InputDecoration(
+                                      hintText: "New Password",
+                                      hintStyle: TextStyle(color: hintColor),
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.never,
+                                      filled: true,
+                                      fillColor: Colors.white.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(24),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        vertical: 18,
+                                        horizontal: 16,
+                                      ),
+                                      prefixIcon: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: SvgPicture.asset(
+                                          'lib/features/onboarding/assets/Icon3.svg',
+                                          width: 20,
+                                          height: 20,
+                                          colorFilter: const ColorFilter.mode(
+                                            Colors.white70,
+                                            BlendMode.srcIn,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    suffixIcon: IconButton(
-                                      icon: SvgPicture.asset(
-                                        'lib/features/onboarding/assets/Icon4.svg',
-                                        width: 20,
-                                        height: 20,
-                                        colorFilter: const ColorFilter.mode(
-                                          Colors.white70,
-                                          BlendMode.srcIn,
-                                        ),
+                                      suffixIcon: _buildAnimatedEyeIcon(
+                                        isObscured: _obscurePassword,
+                                        onTap: () {
+                                          setState(() {
+                                            _obscurePassword = !_obscurePassword;
+                                          });
+                                        },
                                       ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _obscurePassword = !_obscurePassword;
-                                        });
-                                      },
                                     ),
+                                    validator: (v) {
+                                      if (v == null || v.isEmpty) {
+                                        return "Password is required";
+                                      }
+                                      if (v.length < 6) {
+                                        return "Minimum 6 characters";
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                  validator: (v) {
-                                    if (v == null || v.isEmpty) {
-                                      return "Password is required";
-                                    }
-                                    if (v.length < 6) {
-                                      return "Minimum 6 characters";
-                                    }
-                                    return null;
-                                  },
-                                ),
 
-                                const SizedBox(height: 10),
+                                  const SizedBox(height: 10),
 
-                                TextFormField(
-                                  controller: _confirmController,
-                                  obscureText: _obscureConfirm,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    labelText: "Confirm Password",
-                                    labelStyle: TextStyle(color: hintColor),
-                                    filled: true,
-                                    fillColor: Colors.white.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(24),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 18,
-                                      horizontal: 16,
-                                    ),
-                                    prefixIcon: Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: SvgPicture.asset(
-                                        'lib/features/onboarding/assets/Icon3.svg',
-                                        width: 20,
-                                        height: 20,
-                                        colorFilter: const ColorFilter.mode(
-                                          Colors.white70,
-                                          BlendMode.srcIn,
+                                  TextFormField(
+                                    controller: _confirmController,
+                                    obscureText: _obscureConfirm,
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: InputDecoration(
+                                      hintText: "Confirm Password",
+                                      hintStyle: TextStyle(color: hintColor),
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.never,
+                                      filled: true,
+                                      fillColor: Colors.white.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(24),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        vertical: 18,
+                                        horizontal: 16,
+                                      ),
+                                      prefixIcon: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: SvgPicture.asset(
+                                          'lib/features/onboarding/assets/Icon3.svg',
+                                          width: 20,
+                                          height: 20,
+                                          colorFilter: const ColorFilter.mode(
+                                            Colors.white70,
+                                            BlendMode.srcIn,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    suffixIcon: IconButton(
-                                      icon: SvgPicture.asset(
-                                        'lib/features/onboarding/assets/Icon4.svg',
-                                        width: 20,
-                                        height: 20,
-                                        colorFilter: const ColorFilter.mode(
-                                          Colors.white70,
-                                          BlendMode.srcIn,
-                                        ),
+                                      suffixIcon: _buildAnimatedEyeIcon(
+                                        isObscured: _obscureConfirm,
+                                        onTap: () {
+                                          setState(() {
+                                            _obscureConfirm = !_obscureConfirm;
+                                          });
+                                        },
                                       ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _obscureConfirm = !_obscureConfirm;
-                                        });
-                                      },
                                     ),
+                                    validator: (v) {
+                                      if (v == null || v.isEmpty) {
+                                        return "Confirm your password";
+                                      }
+                                      if (v != _passwordController.text) {
+                                        return "Passwords do not match";
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                  validator: (v) {
-                                    if (v == null || v.isEmpty) {
-                                      return "Confirm your password";
-                                    }
-                                    if (v != _passwordController.text) {
-                                      return "Passwords do not match";
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
 
                           const SizedBox(height: 40),
 
-                          SizedBox(
-                            width: double.infinity,
-                            height: 67.99,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _resetPassword,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromARGB(
-                                  188,
-                                  241,
-                                  224,
-                                  228,
+                          _buildStaggered(
+                            index: 5,
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 67.99,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _resetPassword,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color.fromARGB(
+                                    188,
+                                    241,
+                                    224,
+                                    228,
+                                  ),
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
                                 ),
-                                foregroundColor: const Color.fromARGB(
-                                  255,
-                                  255,
-                                  255,
-                                  255,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                              ),
-                              child: _isLoading
-                                  ? const CircularProgressIndicator(
-                                      color: Color.fromARGB(255, 255, 255, 255),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Text(
-                                          "Confirm",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
+                                child: _isLoading
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.black,
+                                      )
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            "Confirm",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
+                                        ],
+                                      ),
+                              ),
                             ),
                           ),
                         ],
@@ -322,6 +314,140 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStaggered({
+    required int index,
+    required Widget child,
+    double fromY = 28,
+  }) {
+    final start = (0.03 + (index * 0.06)).clamp(0.0, 0.88).toDouble();
+    final end = (start + 0.24).clamp(0.0, 1.0).toDouble();
+
+    return AnimatedBuilder(
+      animation: _entranceController,
+      child: child,
+      builder: (context, animatedChild) {
+        final anim = CurvedAnimation(
+          parent: _entranceController,
+          curve: Interval(start, end, curve: Curves.easeOutCubic),
+        );
+
+        return Opacity(
+          opacity: anim.value,
+          child: Transform.translate(
+            offset: Offset(0, fromY * (1 - anim.value)),
+            child: Transform.scale(
+              scale: 0.98 + (0.02 * anim.value),
+              child: animatedChild,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedEyeIcon({
+    required bool isObscured,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutBack,
+          scale: isObscured ? 1.0 : 1.1,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              AnimatedRotation(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeInOutCubic,
+                turns: isObscured ? 0.0 : 0.5,
+                child: SvgPicture.asset(
+                  'lib/features/onboarding/assets/Icon4.svg',
+                  key: ValueKey<bool>(isObscured),
+                  width: 20,
+                  height: 20,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white70,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                opacity: isObscured ? 1.0 : 0.0,
+                child: Transform.rotate(
+                  angle: -0.85,
+                  child: Container(
+                    width: 2.2,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.40),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandHeader extends StatelessWidget {
+  const _BrandHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox(
+        width: 147,
+        height: 48,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              child: SvgPicture.asset(
+                'lib/features/onboarding/assets/logo.svg',
+                width: 51,
+                height: 39,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+            const Positioned(
+              left: 32,
+              top: 24,
+              child: SizedBox(
+                width: 115,
+                height: 24,
+                child: Text(
+                  'NEUROVA',
+                  style: TextStyle(
+                    color: Color(0xFFFFFFF0),
+                    fontSize: 20,
+                    fontFamily: 'Syne',
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
+                    letterSpacing: 0.0,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
