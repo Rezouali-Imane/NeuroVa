@@ -60,6 +60,7 @@ coverage/
 /neurova_app/android/key.properties
 /neurova_app/android/**/*.keystore
 /neurova_app/android/**/*.jks
+/neurova_app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 
 # IntelliJ/IDE metadata
 /neurova_app/*.iml
