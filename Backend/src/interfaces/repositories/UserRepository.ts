@@ -44,6 +44,8 @@ export const UserRepository = {
     lastname: string;
     username: string;
     email: string;
+    phonenumber?: string;
+    bio?: string;
     passwordhash: string;
     userrole?: UserRole;
   }) {
