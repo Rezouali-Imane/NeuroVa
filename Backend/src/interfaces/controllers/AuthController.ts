@@ -7,6 +7,8 @@ import { ForgotPassword } from '../../usecases/auth/ForgotPassword.js';
 import { ResetPassword } from '../../usecases/auth/ResetPassword.js';
 import { Logout } from '../../usecases/auth/Logout.js';
 import { RefreshToken } from '../../usecases/auth/RefreshToken.js';
+import { SendVerificationCode } from '../../usecases/auth/SendVerificationCode.js';
+import { UserRepository } from '../repositories/UserRepository.js';
 
 export const AuthController = {
   me(req: AuthRequest, res: Response) {
@@ -39,12 +41,7 @@ export const AuthController = {
   async login(req: Request, res: Response) {
     try {
       const result = await Login(req.body);
-      
-      if (result.requiresVerification) {
-        res.status(403).json(result);
-      } else {
-        res.status(200).json(result);
-      }
+      res.status(200).json(result);
     } catch (error: any) {
       res.status(401).json({
         success: false,
@@ -110,6 +107,43 @@ export const AuthController = {
       res.status(401).json({
         success: false,
         message: error.message || 'Refresh token failed.',
+      });
+    }
+  },
+
+  async resendVerification(req: AuthRequest, res: Response) {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Unauthorized.',
+        });
+        return;
+      }
+
+      const user = await UserRepository.findById(req.user.userid);
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: 'User not found.',
+        });
+        return;
+      }
+
+      if (user.isverified) {
+        res.status(400).json({
+          success: false,
+          message: 'Email is already verified.',
+        });
+        return;
+      }
+
+      const result = await SendVerificationCode(user.userid, user.email);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to resend verification code.',
       });
     }
   },
