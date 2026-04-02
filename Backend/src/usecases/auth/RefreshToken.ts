@@ -17,6 +17,7 @@ export const RefreshToken = async (data: RefreshTokenDTO) => {
   const accessToken = JwtClient.signAccessToken({
     userid: user.userid,
     role: user.userrole,
+    isverified: user.isverified,
   });
 
   const refreshToken = JwtClient.signRefreshToken({ userid: user.userid });
