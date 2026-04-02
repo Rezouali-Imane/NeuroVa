@@ -33,21 +33,15 @@ export const Login = async (data: LoginDTO) => {
     await UserRepository.updateLoginAttempts(user.userid, 0, false);
   }
 
+  // Send verification email if not yet verified
   if (!user.isverified) {
-    const verification = await SendVerificationCode(user.userid, user.email);
-
-    return {
-      success: false,
-      requiresVerification: true,
-      userid: user.userid,
-      verificationToken: verification.verificationToken,
-      message: "Please verify your email. A new code has been sent.",
-    };
+    await SendVerificationCode(user.userid, user.email);
   }
 
   const accessToken = JwtClient.signAccessToken({
     userid: user.userid,
     role: user.userrole,
+    isverified: user.isverified,
   });
 
   const refreshToken = JwtClient.signRefreshToken({ userid: user.userid });

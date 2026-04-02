@@ -6,10 +6,13 @@ import { SendVerificationCode } from './SendVerificationCode.js';
 import { UserRole } from '../../entities/User.js';
 import { PasswordService } from '../../infrastructure/auth/passwordService.js';
 import { AuthValidators } from '../../infrastructure/auth/validators.js';
+import { JwtClient } from '../../infrastructure/jwt.client.js';
 
 export const Register = async (data: RegisterDTO) => {
   const normalizedEmail = AuthValidators.normalizeEmail(data.email);
   const normalizedUsername = AuthValidators.normalizeUsername(data.username);
+  const normalizedPhone = data.phonenumber?.trim() || undefined;
+  const normalizedBio = data.bio?.trim() || undefined;
 
   const emailValidation = AuthValidators.validateEmail(normalizedEmail);
   if (!emailValidation.valid) {
@@ -45,6 +48,8 @@ export const Register = async (data: RegisterDTO) => {
     lastname: data.lastname,
     username: normalizedUsername,
     email: normalizedEmail,
+    ...(normalizedPhone != null ? { phonenumber: normalizedPhone } : {}),
+    ...(normalizedBio != null ? { bio: normalizedBio } : {}),
     passwordhash,
     userrole: data.role || UserRole.STUDENT,
   });
@@ -57,10 +62,25 @@ export const Register = async (data: RegisterDTO) => {
 
   const verification = await SendVerificationCode(user.userid, user.email);
 
+  const accessToken = JwtClient.signAccessToken({
+    userid: user.userid,
+    role: user.userrole,
+    isverified: false,
+  });
+
+  const refreshToken = JwtClient.signRefreshToken({ userid: user.userid });
+
   return {
     success: true,
-    message: 'Registration successful. Please verify your email.',
-    userid: user.userid,
-    verificationToken: verification.verificationToken,
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.userid,
+      username: user.username,
+      email: user.email,
+      role: user.userrole,
+      isverified: false,
+    },
+    message: 'Registration successful. Verify your email from Settings.',
   };
 };
