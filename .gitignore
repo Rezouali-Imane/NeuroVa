@@ -26,3 +26,93 @@ coverage/
 
 # Common temporary files
 **/tempCodeRunnerFile.*
+
+# Backend project
+/Backend/node_modules/
+/Backend/dist/
+/Backend/coverage/
+/Backend/*.tsbuildinfo
+/Backend/src/generated/prisma/
+/Backend/prisma/migrations/
+/Backend/tempCodeRunnerFile.ts
+
+# Flutter app (neurova_app)
+/neurova_app/**/doc/api/
+/neurova_app/**/ios/Flutter/.last_build_id
+/neurova_app/.dart_tool/
+/neurova_app/.flutter-plugins-dependencies
+/neurova_app/.pub-cache/
+/neurova_app/.pub/
+/neurova_app/build/
+/neurova_app/coverage/
+/neurova_app/app.*.symbols
+/neurova_app/app.*.map.json
+
+# Android artifacts and secrets
+/neurova_app/android/gradle/wrapper/gradle-wrapper.jar
+/neurova_app/android/gradlew
+/neurova_app/android/gradlew.bat
+/neurova_app/android/.gradle/
+/neurova_app/android/captures/
+/neurova_app/android/build/
+/neurova_app/android/local.properties
+/neurova_app/android/.cxx/
+/neurova_app/android/key.properties
+/neurova_app/android/**/*.keystore
+/neurova_app/android/**/*.jks
+
+# IntelliJ/IDE metadata
+/neurova_app/*.iml
+/neurova_app/android/*.iml
+
+# Apple platform generated files
+/neurova_app/ios/**/dgph
+/neurova_app/ios/*.mode1v3
+/neurova_app/ios/*.mode2v3
+/neurova_app/ios/*.moved-aside
+/neurova_app/ios/*.pbxuser
+/neurova_app/ios/*.perspectivev3
+/neurova_app/ios/**/sync/
+/neurova_app/ios/.sconsign.dblite
+/neurova_app/ios/.tags*
+/neurova_app/ios/**/.vagrant/
+/neurova_app/ios/**/DerivedData/
+/neurova_app/ios/Icon?
+/neurova_app/ios/**/Pods/
+/neurova_app/ios/**/.symlinks/
+/neurova_app/ios/profile
+/neurova_app/ios/xcuserdata
+/neurova_app/ios/**/.generated/
+/neurova_app/ios/Flutter/App.framework
+/neurova_app/ios/Flutter/Flutter.framework
+/neurova_app/ios/Flutter/Flutter.podspec
+/neurova_app/ios/Flutter/Generated.xcconfig
+/neurova_app/ios/Flutter/ephemeral/
+/neurova_app/ios/Flutter/app.flx
+/neurova_app/ios/Flutter/app.zip
+/neurova_app/ios/Flutter/flutter_assets/
+/neurova_app/ios/Flutter/flutter_export_environment.sh
+/neurova_app/ios/ServiceDefinitions.json
+/neurova_app/ios/Runner/GeneratedPluginRegistrant.*
+
+# Exceptions for Xcode defaults
+!/neurova_app/ios/default.mode1v3
+!/neurova_app/ios/default.mode2v3
+!/neurova_app/ios/default.pbxuser
+!/neurova_app/ios/default.perspectivev3
+
+# Linux/macOS/Windows generated Flutter files
+/neurova_app/linux/flutter/ephemeral/
+/neurova_app/macos/**/Flutter/ephemeral/
+/neurova_app/macos/**/Pods/
+/neurova_app/macos/**/dgph
+/neurova_app/macos/**/xcuserdata/
+/neurova_app/windows/flutter/ephemeral/
+/neurova_app/windows/*.suo
+/neurova_app/windows/*.user
+/neurova_app/windows/*.userosscache
+/neurova_app/windows/*.sln.docstates
+/neurova_app/windows/x64/
+/neurova_app/windows/x86/
+/neurova_app/windows/*.[Cc]ache
+!/neurova_app/windows/*.[Cc]ache/
