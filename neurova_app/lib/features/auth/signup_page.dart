@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'login_page.dart';
+import '../profil/setup_profil1.dart';
 import '../onboarding/background.dart';
 import '../../shared/widgets/entry_reveal.dart';
 
@@ -12,7 +13,8 @@ class SignupPage extends StatefulWidget {
   State<SignupPage> createState() => _SignupPageState();
 }
 
-class _SignupPageState extends State<SignupPage> {
+class _SignupPageState extends State<SignupPage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -23,9 +25,24 @@ class _SignupPageState extends State<SignupPage> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _agreeTerms = false;
+  late final AnimationController _entranceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1450),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _entranceController.forward();
+    });
+  }
 
   @override
   void dispose() {
+    _entranceController.dispose();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -49,269 +66,200 @@ class _SignupPageState extends State<SignupPage> {
                 child: Form(
                   key: _formKey,
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Center(
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          alignment: Alignment.center,
-                          children: [
-                            const Text(
-                              "NEUROVA",
-                              style: TextStyle(
-                                fontFamily: 'Syne',
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Positioned(
-                              left: -35,
-                              top: -30,
-                              child: SvgPicture.asset(
-                                'lib/features/onboarding/assets/logo.svg',
-                                width: 51,
-                                height: 39,
-                              ),
-                            ),
-                          ],
-                        ),
+                      _buildStaggered(
+                        index: 0,
+                        child: const _BrandHeader(),
                       ),
                       const SizedBox(height: 18),
-                      const Text(
-                        'join now',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFFFFFF0),
-                          fontSize: 56,
-                          fontFamily: 'Syne',
-                          fontWeight: FontWeight.w800,
-                          height: 0.95,
-                          letterSpacing: -0.6,
+                      _buildStaggered(
+                        index: 1,
+                        child: const Text(
+                          'join now',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFFFFFF0),
+                            fontSize: 56,
+                            fontFamily: 'Syne',
+                            fontWeight: FontWeight.w900,
+                            height: 0.95,
+                            letterSpacing: -0.6,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 14),
-                      const Text(
-                        'Start your AI-powered learning journey',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFFFFFF0),
-                          fontSize: 16,
-                          fontFamily: 'Syne',
-                          fontWeight: FontWeight.w400,
-                          height: 1.50,
-                          letterSpacing: -0.31,
+                      _buildStaggered(
+                        index: 2,
+                        child: const Text(
+                          'Start your AI-powered learning journey',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFFFFFF0),
+                            fontSize: 16,
+                            fontFamily: 'Syne',
+                            fontWeight: FontWeight.w400,
+                            height: 1.50,
+                            letterSpacing: -0.31,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 15.04),
-                      _buildField(
-                        controller: _nameController,
-                        label: "Full Name",
-                        hintColor: hintColor,
-                        iconPath: 'lib/features/onboarding/assets/Icon1.svg',
-                        validator: (v) =>
-                            v == null || v.isEmpty ? "Name is required" : null,
+                      _buildStaggered(
+                        index: 3,
+                        child: _buildField(
+                          controller: _nameController,
+                          label: "Full Name",
+                          hintColor: hintColor,
+                          iconPath: 'lib/features/onboarding/assets/Icon1.svg',
+                          validator: (v) =>
+                              v == null || v.isEmpty ? "Name is required" : null,
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      _buildField(
-                        controller: _emailController,
-                        label: "Email address",
-                        hintColor: hintColor,
-                        iconPath: 'lib/features/onboarding/assets/Icon2.svg',
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) {
-                            return "Email is required";
-                          }
-                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
-                            return "Enter a valid email";
-                          }
-                          return null;
-                        },
+                      _buildStaggered(
+                        index: 4,
+                        child: _buildField(
+                          controller: _emailController,
+                          label: "Email address",
+                          hintColor: hintColor,
+                          iconPath: 'lib/features/onboarding/assets/Icon2.svg',
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return "Email is required";
+                            }
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
+                              return "Enter a valid email";
+                            }
+                            return null;
+                          },
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      _buildField(
-                        controller: _passwordController,
-                        label: "Password",
-                        hintColor: hintColor,
-                        iconPath: 'lib/features/onboarding/assets/Icon3.svg',
-                        obscureText: _obscurePassword,
-                        suffix: GestureDetector(
-                          onTap: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: SvgPicture.asset(
-                              'lib/features/onboarding/assets/Icon4.svg',
-                              width: 20,
-                              height: 20,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white70,
-                                BlendMode.srcIn,
-                              ),
+                      _buildStaggered(
+                        index: 5,
+                        child: _buildField(
+                          controller: _passwordController,
+                          label: "Password",
+                          hintColor: hintColor,
+                          iconPath: 'lib/features/onboarding/assets/Icon3.svg',
+                          obscureText: _obscurePassword,
+                          suffix: _buildAnimatedEyeIcon(
+                            isObscured: _obscurePassword,
+                            onTap: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
                             ),
                           ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return "Password is required";
+                            }
+                            if (v.length < 6) {
+                              return "At least 6 characters";
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) {
-                            return "Password is required";
-                          }
-                          if (v.length < 6) {
-                            return "At least 6 characters";
-                          }
-                          return null;
-                        },
                       ),
                       const SizedBox(height: 16),
-                      _buildField(
-                        controller: _confirmController,
-                        label: "Confirm Password",
-                        hintColor: hintColor,
-                        iconPath: 'lib/features/onboarding/assets/Icon3.svg',
-                        obscureText: _obscureConfirm,
-                        suffix: GestureDetector(
-                          onTap: () => setState(
-                            () => _obscureConfirm = !_obscureConfirm,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: SvgPicture.asset(
-                              'lib/features/onboarding/assets/Icon4.svg',
-                              width: 20,
-                              height: 20,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white70,
-                                BlendMode.srcIn,
-                              ),
+                      _buildStaggered(
+                        index: 6,
+                        child: _buildField(
+                          controller: _confirmController,
+                          label: "Confirm Password",
+                          hintColor: hintColor,
+                          iconPath: 'lib/features/onboarding/assets/Icon3.svg',
+                          obscureText: _obscureConfirm,
+                          suffix: _buildAnimatedEyeIcon(
+                            isObscured: _obscureConfirm,
+                            onTap: () => setState(
+                              () => _obscureConfirm = !_obscureConfirm,
                             ),
                           ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return "Confirm your password";
+                            }
+                            if (v != _passwordController.text) {
+                              return "Passwords do not match";
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) {
-                            return "Confirm your password";
-                          }
-                          if (v != _passwordController.text) {
-                            return "Passwords do not match";
-                          }
-                          return null;
-                        },
                       ),
                       const SizedBox(height: 24),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _agreeTerms = !_agreeTerms;
-                              });
-                            },
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(
-                                color: _agreeTerms
-                                    ? Colors.white
-                                    : Colors.white.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: _agreeTerms
-                                  ? const Icon(
-                                      Icons.check,
-                                      size: 14,
-                                      color: Colors.black,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: RichText(
-                              text: TextSpan(
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 12,
-                                ),
-                                children: [
-                                  const TextSpan(text: 'I agree to the '),
-                                  TextSpan(
-                                    text: 'Terms of Service',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        debugPrint("Terms clicked");
-                                      },
-                                  ),
-                                  const TextSpan(text: ' and '),
-                                  TextSpan(
-                                    text: 'Privacy Policy',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        debugPrint("Privacy clicked");
-                                      },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 15),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 67.99,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(
-                              188,
-                              241,
-                              224,
-                              228,
-                            ),
-                            foregroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                          ),
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              if (!_agreeTerms) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      "You must agree to the terms",
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                      _buildStaggered(
+                        index: 7,
+                        child: Center(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 10,
+                            runSpacing: 4,
                             children: [
-                              const Text(
-                                "Create Account",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _agreeTerms = !_agreeTerms;
+                                  });
+                                },
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: _agreeTerms
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(5),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.7),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: _agreeTerms
+                                      ? const Icon(
+                                          Icons.check,
+                                          size: 14,
+                                          color: Colors.black,
+                                        )
+                                      : null,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              SvgPicture.asset(
-                                'lib/features/onboarding/assets/fleche.svg',
-                                width: 20,
-                                height: 20,
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.black,
-                                  BlendMode.srcIn,
+                              RichText(
+                                textAlign: TextAlign.center,
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    fontSize: 12,
+                                  ),
+                                  children: [
+                                    const TextSpan(text: 'I agree to the '),
+                                    TextSpan(
+                                      text: 'Terms of Service',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          debugPrint("Terms clicked");
+                                        },
+                                    ),
+                                    const TextSpan(text: ' and '),
+                                    TextSpan(
+                                      text: 'Privacy Policy',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          debugPrint("Privacy clicked");
+                                        },
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -319,77 +267,151 @@ class _SignupPageState extends State<SignupPage> {
                         ),
                       ),
                       const SizedBox(height: 15),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: Colors.white.withValues(alpha: 0.10),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'or sign up with',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.40),
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: Colors.white.withValues(alpha: 0.10),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 15),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildSocialButton(
-                            'lib/features/onboarding/assets/google.svg',
-                            'Google',
-                          ),
-                          _buildSocialButton(
-                            'lib/features/onboarding/assets/github.svg',
-                            'GitHub',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Already have an account? ',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
-                                fontSize: 14,
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w400,
+                      _buildStaggered(
+                        index: 8,
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 67.99,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(
+                                188,
+                                241,
+                                224,
+                                228,
+                              ),
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
                               ),
                             ),
-                            TextSpan(
-                              text: 'Log In',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontFamily: 'Syne',
-                                fontWeight: FontWeight.w600,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const LoginPage(),
+                            onPressed: () {
+                              if (_formKey.currentState!.validate()) {
+                                if (!_agreeTerms) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "You must agree to the terms",
+                                      ),
                                     ),
                                   );
-                                },
+                                  return;
+                                }
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SetupProfil(),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  "Create Account",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SvgPicture.asset(
+                                  'lib/features/onboarding/assets/fleche.svg',
+                                  width: 20,
+                                  height: 20,
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.black,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      _buildStaggered(
+                        index: 9,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: Colors.white.withValues(alpha: 0.10),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'or sign up with',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.40),
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: Colors.white.withValues(alpha: 0.10),
+                              ),
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      _buildStaggered(
+                        index: 10,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildSocialButton(
+                              'lib/features/onboarding/assets/google.svg',
+                              'Google',
+                            ),
+                            _buildSocialButton(
+                              'lib/features/onboarding/assets/github.svg',
+                              'GitHub',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildStaggered(
+                        index: 11,
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Already have an account? ',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  fontSize: 14,
+                                  fontFamily: 'Inter',
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'Log In',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontFamily: 'Syne',
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const LoginPage(),
+                                      ),
+                                    );
+                                  },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -397,6 +419,90 @@ class _SignupPageState extends State<SignupPage> {
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStaggered({
+    required int index,
+    required Widget child,
+    double fromY = 28,
+  }) {
+    final start = (0.03 + (index * 0.06)).clamp(0.0, 0.88).toDouble();
+    final end = (start + 0.24).clamp(0.0, 1.0).toDouble();
+
+    return AnimatedBuilder(
+      animation: _entranceController,
+      child: child,
+      builder: (context, animatedChild) {
+        final anim = CurvedAnimation(
+          parent: _entranceController,
+          curve: Interval(start, end, curve: Curves.easeOutCubic),
+        );
+
+        return Opacity(
+          opacity: anim.value,
+          child: Transform.translate(
+            offset: Offset(0, fromY * (1 - anim.value)),
+            child: Transform.scale(
+              scale: 0.98 + (0.02 * anim.value),
+              child: animatedChild,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedEyeIcon({
+    required bool isObscured,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutBack,
+          scale: isObscured ? 1.0 : 1.1,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              AnimatedRotation(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeInOutCubic,
+                turns: isObscured ? 0.0 : 0.5,
+                child: SvgPicture.asset(
+                  'lib/features/onboarding/assets/Icon4.svg',
+                  key: ValueKey<bool>(isObscured),
+                  width: 20,
+                  height: 20,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white70,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                opacity: isObscured ? 1.0 : 0.0,
+                child: Transform.rotate(
+                  angle: -0.85,
+                  child: Container(
+                    width: 2.2,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color:  Colors.white.withValues(alpha: 0.40),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -420,8 +526,9 @@ class _SignupPageState extends State<SignupPage> {
       validator: validator,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: hintColor),
+        hintText: label,
+        hintStyle: TextStyle(color: hintColor),
+        floatingLabelBehavior: FloatingLabelBehavior.never,
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.1),
         border: OutlineInputBorder(
@@ -483,6 +590,56 @@ class _SignupPageState extends State<SignupPage> {
             height: 20 / 14,
             letterSpacing: -0.15,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandHeader extends StatelessWidget {
+  const _BrandHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox(
+        width: 147,
+        height: 48,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              child: SvgPicture.asset(
+                'lib/features/onboarding/assets/logo.svg',
+                width: 51,
+                height: 39,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+            const Positioned(
+              left: 32,
+              top: 24,
+              child: SizedBox(
+                width: 115,
+                height: 24,
+                child: Text(
+                  'NEUROVA',
+                  style: TextStyle(
+                    color: Color(0xFFFFFFF0),
+                    fontSize: 20,
+                    fontFamily: 'Syne',
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
+                    letterSpacing: 0.0,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
