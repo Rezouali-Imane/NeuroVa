@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'onboarding1.dart';
 import 'onboarding2.dart';
@@ -15,26 +13,14 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  late final PageController _pageController;
   int _currentPage = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   void _goNextPage() {
-    _pageController.nextPage(
-      duration: const Duration(milliseconds: 700),
-      curve: Curves.easeInOutCubic,
-    );
+    if (_currentPage < 3) {
+      setState(() {
+        _currentPage += 1;
+      });
+    }
   }
 
   Widget _buildPage(int index) {
@@ -55,6 +41,39 @@ class _OnboardingPageState extends State<OnboardingPage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SignupPage()),
+    );
+  }
+
+  Widget _buildSkipButton() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 10, right: 16),
+        child: Align(
+          alignment: Alignment.topRight,
+          child: TextButton(
+            onPressed: _goGetStarted,
+            style: TextButton.styleFrom(
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              foregroundColor: Colors.white.withValues(alpha: 0.9),
+              backgroundColor: Colors.black.withValues(alpha: 0.18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Text(
+              'Skip',
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'Syne',
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -160,69 +179,41 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return Scaffold(
       body: Stack(
         children: [
-          PageView.builder(
-            controller: _pageController,
-            physics: const BouncingScrollPhysics(),
-            itemCount: 4,
-            onPageChanged: (page) {
-              setState(() {
-                _currentPage = page;
-              });
-            },
-            itemBuilder: (context, index) {
-              return AnimatedBuilder(
-                animation: _pageController,
-                builder: (context, child) {
-                  final page = _pageController.hasClients &&
-                          _pageController.page != null
-                      ? _pageController.page!
-                      : _pageController.initialPage.toDouble();
-
-                  final delta = page - index;
-                  final absDelta = delta.abs().clamp(0.0, 1.0);
-                  final scale = (1.0 - (absDelta * 0.07)).clamp(0.93, 1.0).toDouble();
-                  final opacity = (1.0 - absDelta).clamp(0.0, 1.0).toDouble();
-                  final translateX =
-                      delta * MediaQuery.of(context).size.width * (delta > 0 ? 1.0 : 0.25);
-                  final blur = absDelta * 3.0;
-
-                  return Opacity(
-                    opacity: opacity,
-                    child: Transform.translate(
-                      offset: Offset(translateX, 0),
-                      child: Transform.scale(
-                        scale: scale,
-                        alignment: Alignment.center,
-                        child: ImageFiltered(
-                          imageFilter: ImageFilter.blur(
-                            sigmaX: blur,
-                            sigmaY: blur,
-                          ),
-                          child: child,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                child: _buildPage(index),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 520),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.985, end: 1.0).animate(animation),
+                  child: child,
+                ),
               );
             },
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: IgnorePointer(
-              ignoring: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildBottomButton(),
-                  if (_currentPage < 3) const SizedBox(height: 20),
-                  if (_currentPage < 3) _buildDotsIndicator(),
-                  const SizedBox(height: 32),
-                ],
-              ),
+            child: KeyedSubtree(
+              key: ValueKey<int>(_currentPage),
+              child: _buildPage(_currentPage),
             ),
           ),
+          if (_currentPage < 3) _buildSkipButton(),
+          if (_currentPage < 3)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: IgnorePointer(
+                ignoring: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildBottomButton(),
+                    const SizedBox(height: 20),
+                    _buildDotsIndicator(),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

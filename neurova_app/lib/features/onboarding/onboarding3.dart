@@ -79,7 +79,6 @@ class _Onboarding3State extends State<Onboarding3>
         child: SafeArea(
           child: Stack(
             children: [
-              // Logo + NEUROVA text (match onboarding2)
               Positioned(
                 left: MediaQuery.of(context).size.width / 2 - 147 / 2,
                 top: 18,
@@ -121,8 +120,6 @@ class _Onboarding3State extends State<Onboarding3>
                   ),
                 ),
               ),
-              // Chat message bubbles (custom Flutter widgets for animation)
-              // First message (left, dark, with tail)
               Positioned(
                 left: 50,
                 top: 142,
@@ -133,7 +130,6 @@ class _Onboarding3State extends State<Onboarding3>
                   delay: Duration.zero,
                 ),
               ),
-              // Second message (right, purple, with tail)
               Positioned(
                 right: 50,
                 top: 262,
@@ -141,22 +137,18 @@ class _Onboarding3State extends State<Onboarding3>
                   text: "Can you make me a 7-day\n study plan?",
                   time: '1:43',
                   isMe: true,
-                  delay: Duration(milliseconds: 1100),
+                  delay: Duration(milliseconds: 700),
                 ),
               ),
-              // Typing indicator (left, three dots)
               Positioned(
                 left: 50,
                 top: 362,
                 child: TypingBubble(
-                  delay: Duration(milliseconds: 2300),
+                  delay: Duration(milliseconds: 1300),
                 ),
               ),
-              // Big text (201px above indicator, 424px below NEUROVA text)
               Positioned(
                 left: 19,
-                // NEUROVA text top (18) + height (48) + 424 = 490
-                // or indicator top - 201
                 top: 18 + 48 + 424,
                 child: SizedBox(
                   width: 411,
@@ -167,7 +159,7 @@ class _Onboarding3State extends State<Onboarding3>
                       style: TextStyle(
                         color: Color(0xFFFFFFF0),
                         fontFamily: 'Syne',
-                        fontWeight: FontWeight.w800, // ExtraBold
+                        fontWeight: FontWeight.w800,
                         fontStyle: FontStyle.normal,
                         fontSize: 50,
                         height: 40 / 50,
@@ -189,7 +181,7 @@ class _Onboarding3State extends State<Onboarding3>
                       style: TextStyle(
                         color: Color(0xFFFFFFF0),
                         fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700, // Bold
+                        fontWeight: FontWeight.w700,
                         fontSize: 17,
                         height: 20 / 16,
                         letterSpacing: 0.35,
@@ -198,7 +190,6 @@ class _Onboarding3State extends State<Onboarding3>
                   ),
                 ),
               ),
-              // ...existing code...
             ],
           ),
         ),

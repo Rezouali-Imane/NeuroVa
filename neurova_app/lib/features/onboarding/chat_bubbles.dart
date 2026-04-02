@@ -43,7 +43,7 @@ class _ChatBubbleState extends State<ChatBubble>
     super.initState();
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1300),
+      duration: const Duration(milliseconds: 850),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => _startEntrance());
   }
@@ -254,7 +254,7 @@ class _TypingBubbleState extends State<TypingBubble>
     );
     _appearController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 600),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => _startTypingSequence());
   }
