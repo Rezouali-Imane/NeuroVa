@@ -146,6 +146,8 @@ class _SignupPageState extends State<SignupPage>
                           hintColor: hintColor,
                           iconPath: 'lib/features/onboarding/assets/Icon3.svg',
                           obscureText: _obscurePassword,
+                          autovalidateMode:
+                              AutovalidateMode.onUserInteraction,
                           suffix: _buildAnimatedEyeIcon(
                             isObscured: _obscurePassword,
                             onTap: () => setState(
@@ -156,8 +158,20 @@ class _SignupPageState extends State<SignupPage>
                             if (v == null || v.isEmpty) {
                               return "Password is required";
                             }
-                            if (v.length < 6) {
-                              return "At least 6 characters";
+                            final passwordRegex = RegExp(
+                              r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$',
+                            );
+                            final emojiRegex = RegExp(
+                              r'[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]',
+                              unicode: true,
+                            );
+
+                            if (emojiRegex.hasMatch(v)) {
+                              return "Emojis are not allowed in the password.";
+                            }
+
+                            if (!passwordRegex.hasMatch(v)) {
+                              return "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character (@\$!%*?&#).";
                             }
                             return null;
                           },
@@ -302,7 +316,12 @@ class _SignupPageState extends State<SignupPage>
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => SetupProfil(
-                                      prefilledFullName: _nameController.text,
+                                      prefilledFullName:
+                                          _nameController.text.trim(),
+                                      signupEmail:
+                                          _emailController.text.trim(),
+                                      signupPassword:
+                                          _passwordController.text,
                                     ),
                                   ),
                                 );
@@ -519,6 +538,7 @@ class _SignupPageState extends State<SignupPage>
     TextInputType? keyboardType,
     Widget? suffix,
     String? Function(String?)? validator,
+    AutovalidateMode? autovalidateMode,
     String? iconPath,
   }) {
     return TextFormField(
@@ -526,6 +546,7 @@ class _SignupPageState extends State<SignupPage>
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
+      autovalidateMode: autovalidateMode,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         hintText: label,
