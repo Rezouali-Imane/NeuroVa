@@ -5,7 +5,24 @@ import '../onboarding/background.dart';
 import '../../shared/widgets/entry_reveal.dart';
 
 class SetupProfil2 extends StatefulWidget {
-  const SetupProfil2({super.key});
+  const SetupProfil2({
+    super.key,
+    required this.firstName,
+    required this.lastName,
+    required this.username,
+    required this.signupEmail,
+    required this.signupPassword,
+    this.phoneNumber,
+    this.bio,
+  });
+
+  final String firstName;
+  final String lastName;
+  final String username;
+  final String signupEmail;
+  final String signupPassword;
+  final String? phoneNumber;
+  final String? bio;
 
   @override
   State<SetupProfil2> createState() => _SetupProfil2State();
@@ -137,7 +154,17 @@ class _SetupProfil2State extends State<SetupProfil2> {
         transitionDuration: const Duration(milliseconds: 520),
         reverseTransitionDuration: const Duration(milliseconds: 520),
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const SetupProfile3Page(),
+            SetupProfile3Page(
+              firstName: widget.firstName,
+              lastName: widget.lastName,
+              username: widget.username,
+              email: widget.signupEmail,
+              password: widget.signupPassword,
+              phoneNumber: widget.phoneNumber,
+              bio: widget.bio,
+              fieldOfStudy: selectedField,
+              university: _selectedUniversity?.name,
+            ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final curved = CurvedAnimation(
             parent: animation,

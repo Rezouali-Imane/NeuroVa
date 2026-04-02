@@ -1,22 +1,47 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+import '../auth/state/auth_notifier.dart';
 import '../onboarding/background.dart';
 import '../../shared/widgets/entry_reveal.dart';
 
-class SetupProfile3Page extends StatefulWidget {
-  const SetupProfile3Page({super.key});
+class SetupProfile3Page extends ConsumerStatefulWidget {
+  const SetupProfile3Page({
+    super.key,
+    required this.firstName,
+    required this.lastName,
+    required this.username,
+    required this.email,
+    required this.password,
+    this.phoneNumber,
+    this.bio,
+    this.fieldOfStudy,
+    this.university,
+  });
+
+  final String firstName;
+  final String lastName;
+  final String username;
+  final String email;
+  final String password;
+  final String? phoneNumber;
+  final String? bio;
+  final String? fieldOfStudy;
+  final String? university;
 
   @override
-  State<SetupProfile3Page> createState() => _SetupProfile3PageState();
+  ConsumerState<SetupProfile3Page> createState() => _SetupProfile3PageState();
 }
 
-class _SetupProfile3PageState extends State<SetupProfile3Page> {
+class _SetupProfile3PageState extends ConsumerState<SetupProfile3Page> {
   bool _focusReminders = true;
   bool _faithMode = false;
   bool _notifications = true;
   bool _hapticFeedback = true;
   bool _focusShield = true;
   int _currentStep = 1;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -204,13 +229,67 @@ class _SetupProfile3PageState extends State<SetupProfile3Page> {
                                     borderRadius: BorderRadius.circular(24),
                                   ),
                                 ),
-                                onPressed: () {},
+                                onPressed: () async {
+                                    if (_isSubmitting) return;
+                                        final email = widget.email.trim();
+                                        final password = widget.password;
+
+                                        setState(() {
+                                          _isSubmitting = true;
+                                        });
+
+                                        try {
+                                          await ref
+                                              .read(authNotifierProvider.notifier)
+                                              .signUp(
+                                                name: widget.firstName,
+                                                lastname: widget.lastName,
+                                                username: widget.username,
+                                                email: email,
+                                                password: password,
+                                                phonenumber: widget.phoneNumber,
+                                                bio: widget.bio,
+                                              );
+
+                                          if (!mounted) return;
+
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Account created successfully! Verify your email in Settings.',
+                                              ),
+                                            ),
+                                          );
+
+                                          if (!mounted) return;
+                                          context.go('/home');
+                                        } catch (error) {
+                                          if (!mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                error
+                                                    .toString()
+                                                    .replaceFirst('Exception: ', ''),
+                                              ),
+                                            ),
+                                          );
+                                        } finally {
+                                          if (mounted) {
+                                            setState(() {
+                                              _isSubmitting = false;
+                                            });
+                                          }
+                                        }
+                                      },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     const Text(
                                       'Start Learning',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),

@@ -8,9 +8,16 @@ import '../onboarding/background.dart';
 import '../../shared/widgets/entry_reveal.dart';
 
 class SetupProfil extends StatefulWidget {
-  const SetupProfil({super.key, this.prefilledFullName = ''});
+  const SetupProfil({
+    super.key,
+    this.prefilledFullName = '',
+    required this.signupEmail,
+    required this.signupPassword,
+  });
 
   final String prefilledFullName;
+  final String signupEmail;
+  final String signupPassword;
 
   @override
   State<SetupProfil> createState() => _SetupProfilState();
@@ -195,13 +202,31 @@ class _SetupProfilState extends State<SetupProfil> {
   }
 
   void _goToNextStep() {
+    final username = _usernameController.text.trim().replaceFirst('@', '');
+    if (username.isEmpty || _isUsernameAvailable != true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please choose a valid available username.'),
+        ),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 520),
         reverseTransitionDuration: const Duration(milliseconds: 520),
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const SetupProfil2(),
+            SetupProfil2(
+              firstName: _firstNameController.text.trim(),
+              lastName: _lastNameController.text.trim(),
+              username: username,
+              signupEmail: widget.signupEmail,
+              signupPassword: widget.signupPassword,
+              phoneNumber: _phoneController.text.trim(),
+              bio: _bioController.text.trim(),
+            ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final curved = CurvedAnimation(
             parent: animation,
