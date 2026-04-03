@@ -1,19 +1,22 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'login_page.dart';
 import '../profil/setup_profil1.dart';
 import '../onboarding/background.dart';
 import '../../shared/widgets/entry_reveal.dart';
+import 'package:go_router/go_router.dart';
+import 'state/auth_notifier.dart';
 
-class SignupPage extends StatefulWidget {
+class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
 
   @override
-  State<SignupPage> createState() => _SignupPageState();
+  ConsumerState<SignupPage> createState() => _SignupPageState();
 }
 
-class _SignupPageState extends State<SignupPage>
+class _SignupPageState extends ConsumerState<SignupPage>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
@@ -50,6 +53,48 @@ class _SignupPageState extends State<SignupPage>
     super.dispose();
   }
 
+  bool _isGoogleSubmitting = false;
+
+  Future<void> _submitGoogle() async {
+    if (_isGoogleSubmitting) return;
+
+    setState(() => _isGoogleSubmitting = true);
+
+    try {
+      final bool? isNewUser = await ref
+          .read(authNotifierProvider.notifier)
+          .signInWithGoogle();
+
+      final authState = ref.read(authNotifierProvider);
+
+      if (authState.isAuthenticated) {
+        if (mounted) {
+          if (isNewUser == true) {
+            context.go('/setup-profile');
+          } else {
+            context.go('/home');
+          }
+        }
+      } else if (authState.errorMessage != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(authState.errorMessage!)));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Sign up failed: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleSubmitting = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final hintColor = Colors.white.withValues(alpha: 0.4);
@@ -69,10 +114,7 @@ class _SignupPageState extends State<SignupPage>
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _buildStaggered(
-                        index: 0,
-                        child: const _BrandHeader(),
-                      ),
+                      _buildStaggered(index: 0, child: const _BrandHeader()),
                       const SizedBox(height: 18),
                       _buildStaggered(
                         index: 1,
@@ -113,8 +155,9 @@ class _SignupPageState extends State<SignupPage>
                           label: "Full Name",
                           hintColor: hintColor,
                           iconPath: 'lib/features/onboarding/assets/Icon1.svg',
-                          validator: (v) =>
-                              v == null || v.isEmpty ? "Name is required" : null,
+                          validator: (v) => v == null || v.isEmpty
+                              ? "Name is required"
+                              : null,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -146,8 +189,7 @@ class _SignupPageState extends State<SignupPage>
                           hintColor: hintColor,
                           iconPath: 'lib/features/onboarding/assets/Icon3.svg',
                           obscureText: _obscurePassword,
-                          autovalidateMode:
-                              AutovalidateMode.onUserInteraction,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           suffix: _buildAnimatedEyeIcon(
                             isObscured: _obscurePassword,
                             onTap: () => setState(
@@ -228,7 +270,9 @@ class _SignupPageState extends State<SignupPage>
                                         : Colors.white.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(5),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.7),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.7,
+                                      ),
                                       width: 1.2,
                                     ),
                                   ),
@@ -316,12 +360,10 @@ class _SignupPageState extends State<SignupPage>
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => SetupProfil(
-                                      prefilledFullName:
-                                          _nameController.text.trim(),
-                                      signupEmail:
-                                          _emailController.text.trim(),
-                                      signupPassword:
-                                          _passwordController.text,
+                                      prefilledFullName: _nameController.text
+                                          .trim(),
+                                      signupEmail: _emailController.text.trim(),
+                                      signupPassword: _passwordController.text,
                                     ),
                                   ),
                                 );
@@ -390,10 +432,12 @@ class _SignupPageState extends State<SignupPage>
                             _buildSocialButton(
                               'lib/features/onboarding/assets/google.svg',
                               'Google',
+                              _isGoogleSubmitting ? () {} : _submitGoogle,
                             ),
                             _buildSocialButton(
                               'lib/features/onboarding/assets/github.svg',
                               'GitHub',
+                              () {},
                             ),
                           ],
                         ),
@@ -517,7 +561,7 @@ class _SignupPageState extends State<SignupPage>
                     width: 2.2,
                     height: 24,
                     decoration: BoxDecoration(
-                      color:  Colors.white.withValues(alpha: 0.40),
+                      color: Colors.white.withValues(alpha: 0.40),
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -581,7 +625,7 @@ class _SignupPageState extends State<SignupPage>
     );
   }
 
-  Widget _buildSocialButton(String iconPath, String label) {
+  Widget _buildSocialButton(String iconPath, String label, VoidCallback onTap) {
     return Container(
       width: 166.92,
       height: 51.988,
@@ -594,9 +638,7 @@ class _SignupPageState extends State<SignupPage>
         borderRadius: BorderRadius.circular(24),
       ),
       child: TextButton.icon(
-        onPressed: () {
-          debugPrint("$label SignIn Clicked");
-        },
+        onPressed: onTap,
         icon: SvgPicture.asset(
           iconPath,
           width: 20,

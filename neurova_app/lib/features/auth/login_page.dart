@@ -65,25 +65,45 @@ class _LoginPageState extends ConsumerState<LoginPage>
   }
 
   Future<void> _submitGoogle() async {
-    if (_isSubmitting) return;
+  if (_isSubmitting) return;
 
-    setState(() => _isSubmitting = true);
+  setState(() => _isSubmitting = true);
 
-    try {
-      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-      final authState = ref.read(authNotifierProvider);
+  try {
+    final bool? isNewUser = await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    
+    final authState = ref.read(authNotifierProvider);
 
-      if (authState.isAuthenticated) {
-        
-        if (mounted) context.go('/home');
-      }
-    } finally {
+    if (authState.isAuthenticated) {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+       
+        if (isNewUser == true) {
+        
+          context.go('/setup-profile');
+        } else {
+         
+          context.go('/home');
+        }
+      }
+    } else if (authState.errorMessage != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authState.errorMessage!)),
+        );
       }
     }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An unexpected error occurred: $e')),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+    }
   }
-
+}
   @override
   void dispose() {
     _entranceController.dispose();

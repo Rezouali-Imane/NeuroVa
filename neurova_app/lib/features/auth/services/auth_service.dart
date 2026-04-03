@@ -81,15 +81,18 @@ class AuthService {
     return 'Registration successful';
   }
 
-  Future<String> signInWithGoogle({required String idToken}) async {
-      final response = await _dio.post<dynamic>(
-        '/api/auth/google',
-        data: <String, dynamic>{'idToken': idToken},
-      );
-      final token = _extractToken(response.data);
-      await _localStorageService.saveAuthToken(token);
-      return token;
-    }
+Future<Map<String, dynamic>> signInWithGoogle({required String idToken}) async {
+  final response = await _dio.post<dynamic>(
+    '/api/auth/google',
+    data: <String, dynamic>{'idToken': idToken},
+  );
+
+  final data = response.data as Map<String, dynamic>;
+  final token = data['accessToken']; 
+  await _localStorageService.saveAuthToken(token);
+
+  return data;
+}
 
   Future<void> logout() {
     return _localStorageService.clearAuthToken();

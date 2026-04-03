@@ -8,7 +8,6 @@ import '../../../shared/services/local_storage_service.dart';
 import '../services/auth_service.dart';
 import 'auth_state.dart';
 
-
 final dioProvider = Provider<Dio>((Ref ref) {
   return Dio(
     BaseOptions(
@@ -31,7 +30,9 @@ final authServiceProvider = Provider<AuthService>((Ref ref) {
   );
 });
 
-final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((Ref ref) {
+final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((
+  Ref ref,
+) {
   return AuthNotifier(ref.read(authServiceProvider));
 });
 
@@ -45,7 +46,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       final token = await _authService.restoreToken();
-      final isverified = token != null ? _extractIsVerifiedFromToken(token) : false;
+      final isverified = token != null
+          ? _extractIsVerifiedFromToken(token)
+          : false;
       state = state.copyWith(
         isLoading: false,
         token: token,
@@ -109,11 +112,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         phonenumber: phonenumber,
         bio: bio,
       );
-      
-      
+
       final token = await _authService.restoreToken();
-      final isverified = token != null ? _extractIsVerifiedFromToken(token) : false;
-      
+      final isverified = token != null
+          ? _extractIsVerifiedFromToken(token)
+          : false;
+
       state = state.copyWith(
         isLoading: false,
         token: token,
@@ -145,54 +149,61 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState.initial();
   }
 
-  Future<void> signInWithGoogle() async {
-  state = state.copyWith(isLoading: true, clearError: true);
+  Future<bool?> signInWithGoogle() async {
+    state = state.copyWith(isLoading: true, clearError: true);
 
-  try {
-    final googleUser = await GoogleSignIn(
-      serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
-    ).signIn();
+    try {
+      final googleUser = await GoogleSignIn(
+        serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+      ).signIn();
 
-    if (googleUser == null) {
-      state = state.copyWith(isLoading: false);
-      return;
-    }
+      if (googleUser == null) {
+        state = state.copyWith(isLoading: false);
+        return null;
+      }
 
-    final googleAuth = await googleUser.authentication;
-    final idToken = googleAuth.idToken;
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
 
-    if (idToken == null) {
+      if (idToken == null) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Google sign-in failed: no ID token.',
+        );
+        return null;
+      }
+      final Map<String, dynamic> authData = await _authService.signInWithGoogle(
+        idToken: idToken,
+      );
+
+      final String token = authData['accessToken'];
+      final bool isNew = authData['isNewUser'] ?? false;
+      final isverified = _extractIsVerifiedFromToken(token);
+
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Google sign-in failed: no ID token.',
+        token: token,
+        isverified: isverified,
+        clearError: true,
       );
-      return;
+
+      return isNew;
+    } on DioException catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        clearToken: true,
+        errorMessage: _readDioError(error),
+      );
+      return null;
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        clearToken: true,
+        errorMessage: error.toString(),
+      );
+      return null;
     }
-
-    final token = await _authService.signInWithGoogle(idToken: idToken);
-    final isverified = _extractIsVerifiedFromToken(token);
-
-    state = state.copyWith(
-      isLoading: false,
-      token: token,
-      isverified: isverified,
-      clearError: true,
-    );
-  } on DioException catch (error) {
-    state = state.copyWith(
-      isLoading: false,
-      clearToken: true,
-      errorMessage: _readDioError(error),
-    );
-  } catch (error) {
-    state = state.copyWith(
-      isLoading: false,
-      clearToken: true,
-      errorMessage: error.toString(),
-    );
   }
-}
-
 
   Future<void> resendVerificationCode() async {
     try {
@@ -214,16 +225,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
- 
   Future<void> forgotPassword({required String email}) async {
-  try {
-    await _authService.forgotPassword(email: email);
-  } on DioException catch (error) {
-    throw Exception(_readDioError(error));
-  } catch (error) {
-    throw Exception(error.toString());
+    try {
+      await _authService.forgotPassword(email: email);
+    } on DioException catch (error) {
+      throw Exception(_readDioError(error));
+    } catch (error) {
+      throw Exception(error.toString());
+    }
   }
-}
 
   String _readDioError(DioException error) {
     if (error.type == DioExceptionType.connectionError ||
@@ -250,7 +260,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final payload = parts[1];
       // Add padding if necessary
-      final paddedPayload = payload.padRight(payload.length + (4 - payload.length % 4) % 4, '=');
+      final paddedPayload = payload.padRight(
+        payload.length + (4 - payload.length % 4) % 4,
+        '=',
+      );
 
       final decodedBytes = base64Url.decode(paddedPayload);
       final decodedString = utf8.decode(decodedBytes);

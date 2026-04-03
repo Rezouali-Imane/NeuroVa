@@ -34,6 +34,7 @@ export const GoogleAuth = async ({ idToken }: { idToken: string }) => {
   }
 
   let user = await UserRepository.findByEmail(email);
+   const userAlreadyExisted = !!user;
 
   if (!user) {
     const userid = uuidv4();
@@ -55,7 +56,6 @@ export const GoogleAuth = async ({ idToken }: { idToken: string }) => {
 
     await UserRepository.markUserAsVerified(userid);
     await StudentRepository.create(userid);
-
     user = await UserRepository.findByEmail(email);
   }
 
@@ -75,6 +75,7 @@ export const GoogleAuth = async ({ idToken }: { idToken: string }) => {
     success: true,
     accessToken,
     refreshToken,
+    isNewUser: !userAlreadyExisted,
     user: {
       id: user.userid,
       username: user.username,
