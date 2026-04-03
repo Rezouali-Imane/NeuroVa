@@ -70,7 +70,7 @@ export const AuthController = {
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        message: 'An error occurred.',
+        message: error.message ||'An error occurred.',
       });
     }
   },

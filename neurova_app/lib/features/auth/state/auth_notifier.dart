@@ -168,11 +168,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   try {
     await _authService.forgotPassword(email: email);
   } on DioException catch (error) {
-    print('STATUS: ${error.response?.statusCode}');
-    print('DATA: ${error.response?.data}');
     throw Exception(_readDioError(error));
   } catch (error) {
-    print('GENERIC ERROR: $error');
     throw Exception(error.toString());
   }
 }
