@@ -205,7 +205,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> signInWithGithub() async {
-    // On indique que ça charge et on nettoie les erreurs
+    
     state = state.copyWith(isLoading: true, clearError: true);
 
     final url = Uri.parse('${AppConstants.apiBaseUrl}/api/auth/github');
@@ -213,12 +213,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
-        // On arrête le loading car l'utilisateur a quitté l'app vers le navigateur
+        
         state = state.copyWith(isLoading: false);
       } else {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: 'Impossible de lancer l\'authentification GitHub',
+          errorMessage: 'authentication via github failed',
         );
       }
     } catch (error) {
@@ -242,7 +242,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (error) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Erreur lors de la récupération du profil GitHub',
+        errorMessage: 'Erreur cant load github profile',
       );
     }
   }
@@ -301,7 +301,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (parts.length != 3) return false;
 
       final payload = parts[1];
-      // Add padding if necessary
       final paddedPayload = payload.padRight(
         payload.length + (4 - payload.length % 4) % 4,
         '=',
