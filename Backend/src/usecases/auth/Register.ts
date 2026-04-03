@@ -52,6 +52,7 @@ export const Register = async (data: RegisterDTO) => {
     ...(normalizedBio != null ? { bio: normalizedBio } : {}),
     passwordhash,
     userrole: data.role || UserRole.STUDENT,
+    isverified: false,
   });
 
   if (user.userrole === UserRole.STUDENT) {

@@ -50,6 +50,7 @@ export const GoogleAuth = async ({ idToken }: { idToken: string }) => {
       email,
       passwordhash: 'Via Google',
       userrole: UserRole.STUDENT,
+      isverified: true,
     });
 
     await UserRepository.markUserAsVerified(userid);

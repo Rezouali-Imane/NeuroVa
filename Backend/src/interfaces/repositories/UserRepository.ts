@@ -48,12 +48,12 @@ export const UserRepository = {
     bio?: string;
     passwordhash: string;
     userrole?: UserRole;
+    isverified: boolean,
   }) {
     return await prisma.users.create({
       data: {
         ...data,
         userrole: data.userrole ?? "STUDENT",
-        isverified: false,
         islocked: false,
       },
     });
