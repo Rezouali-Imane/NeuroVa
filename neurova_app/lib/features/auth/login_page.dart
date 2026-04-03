@@ -55,12 +55,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
       final authState = ref.read(authNotifierProvider);
 
       if (authState.isAuthenticated) {
-        if (authState.isverified) {
+        
           context.go('/home');
-        } else {
-          context.go('/verify-email');
-        }
-      }
+        } 
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

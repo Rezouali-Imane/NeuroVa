@@ -53,9 +53,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isAuthenticated && (isLoggingIn || isRegistering || isOnboarding)) {
-        if (!authState.isverified) {
-           return '/confirm-email';
-        }
         return '/home';
       }
       return null;
