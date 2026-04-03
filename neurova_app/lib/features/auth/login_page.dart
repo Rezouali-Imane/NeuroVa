@@ -55,9 +55,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
       final authState = ref.read(authNotifierProvider);
 
       if (authState.isAuthenticated) {
-        
-          context.go('/home');
-        } 
+        context.go('/home');
+      }
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -156,7 +155,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                               ),
                             ),
                           ),
-                           validator: (v) {
+                          validator: (v) {
                             if (v == null || v.isEmpty) {
                               return "Email is required";
                             }

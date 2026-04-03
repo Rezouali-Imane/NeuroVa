@@ -9,6 +9,7 @@ import { Logout } from '../../usecases/auth/Logout.js';
 import { RefreshToken } from '../../usecases/auth/RefreshToken.js';
 import { SendVerificationCode } from '../../usecases/auth/SendVerificationCode.js';
 import { UserRepository } from '../repositories/UserRepository.js';
+import { GoogleAuth } from '../../usecases/auth/GoogleAuth.js';
 
 export const AuthController = {
   me(req: AuthRequest, res: Response) {
@@ -49,6 +50,18 @@ export const AuthController = {
       });
     }
   },
+
+  async googleAuth(req: Request, res: Response) {
+  try {
+    const result = await GoogleAuth(req.body);
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(401).json({
+      success: false,
+      message: error.message || 'Google authentication failed.',
+    });
+  }
+},
 
   async verifyEmail(req: Request, res: Response) {
     try {
