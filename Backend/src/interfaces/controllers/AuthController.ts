@@ -10,6 +10,7 @@ import { RefreshToken } from '../../usecases/auth/RefreshToken.js';
 import { SendVerificationCode } from '../../usecases/auth/SendVerificationCode.js';
 import { UserRepository } from '../repositories/UserRepository.js';
 import { GoogleAuth } from '../../usecases/auth/GoogleAuth.js';
+import { GithubAuth } from '../../usecases/auth/GithubAuth.js';
 
 export const AuthController = {
   me(req: AuthRequest, res: Response) {
@@ -61,6 +62,37 @@ export const AuthController = {
       message: error.message || 'Google authentication failed.',
     });
   }
+},
+
+async githubCallback(req: Request, res: Response) {
+  try {
+    const code = String(req.query.code || '');
+    if (!code) {
+      res.redirect(`${process.env.FLUTTER_APP_URL}/#/login?error=github_failed`);
+      return;
+    }
+
+    const result = await GithubAuth({ code });
+
+    const params = new URLSearchParams({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      isNewUser: String(result.isNewUser),
+    });
+
+    res.redirect(`${process.env.FLUTTER_APP_URL}/#/auth/callback?${params}`);
+  } catch (error: any) {
+    res.redirect(`${process.env.FLUTTER_APP_URL}/#/login?error=${encodeURIComponent(error.message)}`);
+  }
+},
+
+githubRedirect(req: Request, res: Response) {
+  const params = new URLSearchParams({
+    client_id: process.env.GITHUB_CLIENT_ID!,
+    redirect_uri: process.env.GITHUB_CALLBACK_URL!,
+    scope: 'read:user user:email',
+  });
+  res.redirect(`https://github.com/login/oauth/authorize?${params}`);
 },
 
   async verifyEmail(req: Request, res: Response) {

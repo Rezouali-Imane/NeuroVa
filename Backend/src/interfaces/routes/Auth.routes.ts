@@ -7,6 +7,8 @@ const router = Router();
 router.post('/register', AuthController.register);
 router.post('/login', AuthController.login);
 router.post('/google', AuthController.googleAuth);
+router.get('/github', AuthController.githubRedirect);
+router.get('/github/callback', AuthController.githubCallback);
 router.get('/me', authMiddleware, AuthController.me);
 router.post('/logout', AuthController.logout);
 router.get('/verify-email', AuthController.verifyEmail);
