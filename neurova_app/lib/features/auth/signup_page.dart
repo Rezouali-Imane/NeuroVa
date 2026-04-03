@@ -437,7 +437,11 @@ class _SignupPageState extends ConsumerState<SignupPage>
                             _buildSocialButton(
                               'lib/features/onboarding/assets/github.svg',
                               'GitHub',
-                              () {},
+                              () {
+                                ref
+                                    .read(authNotifierProvider.notifier)
+                                    .signInWithGithub();
+                              },
                             ),
                           ],
                         ),

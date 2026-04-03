@@ -109,6 +109,10 @@ Future<Map<String, dynamic>> signInWithGoogle({required String idToken}) async {
     );
   }
 
+  Future<void> saveToken(String token) async {
+  await _localStorageService.saveAuthToken(token);
+}
+
   Future<Map<String, dynamic>> resendVerificationCode() async {
     final response = await _dio.post<dynamic>('/api/auth/resend-verification');
 
@@ -133,4 +137,6 @@ Future<Map<String, dynamic>> signInWithGoogle({required String idToken}) async {
     print(' FAILED to extract token. Data: $data');
     throw const FormatException('AccessToken missing in backend response.');
   }
+
+  
 }

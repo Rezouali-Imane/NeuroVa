@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/services/local_storage_service.dart';
@@ -22,6 +23,11 @@ final dioProvider = Provider<Dio>((Ref ref) {
 final localStorageServiceProvider = Provider<LocalStorageService>((Ref ref) {
   return LocalStorageService();
 });
+
+final GoogleSignIn _googleSignIn = GoogleSignIn(
+  clientId: const String.fromEnvironment('GOOGLE_CLIENT_ID'),
+  scopes: ['email', 'profile'],
+);
 
 final authServiceProvider = Provider<AuthService>((Ref ref) {
   return AuthService(
@@ -153,9 +159,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final googleUser = await GoogleSignIn(
-        serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
-      ).signIn();
+      final googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
         state = state.copyWith(isLoading: false);
@@ -168,10 +172,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (idToken == null) {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: 'Google sign-in failed: no ID token.',
+          errorMessage:
+              'Google sign-in failed: no ID token. Check Client ID and Web configuration.',
         );
         return null;
       }
+
       final Map<String, dynamic> authData = await _authService.signInWithGoogle(
         idToken: idToken,
       );
@@ -188,20 +194,56 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       return isNew;
-    } on DioException catch (error) {
-      state = state.copyWith(
-        isLoading: false,
-        clearToken: true,
-        errorMessage: _readDioError(error),
-      );
-      return null;
     } catch (error) {
       state = state.copyWith(
         isLoading: false,
         clearToken: true,
-        errorMessage: error.toString(),
+        errorMessage: 'Google Error: ${error.toString()}',
       );
       return null;
+    }
+  }
+
+  Future<void> signInWithGithub() async {
+    // On indique que ça charge et on nettoie les erreurs
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final url = Uri.parse('${AppConstants.apiBaseUrl}/api/auth/github');
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+        // On arrête le loading car l'utilisateur a quitté l'app vers le navigateur
+        state = state.copyWith(isLoading: false);
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Impossible de lancer l\'authentification GitHub',
+        );
+      }
+    } catch (error) {
+      state = state.copyWith(isLoading: false, errorMessage: error.toString());
+    }
+  }
+
+  Future<void> finalizeGithubLogin(String token) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _authService.saveToken(token);
+
+      final isverified = _extractIsVerifiedFromToken(token);
+
+      state = state.copyWith(
+        isLoading: false,
+        token: token,
+        isverified: isverified,
+        clearError: true,
+      );
+    } catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Erreur lors de la récupération du profil GitHub',
+      );
     }
   }
 

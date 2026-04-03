@@ -48,6 +48,7 @@ dependencies:
   lottie: ^3.3.1
   chat_bubbles: ^1.9.0
   flutter_chat_bubble: ^2.0.2
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
