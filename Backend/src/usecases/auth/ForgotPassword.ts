@@ -10,11 +10,8 @@ export const ForgotPassword = async (data: ForgotPasswordDTO) => {
 
   const user = await UserRepository.findByEmail(normalizedEmail);
   if (!user) {
-    return {
-      success: true,
-      message: "If this account exists, a reset code has been sent.",
-    };
-  }
+  throw new Error("No account found with this email address.");
+}
 
   const resetcode = TokenGenerator.generateResetToken();
   const expiresat = TokenGenerator.getExpirationDate(1);
