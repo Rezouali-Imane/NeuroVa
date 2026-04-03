@@ -27,6 +27,13 @@ final GoRouter appRouter = GoRouter(
       },
     ),
     GoRoute(
+  path: '/confirm-email',
+  builder: (BuildContext context, GoRouterState state) {
+    final email = state.extra as String? ?? '';
+    return ConfirmEmailPage(email: email);
+  },
+),
+    GoRoute(
       path: '/login',
       builder: (BuildContext context, GoRouterState state) {
         return const LoginPage();

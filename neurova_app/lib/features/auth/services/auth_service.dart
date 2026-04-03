@@ -10,16 +10,39 @@ class AuthService {
   final Dio _dio;
   final LocalStorageService _localStorageService;
 
+
+  Future<void> forgotPassword({required String email}) async {
+  await _dio.post<dynamic>(
+    '/api/auth/forgot-password',
+    data: <String, dynamic>{'email': email},
+  );
+}
+
+Future<void> resetPassword({
+  required String email,
+  required String code,
+  required String newPassword,
+}) async {
+  await _dio.post<dynamic>(
+    '/api/auth/reset-password',
+    data: <String, dynamic>{
+      'email': email,
+      'resetCode': code,
+      'newPassword': newPassword,
+    },
+  );
+}
+
   Future<String> login({required String email, required String password}) async {
     final response = await _dio.post<dynamic>(
       '/api/auth/login',
       data: <String, dynamic>{'identifier': email, 'password': password},
     );
-
     final token = _extractToken(response.data);
     await _localStorageService.saveAuthToken(token);
     return token;
   }
+
 
   Future<String> register({
     required String name,
@@ -43,6 +66,7 @@ class AuthService {
         if (bio != null && bio.trim().isNotEmpty) 'bio': bio.trim(),
       },
     );
+
 
     // Extract and save token
     final token = _extractToken(response.data);

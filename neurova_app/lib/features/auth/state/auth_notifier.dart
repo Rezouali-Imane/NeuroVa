@@ -163,6 +163,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+ Future<void> resetPassword({
+  required String email,
+  required String code,
+  required String newPassword,
+}) async {
+  try {
+    await _authService.resetPassword(
+      email: email,
+      code: code,
+      newPassword: newPassword,
+    );
+  } on DioException catch (error) {
+    throw Exception(_readDioError(error));
+  } catch (error) {
+    throw Exception(error.toString());
+  }
+}
+
+  Future<void> forgotPassword({required String email}) async {
+  try {
+    await _authService.forgotPassword(email: email);
+  } on DioException catch (error) {
+    throw Exception(_readDioError(error));
+  } catch (error) {
+    throw Exception(error.toString());
+  }
+}
+
   String _readDioError(DioException error) {
     if (error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.connectionTimeout) {

@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'confirm_mail.dart';
-import 'login_page.dart';
 import '../onboarding/background.dart';
 import '../../shared/widgets/entry_reveal.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../auth/state/auth_notifier.dart';
+import 'package:go_router/go_router.dart';
 
-class ForgotPasswordPage extends StatefulWidget {
+class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
 
   @override
-  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+  ConsumerState<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage>
+class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
     with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -43,34 +44,29 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
   }
 
   Future<void> _sendResetLink() async {
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _successMessage = null;
-    });
+  setState(() {
+    _isLoading = true;
+    _errorMessage = null;
+  });
 
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-      _successMessage = "Email sent successfully!";
-    });
-
-    await Future.delayed(const Duration(milliseconds: 500));
+  try {
+    await ref.read(authNotifierProvider.notifier).forgotPassword(
+          email: _emailController.text.trim(),
+        );
 
     if (!mounted) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ConfirmEmailPage(email: _emailController.text.trim()),
-      ),
-    );
+   context.push('/confirm-email', extra: _emailController.text.trim());
+  } catch (error) {
+    if (!mounted) return;
+    setState(() {
+      _errorMessage = error.toString().replaceFirst('Exception: ', '');
+    });
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -90,12 +86,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                   fromY: 10,
                   child: TextButton.icon(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                      );
+                      context.go('/login');
                     },
                     icon: SvgPicture.asset(
                       'lib/features/onboarding/assets/fleche2.svg',
@@ -195,9 +186,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                                 decoration: InputDecoration(
                                   hintText: "Email address",
                                   hintStyle: TextStyle(color: hintColor),
-                                  floatingLabelBehavior: FloatingLabelBehavior.never,
+                                  floatingLabelBehavior:
+                                      FloatingLabelBehavior.never,
                                   filled: true,
-                                  fillColor: Colors.white.withValues(alpha: 0.1),
+                                  fillColor: Colors.white.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(24),
                                     borderSide: BorderSide.none,
@@ -246,7 +240,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                               index: 6,
                               child: Text(
                                 _successMessage!,
-                                style: const TextStyle(color: Colors.greenAccent),
+                                style: const TextStyle(
+                                  color: Colors.greenAccent,
+                                ),
                               ),
                             ),
 
