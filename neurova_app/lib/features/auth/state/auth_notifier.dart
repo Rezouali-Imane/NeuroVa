@@ -1,11 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/services/local_storage_service.dart';
 import '../services/auth_service.dart';
 import 'auth_state.dart';
+
 
 final dioProvider = Provider<Dio>((Ref ref) {
   return Dio(
@@ -108,7 +110,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         bio: bio,
       );
       
-      // Get the token that was just saved
+      
       final token = await _authService.restoreToken();
       final isverified = token != null ? _extractIsVerifiedFromToken(token) : false;
       
@@ -142,6 +144,55 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _authService.logout();
     state = const AuthState.initial();
   }
+
+  Future<void> signInWithGoogle() async {
+  state = state.copyWith(isLoading: true, clearError: true);
+
+  try {
+    final googleUser = await GoogleSignIn(
+      serverClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+    ).signIn();
+
+    if (googleUser == null) {
+      state = state.copyWith(isLoading: false);
+      return;
+    }
+
+    final googleAuth = await googleUser.authentication;
+    final idToken = googleAuth.idToken;
+
+    if (idToken == null) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Google sign-in failed: no ID token.',
+      );
+      return;
+    }
+
+    final token = await _authService.signInWithGoogle(idToken: idToken);
+    final isverified = _extractIsVerifiedFromToken(token);
+
+    state = state.copyWith(
+      isLoading: false,
+      token: token,
+      isverified: isverified,
+      clearError: true,
+    );
+  } on DioException catch (error) {
+    state = state.copyWith(
+      isLoading: false,
+      clearToken: true,
+      errorMessage: _readDioError(error),
+    );
+  } catch (error) {
+    state = state.copyWith(
+      isLoading: false,
+      clearToken: true,
+      errorMessage: error.toString(),
+    );
+  }
+}
+
 
   Future<void> resendVerificationCode() async {
     try {

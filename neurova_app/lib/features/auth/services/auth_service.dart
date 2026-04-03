@@ -69,17 +69,6 @@ class AuthService {
         if (bio != null && bio.trim().isNotEmpty) 'bio': bio.trim(),
       },
     );
-
-    Future<String> signInWithGoogle({required String idToken}) async {
-      final response = await _dio.post<dynamic>(
-        '/api/auth/google',
-        data: <String, dynamic>{'idToken': idToken},
-      );
-      final token = _extractToken(response.data);
-      await _localStorageService.saveAuthToken(token);
-      return token;
-    }
-
     final token = _extractToken(response.data);
     await _localStorageService.saveAuthToken(token);
 
@@ -91,6 +80,16 @@ class AuthService {
     }
     return 'Registration successful';
   }
+
+  Future<String> signInWithGoogle({required String idToken}) async {
+      final response = await _dio.post<dynamic>(
+        '/api/auth/google',
+        data: <String, dynamic>{'idToken': idToken},
+      );
+      final token = _extractToken(response.data);
+      await _localStorageService.saveAuthToken(token);
+      return token;
+    }
 
   Future<void> logout() {
     return _localStorageService.clearAuthToken();

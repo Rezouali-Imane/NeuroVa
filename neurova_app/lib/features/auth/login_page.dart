@@ -64,6 +64,26 @@ class _LoginPageState extends ConsumerState<LoginPage>
     }
   }
 
+  Future<void> _submitGoogle() async {
+    if (_isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+      final authState = ref.read(authNotifierProvider);
+
+      if (authState.isAuthenticated) {
+        
+        if (mounted) context.go('/home');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _entranceController.dispose();
@@ -379,10 +399,12 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             _socialBtn(
                               'lib/features/onboarding/assets/google.svg',
                               'Google',
+                              _isSubmitting ? () {} : _submitGoogle,
                             ),
                             _socialBtn(
                               'lib/features/onboarding/assets/github.svg',
                               'GitHub',
+                              (){}
                             ),
                           ],
                         ),
@@ -518,7 +540,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
     );
   }
 
-  Widget _socialBtn(String icon, String text) {
+  Widget _socialBtn(String icon, String text, VoidCallback onTap) {
     return Container(
       width: 166.92,
       height: 51.988,
@@ -531,7 +553,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
         borderRadius: BorderRadius.circular(24),
       ),
       child: TextButton.icon(
-        onPressed: () {},
+        onPressed: onTap, // Now it accepts the dynamic action
         icon: SvgPicture.asset(
           icon,
           width: 20,
