@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const MailService = {
-  async sendVerificationCode(email: string, code: string) {
+  async sendVerificationCode(email: string, verificationLink: string) {
     await resend.emails.send({
       from: 'Neurova <onboarding@resend.dev>',
       to: email,
@@ -85,11 +85,11 @@ export const MailService = {
               </div>
               <div class="content">
                 <p style="font-size: 16px;">Welcome to Neurova! 🎉</p>
-                <p>Please use the verification code below to complete your registration:</p>
-                <div class="code-box">
-                  <div class="code">${code}</div>
-                </div>
-                <p class="expiry">⏰ This code will expire in 15 minutes</p>
+                <p>Please click the button below to verify your account:</p>
+                <p style="margin: 30px 0;">
+                  <a href="${verificationLink}" style="display:inline-block;padding:12px 22px;background:#667eea;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Verify Email</a>
+                </p>
+                <p class="expiry">⏰ This link will expire in 15 minutes</p>
               </div>
               <div class="footer">
                 <p>If you didn't create an account with Neurova, you can safely ignore this email.</p>

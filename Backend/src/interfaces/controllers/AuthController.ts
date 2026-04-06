@@ -12,8 +12,23 @@ import { UserRepository } from "../repositories/UserRepository.js";
 import { GoogleAuth } from "../../usecases/auth/GoogleAuth.js";
 import { GithubAuth } from "../../usecases/auth/GithubAuth.js";
 
+const buildFlutterRedirect = (
+  routePath: string,
+  query: Record<string, string> = {},
+) => {
+  const base = (process.env.FLUTTER_APP_URL || "http://localhost:5000").replace(
+    /\/$/,
+    "",
+  );
+  const isWebUrl = /^https?:\/\//i.test(base);
+  const path = routePath.startsWith("/") ? routePath : `/${routePath}`;
+  const prefix = isWebUrl ? "#/" : "/";
+  const params = new URLSearchParams(query).toString();
+  return `${base}${prefix}${path.slice(1)}${params ? `?${params}` : ""}`;
+};
+
 export const AuthController = {
-  me(req: AuthRequest, res: Response) {
+  async me(req: AuthRequest, res: Response) {
     if (!req.user) {
       res.status(401).json({
         success: false,
@@ -22,10 +37,35 @@ export const AuthController = {
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      user: req.user,
-    });
+    try {
+      const user = await UserRepository.findById(req.user.userid);
+
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: "User not found.",
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        user: {
+          userid: user.userid,
+          name: user.name,
+          lastname: user.lastname,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isverified: user.isverified,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to load current user profile.",
+      });
+    }
   },
 
   async register(req: Request, res: Response) {
@@ -68,22 +108,21 @@ export const AuthController = {
     try {
       const code = req.query.code as string;
       if (!code) {
-        return res.redirect(
-          `${process.env.FLUTTER_APP_URL}/#/login?error=github_failed`,
-        );
+        return res.redirect(buildFlutterRedirect("/login", { error: "github_failed" }));
       }
 
       const result = await GithubAuth({ code });
       const accessToken = result.accessToken;
       const isNewUser = String(result.isNewUser);
-      const redirectUrl = `${process.env.FLUTTER_APP_URL}/#/auth-callback?accessToken=${accessToken}&isNewUser=${isNewUser}`;
+      const redirectUrl = buildFlutterRedirect("/auth-callback", {
+        accessToken,
+        isNewUser,
+      });
 
       return res.redirect(redirectUrl);
     } catch (error: any) {
       console.error("GitHub Auth Error:", error);
-      return res.redirect(
-        `${process.env.FLUTTER_APP_URL}/#/login?error=auth_failed`,
-      );
+      return res.redirect(buildFlutterRedirect("/login", { error: "auth_failed" }));
     }
   },
 
@@ -100,12 +139,24 @@ export const AuthController = {
     try {
       const token = String(req.query.token || "");
       const result = await VerifyEmail({ token });
-      res.status(200).json(result);
+      const accessToken =
+        typeof (result as { accessToken?: unknown }).accessToken === "string"
+          ? ((result as { accessToken: string }).accessToken)
+          : "";
+
+      return res.redirect(
+        buildFlutterRedirect("/auth-callback", {
+          emailVerified: "true",
+          ...(accessToken ? { accessToken } : {}),
+        }),
+      );
     } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        message: error.message || "Verification failed.",
-      });
+      return res.redirect(
+        buildFlutterRedirect("/auth-callback", {
+          emailVerified: "false",
+          error: "verification_failed",
+        }),
+      );
     }
   },
 

@@ -61,7 +61,7 @@ export const Register = async (data: RegisterDTO) => {
     await AdminRepository.create(user.userid);
   }
 
-  const verification = await SendVerificationCode(user.userid, user.email);
+  await SendVerificationCode(user.userid, user.email);
 
   const accessToken = JwtClient.signAccessToken({
     userid: user.userid,
