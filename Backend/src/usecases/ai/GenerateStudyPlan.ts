@@ -1,4 +1,5 @@
 import openai from '../../infrastructure/ai/openai.client.js';
+import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
 import { getPrayerTimes } from '../../infrastructure/external/prayertime.client.js';
 import prisma from '../../infrastructure/database/prisma.client.js';
 import { StudentMemoryRepository } from '../../interfaces/repositories/AIRepositories.js';
@@ -60,7 +61,7 @@ Format: **Day 1 — [Date]** then bullet points per time block.`;
 
  
   const response = await openai.chat.completions.create({
-    model: 'gemini-2.0-flash',
+    model: resolveChatModel(),
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 1500,
   });

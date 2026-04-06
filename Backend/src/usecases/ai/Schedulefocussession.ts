@@ -1,4 +1,5 @@
 import openai from '../../infrastructure/ai/openai.client.js';
+import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
 import prisma from '../../infrastructure/database/prisma.client.js';
 import { StudentMemoryRepository } from '../../interfaces/repositories/AIRepositories.js';
 import type { ScheduleFocusSessionDTO } from '../../interfaces/dtos/AI.dto.js';
@@ -39,7 +40,7 @@ Return a JSON object with:
 Return ONLY valid JSON, no explanation.`;
 
   const response = await openai.chat.completions.create({
-    model: 'gemini-2.0-flash',
+    model: resolveChatModel(),
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 150,
   });

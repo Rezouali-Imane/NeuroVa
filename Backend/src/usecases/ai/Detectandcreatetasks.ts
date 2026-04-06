@@ -1,4 +1,5 @@
 import openai from '../../infrastructure/ai/openai.client.js';
+import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
 import prisma from '../../infrastructure/database/prisma.client.js';
 
 
@@ -37,7 +38,7 @@ Rules:
 Example: [{"title": "Study for algorithms exam", "category": "ACADEMIC", "priority": 3, "deadline": "2026-03-20T00:00:00.000Z"}]`;
 
     const response = await openai.chat.completions.create({
-      model: 'gemini-2.0-flash',
+      model: resolveChatModel(),
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 300,
     });

@@ -237,6 +237,12 @@ const sleep = async (ms: number) => new Promise((resolve) => setTimeout(resolve,
 
 const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
 
+const DEFAULT_COMPLETION_TIMEOUT_MS = AI_PROVIDER === 'ollama' ? 35000 : 18000;
+const DEFAULT_COMPLETION_TOTAL_BUDGET_MS = AI_PROVIDER === 'ollama' ? 70000 : 30000;
+
+const AI_COMPLETION_TIMEOUT_MS = Number(process.env.AI_COMPLETION_TIMEOUT_MS ?? DEFAULT_COMPLETION_TIMEOUT_MS);
+const AI_COMPLETION_TOTAL_BUDGET_MS = Number(process.env.AI_COMPLETION_TOTAL_BUDGET_MS ?? DEFAULT_COMPLETION_TOTAL_BUDGET_MS);
+
 const DEFAULT_GEMINI_MODELS = [
   'gemini-2.0-flash',
   'gemini-2.0-flash-lite',
@@ -247,10 +253,23 @@ const DEFAULT_GEMINI_MODELS = [
 const DEFAULT_OPENROUTER_MODELS = [
   'qwen/qwen-2.5-7b-instruct:free',
   'meta-llama/llama-3.1-8b-instruct:free',
-  'mistralai/mistral-7b-instruct:free',
+  'google/gemma-2-9b-it:free',
+] as const;
+
+const DEFAULT_OLLAMA_MODELS = [
+  'llama3.2:1b',
+  'phi3:mini',
+  'llama3.2:3b',
 ] as const;
 
 const getGeminiModelPool = (): string[] => {
+  if (AI_PROVIDER === 'ollama') {
+    const configuredModel = process.env.OLLAMA_MODEL?.trim();
+    // Ollama should use a single explicit model to avoid intermittent 404s from non-installed fallbacks.
+    if (!configuredModel) return [...DEFAULT_OLLAMA_MODELS];
+    return [configuredModel];
+  }
+
   if (AI_PROVIDER === 'openrouter') {
     const configuredModel = process.env.OPENROUTER_MODEL?.trim();
     if (!configuredModel) return [...DEFAULT_OPENROUTER_MODELS];
@@ -272,25 +291,51 @@ const createGeminiCompletion = async (params: {
   let lastError: unknown;
   let quotaError: unknown;
   const modelPool = getGeminiModelPool();
+  const startedAt = Date.now();
+
+  const runWithTimeout = async <T>(operation: Promise<T>): Promise<T> => {
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    try {
+      return await Promise.race<T>([
+        operation,
+        new Promise<T>((_, reject) => {
+          timeoutHandle = setTimeout(() => {
+            reject(new Error('AI provider timeout'));
+          }, AI_COMPLETION_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+    }
+  };
 
   for (const model of modelPool) {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed >= AI_COMPLETION_TOTAL_BUDGET_MS) {
+        throw new Error('AI response timeout. Please try again.');
+      }
+
       try {
         if (directchat || !tools || tools.length === 0) {
-          return await openai.chat.completions.create({
-            model,
-            messages,
-            max_tokens: 1000,
-          });
+          return await runWithTimeout(
+            openai.chat.completions.create({
+              model,
+              messages,
+              max_tokens: 1000,
+            }),
+          );
         }
 
-        return await openai.chat.completions.create({
-          model,
-          messages,
-          tools,
-          tool_choice: 'auto',
-          max_tokens: 1000,
-        });
+        return await runWithTimeout(
+          openai.chat.completions.create({
+            model,
+            messages,
+            tools,
+            tool_choice: 'auto',
+            max_tokens: 1000,
+          }),
+        );
       } catch (error) {
         lastError = error;
         const status = (error as { status?: number })?.status;
@@ -338,6 +383,33 @@ const parseEndDate = (content: string): Date | null => {
   }
 
   return null;
+};
+
+const buildProviderFallbackReply = (content: string, language: string): string => {
+  const text = content.toLowerCase();
+  const isOllama = AI_PROVIDER === 'ollama';
+
+  if (text.includes('study plan') || text.includes('schedule')) {
+    return language === 'French'
+      ? 'Le modele IA local est temporairement occupe. Plan rapide: 1) 25 min revision active, 2) 5 min pause, 3) 25 min exercices, 4) 10 min recap. Reessayez dans quelques secondes.'
+      : 'The local AI model is temporarily busy. Quick plan: 1) 25 min active review, 2) 5 min break, 3) 25 min practice, 4) 10 min recap. Retry in a few seconds.';
+  }
+
+  if (text.includes('quiz')) {
+    return language === 'French'
+      ? 'Le modele IA est temporairement occupe. Mini quiz: 1) Complexite de la recherche binaire? 2) Difference pile vs file? 3) Quand utiliser une table de hachage?'
+      : 'The AI model is temporarily busy. Mini quiz: 1) Binary search complexity? 2) Stack vs queue? 3) When do you use a hash map?';
+  }
+
+  if (isOllama) {
+    return language === 'French'
+      ? 'Le modele IA local est temporairement occupe. Reessayez dans 10-20 secondes.'
+      : 'The local AI model is temporarily busy. Please retry in 10-20 seconds.';
+  }
+
+  return language === 'French'
+    ? 'Le fournisseur IA gratuit est actuellement indisponible ou limite (429/404). Reessayez dans 1-2 minutes. Je peux quand meme vous proposer un plan court si vous dites: "plan de 30 minutes".'
+    : 'The free AI provider is currently unavailable or rate-limited (429/404). Retry in 1-2 minutes. I can still give you a short structured plan if you ask: "make me a 30-minute plan".';
 };
 
 const extractStatusFromContent = (content: string): TaskStatus | null => {
@@ -812,7 +884,8 @@ export const SendMessage = async (data: SendMessageDTO) => {
   } catch {
   }
 
-  const history = await ChatHistoryRepository.findByUser(data.userid, 10);
+  const historyLimit = AI_PROVIDER === 'ollama' ? 4 : 10;
+  const history = await ChatHistoryRepository.findByUser(data.userid, historyLimit);
   const historyMessages = history.reverse().map(h => ({
     role: h.role === 'USER' ? 'user' as const : 'assistant' as const,
     content: h.content,
@@ -1017,12 +1090,32 @@ export const SendMessage = async (data: SendMessageDTO) => {
       };
     }
 
-    const response = await createGeminiCompletion({
-      messages,
-      directchat: true,
-    });
-
-    const aiReply = response.choices[0]?.message?.content ?? "Sorry, I couldn't generate a response right now.";
+    let aiReply = "Sorry, I couldn't generate a response right now.";
+    try {
+      const response = await createGeminiCompletion({
+        messages,
+        directchat: true,
+      });
+      aiReply = response.choices[0]?.message?.content ?? aiReply;
+    } catch {
+      try {
+        // Compact retry path for local models: minimal context reduces intermittent Ollama failures.
+        const compactRetry = await createGeminiCompletion({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are Neurova, a concise and helpful academic assistant. Respond clearly in markdown.',
+            },
+            { role: 'user', content: data.content },
+          ],
+          directchat: true,
+          maxRetries: 0,
+        });
+        aiReply = compactRetry.choices[0]?.message?.content?.trim() || buildProviderFallbackReply(data.content, language);
+      } catch {
+        aiReply = buildProviderFallbackReply(data.content, language);
+      }
+    }
 
     await ChatHistoryRepository.save(data.userid, 'USER', data.content);
     await ChatHistoryRepository.save(data.userid, 'ASSISTANT', aiReply);
@@ -1297,18 +1390,13 @@ export const SendMessage = async (data: SendMessageDTO) => {
       }
     }
   } catch (error) {
-    if (data.directchat) {
-      const message = error instanceof Error ? error.message : 'Gemini request failed';
-      throw new Error(`Direct chat failed: ${message}`);
-    }
-
     if (isActionIntent(data.content)) {
       const fallback = await fallbackAssistantAction(data.userid, data.content);
       aiReply = fallback.reply;
       actions = fallback.actions;
     } else {
-      const message = error instanceof Error ? error.message : 'Gemini request failed';
-      throw new Error(`Gemini request failed: ${message}`);
+      aiReply = buildProviderFallbackReply(data.content, language);
+      actions = [];
     }
   }
 

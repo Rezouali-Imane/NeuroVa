@@ -12,6 +12,12 @@ import { ProcessDocument } from '../../usecases/ai/Processdocument.js';
 import { GetKnowledgeBase, DeleteDocument } from '../../usecases/ai/Knowledgebase.usecases.js';
 import { ScheduleFocusSession } from '../../usecases/ai/Schedulefocussession.js';
 import { SendTaskReminders } from '../../usecases/ai/Sendtaskreminders.js';
+import {
+  handleAIError,
+  validateUserAccess,
+  AIError,
+  AIErrorCode,
+} from '../../infrastructure/ai/error.handler.js';
 
 export const upload = multer({
   storage: multer.memoryStorage(),
@@ -23,57 +29,94 @@ export const upload = multer({
   },
 });
 
+// Middleware to extract and validate user ID from auth token
+export const extractUserId = (req: Request, res: Response, next: Function) => {
+  try {
+    // Assuming authMiddleware sets req.user
+    if (!req.user) {
+      throw new AIError(AIErrorCode.UNAUTHORIZED, 'Authentication required', 401);
+    }
+    next();
+  } catch (error) {
+    handleAIError(error, res);
+  }
+};
+
 export const AIAssistantController = {
-
-
   async sendMessage(req: Request, res: Response) {
     try {
       const result = await SendMessage(req.body);
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
 
   async getChatHistory(req: Request, res: Response) {
     try {
       const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      // Validate user can only access their own history
+      validateUserAccess(requestUserId, userid);
+
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const offset = parseInt(req.query.offset as string) || 0;
+
       const history = await GetChatHistory(userid);
-      res.status(200).json({ success: true, data: history });
+      // Simple pagination
+      const paginatedHistory = history.slice(offset, offset + limit);
+
+      res.status(200).json({
+        success: true,
+        data: paginatedHistory,
+        pagination: { limit, offset, total: history.length },
+      });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
 
   async clearChatHistory(req: Request, res: Response) {
     try {
       const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      validateUserAccess(requestUserId, userid);
+
       const result = await ClearChatHistory(userid);
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
-
 
   async generateStudyPlan(req: Request, res: Response) {
     try {
       const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      validateUserAccess(requestUserId, userid);
+
       const { faithmode, city, country } = req.body;
       const result = await GenerateStudyPlan({ userid, faithmode, city, country });
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
 
   async analyzeWeakness(req: Request, res: Response) {
     try {
       const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      validateUserAccess(requestUserId, userid);
+
       const result = await AnalyzeWeakness({ userid });
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
 
@@ -81,29 +124,44 @@ export const AIAssistantController = {
   async getMemory(req: Request, res: Response) {
     try {
       const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      validateUserAccess(requestUserId, userid);
+
       const result = await GetStudentMemory(userid);
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
 
   async updateMemory(req: Request, res: Response) {
     try {
       const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      validateUserAccess(requestUserId, userid);
+
       const result = await UpdateStudentMemory({ userid, ...req.body });
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
-
 
   async uploadDocument(req: Request, res: Response) {
     try {
       const file = req.file;
-      if (!file) throw new Error('No file uploaded');
-      const { userid, major, subject } = req.body;
+      if (!file) {
+        throw new AIError(AIErrorCode.VALIDATION_ERROR, 'No file uploaded', 400);
+      }
+
+      const userid = req.body.userid as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      validateUserAccess(requestUserId, userid);
+
+      const { major, subject } = req.body;
       const result = await ProcessDocument({
         userid,
         major,
@@ -114,17 +172,21 @@ export const AIAssistantController = {
       });
       res.status(201).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
 
   async getKnowledgeBase(req: Request, res: Response) {
     try {
       const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      validateUserAccess(requestUserId, userid);
+
       const docs = await GetKnowledgeBase(userid);
       res.status(200).json({ success: true, data: docs });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
 
@@ -134,29 +196,36 @@ export const AIAssistantController = {
       const result = await DeleteDocument(id);
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
-
 
   async scheduleFocusSession(req: Request, res: Response) {
     try {
       const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      validateUserAccess(requestUserId, userid);
+
       const { taskid, durationMinutes } = req.body;
       const result = await ScheduleFocusSession({ userid, taskid, durationMinutes });
       res.status(201).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
 
   async sendReminders(req: Request, res: Response) {
     try {
       const userid = req.params['userid'] as string | undefined;
+      if (userid) {
+        const requestUserId = (req.user as any)?.userid;
+        validateUserAccess(requestUserId, userid);
+      }
       const result = await SendTaskReminders(userid);
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      handleAIError(error, res);
     }
   },
 };

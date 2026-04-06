@@ -1,5 +1,9 @@
 import openai from '../../infrastructure/ai/openai.client.js';
+import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
 import { StudentMemoryRepository } from '../../interfaces/repositories/AIRepositories.js';
+
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+const ENABLE_OLLAMA_MEMORY_EXTRACTION = (process.env.OLLAMA_ENABLE_MEMORY_EXTRACTION || 'false').toLowerCase() === 'true';
 
 const MEMORY_KEYS = [
   'name',
@@ -17,6 +21,8 @@ export const ExtractAndSaveMemory = async (
   userMessage: string,
   existingMemory: Record<string, string>
 ): Promise<void> => {
+  if (AI_PROVIDER === 'ollama' && !ENABLE_OLLAMA_MEMORY_EXTRACTION) return;
+
   try {
     const alreadyKnown = Object.entries(existingMemory)
       .map(([k, v]) => `${k}: ${v}`)
@@ -38,7 +44,7 @@ Rules:
 - Return ONLY valid JSON, no explanation, no markdown`;
 
     const response = await openai.chat.completions.create({
-      model: 'gemini-2.0-flash',
+      model: resolveChatModel(),
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 200,
     });
