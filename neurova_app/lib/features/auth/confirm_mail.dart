@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'login_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
 import '../onboarding/background.dart';
 import '../../shared/widgets/entry_reveal.dart';
 
-class ConfirmEmailPage extends StatefulWidget {
+class ConfirmEmailPage extends ConsumerStatefulWidget {
   final String email;
 
   const ConfirmEmailPage({super.key, required this.email});
 
   @override
-  State<ConfirmEmailPage> createState() => _ConfirmEmailPageState();
+  ConsumerState<ConfirmEmailPage> createState() => _ConfirmEmailPageState();
 }
 
-class _ConfirmEmailPageState extends State<ConfirmEmailPage>
+class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _entranceController;
 
@@ -52,12 +54,7 @@ class _ConfirmEmailPageState extends State<ConfirmEmailPage>
                   fromY: 10,
                   child: TextButton.icon(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                      );
+                      context.go('/login');
                     },
                     icon: SvgPicture.asset(
                       'lib/features/onboarding/assets/fleche2.svg',
@@ -77,7 +74,7 @@ class _ConfirmEmailPageState extends State<ConfirmEmailPage>
               ),
 
               Positioned(
-                top: 80,
+                top: 60,
                 left: 0,
                 right: 0,
                 child: _buildStaggered(
@@ -100,7 +97,7 @@ class _ConfirmEmailPageState extends State<ConfirmEmailPage>
                           _buildStaggered(
                             index: 2,
                             child: const Text(
-                              'Forgot',
+                              'Verify',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Color(0xFFFFFFF0),
@@ -116,7 +113,7 @@ class _ConfirmEmailPageState extends State<ConfirmEmailPage>
                           _buildStaggered(
                             index: 3,
                             child: const Text(
-                              'Password',
+                              'Email',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Color(0xFFFFFFF0),
@@ -134,13 +131,74 @@ class _ConfirmEmailPageState extends State<ConfirmEmailPage>
                           _buildStaggered(
                             index: 4,
                             child: Text(
-                              'A password reset link has been sent to\n${widget.email}',
+                              widget.email.isNotEmpty
+                                  ? 'We sent a verification link to ${widget.email}. Click the link in your email to verify your account.'
+                                  : 'Click the verification link in your email to verify your account.',
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Color(0xFFAFAFAF),
-                                fontSize: 15,
+                                fontSize: 14,
                                 fontFamily: 'Syne',
-                                height: 1.4,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          _buildStaggered(
+                            index: 5,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                ),
+                              ),
+                              child: const Text(
+                                'After clicking the email link, you will be redirected back to the app and your account will be verified automatically.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontFamily: 'Syne',
+                                  fontSize: 14,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 40),
+
+                          _buildStaggered(
+                            index: 6,
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 67.99,
+                              child: ElevatedButton(
+                                onPressed: () => context.go('/login'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color.fromARGB(
+                                    188,
+                                    241,
+                                    224,
+                                    228,
+                                  ),
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Back to Login',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
                               ),
                             ),
                           ),

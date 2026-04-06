@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import '../onboarding/background.dart';
-import '../../shared/widgets/entry_reveal.dart';
 
-class ResetPasswordPage extends StatefulWidget {
-  const ResetPasswordPage({super.key});
+import '../../shared/widgets/entry_reveal.dart';
+import '../onboarding/background.dart';
+import 'state/auth_notifier.dart';
+
+class ResetPasswordPage extends ConsumerStatefulWidget {
+  final String email;
+  final String code;
+
+  const ResetPasswordPage({super.key, this.email = '', this.code = ''});
 
   @override
-  State<ResetPasswordPage> createState() => _ResetPasswordPageState();
+  ConsumerState<ResetPasswordPage> createState() => _ResetPasswordPageState();
 }
 
-class _ResetPasswordPageState extends State<ResetPasswordPage>
-  with SingleTickerProviderStateMixin {
+class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage>
+    with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -43,18 +49,46 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
     super.dispose();
   }
 
-  void _resetPassword() async {
+  Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
+    if (widget.email.isEmpty || widget.code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reset session expired. Please request a new code.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await ref
+          .read(authNotifierProvider.notifier)
+          .resetPassword(
+            email: widget.email,
+            code: widget.code,
+            newPassword: _passwordController.text,
+          );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() => _isLoading = false);
+      context.go('/resetpassword-success');
+    } catch (error) {
+      if (!mounted) return;
 
-    context.go('/resetpassword-success');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -85,13 +119,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                       ),
                     ),
                     label: const Text(
-                      "Back to login",
+                      'Back to login',
                       style: TextStyle(color: Colors.white70, fontSize: 15),
                     ),
                   ),
                 ),
               ),
-
               Positioned(
                 top: 60,
                 left: 0,
@@ -102,7 +135,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                   child: const _BrandHeader(),
                 ),
               ),
-
               Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
@@ -112,11 +144,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                       child: Column(
                         children: [
                           const SizedBox(height: 120),
-
                           _buildStaggered(
                             index: 2,
                             child: const Text(
-                              "Reset",
+                              'Reset',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Color(0xFFFFFFF0),
@@ -128,11 +159,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                               ),
                             ),
                           ),
-
                           _buildStaggered(
                             index: 3,
                             child: const Text(
-                              "Password",
+                              'Password',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Color(0xFFFFFFF0),
@@ -144,11 +174,14 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                               ),
                             ),
                           ),
-
-                          const SizedBox(height: 30),
-
+                          const SizedBox(height: 16),
                           _buildStaggered(
                             index: 4,
+                            child: const SizedBox.shrink(),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildStaggered(
+                            index: 5,
                             child: Form(
                               key: _formKey,
                               child: Column(
@@ -158,7 +191,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                                     obscureText: _obscurePassword,
                                     style: const TextStyle(color: Colors.white),
                                     decoration: InputDecoration(
-                                      hintText: "New Password",
+                                      hintText: 'New Password',
                                       hintStyle: TextStyle(color: hintColor),
                                       floatingLabelBehavior:
                                           FloatingLabelBehavior.never,
@@ -170,10 +203,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                                         borderRadius: BorderRadius.circular(24),
                                         borderSide: BorderSide.none,
                                       ),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 18,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 18,
+                                            horizontal: 16,
+                                          ),
                                       prefixIcon: Padding(
                                         padding: const EdgeInsets.all(12),
                                         child: SvgPicture.asset(
@@ -190,30 +224,29 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                                         isObscured: _obscurePassword,
                                         onTap: () {
                                           setState(() {
-                                            _obscurePassword = !_obscurePassword;
+                                            _obscurePassword =
+                                                !_obscurePassword;
                                           });
                                         },
                                       ),
                                     ),
                                     validator: (v) {
                                       if (v == null || v.isEmpty) {
-                                        return "Password is required";
+                                        return 'Password is required';
                                       }
                                       if (v.length < 6) {
-                                        return "Minimum 6 characters";
+                                        return 'Minimum 6 characters';
                                       }
                                       return null;
                                     },
                                   ),
-
                                   const SizedBox(height: 10),
-
                                   TextFormField(
                                     controller: _confirmController,
                                     obscureText: _obscureConfirm,
                                     style: const TextStyle(color: Colors.white),
                                     decoration: InputDecoration(
-                                      hintText: "Confirm Password",
+                                      hintText: 'Confirm Password',
                                       hintStyle: TextStyle(color: hintColor),
                                       floatingLabelBehavior:
                                           FloatingLabelBehavior.never,
@@ -225,10 +258,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                                         borderRadius: BorderRadius.circular(24),
                                         borderSide: BorderSide.none,
                                       ),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 18,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 18,
+                                            horizontal: 16,
+                                          ),
                                       prefixIcon: Padding(
                                         padding: const EdgeInsets.all(12),
                                         child: SvgPicture.asset(
@@ -252,10 +286,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                                     ),
                                     validator: (v) {
                                       if (v == null || v.isEmpty) {
-                                        return "Confirm your password";
+                                        return 'Confirm your password';
                                       }
                                       if (v != _passwordController.text) {
-                                        return "Passwords do not match";
+                                        return 'Passwords do not match';
                                       }
                                       return null;
                                     },
@@ -264,11 +298,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                               ),
                             ),
                           ),
-
                           const SizedBox(height: 40),
-
                           _buildStaggered(
-                            index: 5,
+                            index: 6,
                             child: SizedBox(
                               width: double.infinity,
                               height: 67.99,
@@ -290,18 +322,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                                     ? const CircularProgressIndicator(
                                         color: Colors.black,
                                       )
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Text(
-                                            "Confirm",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                        ],
+                                    : const Text(
+                                        'Reset Password',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
                                       ),
                               ),
                             ),
@@ -358,46 +384,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutBack,
-          scale: isObscured ? 1.0 : 1.1,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              AnimatedRotation(
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeInOutCubic,
-                turns: isObscured ? 0.0 : 0.5,
-                child: SvgPicture.asset(
-                  'lib/features/onboarding/assets/Icon4.svg',
-                  key: ValueKey<bool>(isObscured),
-                  width: 20,
-                  height: 20,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white70,
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeInOut,
-                opacity: isObscured ? 1.0 : 0.0,
-                child: Transform.rotate(
-                  angle: -0.85,
-                  child: Container(
-                    width: 2.2,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.40),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        child: Icon(
+          isObscured
+              ? Icons.visibility_off_outlined
+              : Icons.visibility_outlined,
+          color: Colors.white70,
+          size: 22,
         ),
       ),
     );

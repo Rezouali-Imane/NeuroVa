@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../onboarding/background.dart';
-import '../../shared/widgets/entry_reveal.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../auth/state/auth_notifier.dart';
 import 'package:go_router/go_router.dart';
 
-class ForgotPasswordPage extends ConsumerStatefulWidget {
-  const ForgotPasswordPage({super.key});
+import '../../shared/widgets/entry_reveal.dart';
+import '../onboarding/background.dart';
+
+class ResetCodePage extends StatefulWidget {
+  final String email;
+
+  const ResetCodePage({super.key, required this.email});
 
   @override
-  ConsumerState<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+  State<ResetCodePage> createState() => _ResetCodePageState();
 }
 
-class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
+class _ResetCodePageState extends State<ResetCodePage>
     with SingleTickerProviderStateMixin {
-  final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-
-  bool _isLoading = false;
-  String? _errorMessage;
-  String? _successMessage;
+  final _codeController = TextEditingController();
   late final AnimationController _entranceController;
 
   @override
@@ -39,33 +36,20 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
   @override
   void dispose() {
     _entranceController.dispose();
-    _emailController.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
-  Future<void> _sendResetLink() async {
+  void _continueToResetPassword() {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      await ref
-          .read(authNotifierProvider.notifier)
-          .forgotPassword(email: _emailController.text.trim());
-
-      if (!mounted) return;
-        context.push('/reset-code', extra: _emailController.text.trim());
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = error.toString().replaceFirst('Exception: ', '');
-      });
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    context.push(
+      '/resetpassword',
+      extra: <String, String>{
+        'email': widget.email,
+        'code': _codeController.text.trim(),
+      },
+    );
   }
 
   @override
@@ -85,9 +69,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
                   index: 0,
                   fromY: 10,
                   child: TextButton.icon(
-                    onPressed: () {
-                      context.go('/login');
-                    },
+                    onPressed: () => context.go('/forgot-password'),
                     icon: SvgPicture.asset(
                       'lib/features/onboarding/assets/fleche2.svg',
                       width: 18,
@@ -98,15 +80,14 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
                       ),
                     ),
                     label: const Text(
-                      "Back to login",
+                      'Back',
                       style: TextStyle(color: Colors.white70, fontSize: 15),
                     ),
                   ),
                 ),
               ),
-
               Positioned(
-                top: 80,
+                top: 60,
                 left: 0,
                 right: 0,
                 child: _buildStaggered(
@@ -115,7 +96,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
                   child: const _BrandHeader(),
                 ),
               ),
-
               Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
@@ -125,11 +105,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
                       child: Column(
                         children: [
                           const SizedBox(height: 120),
-
                           _buildStaggered(
                             index: 2,
                             child: const Text(
-                              "Forgot",
+                              'Reset',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Color(0xFFFFFFF0),
@@ -141,11 +120,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
                               ),
                             ),
                           ),
-
                           _buildStaggered(
                             index: 3,
                             child: const Text(
-                              "Password",
+                              'Code',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Color(0xFFFFFFF0),
@@ -157,47 +135,45 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
                               ),
                             ),
                           ),
-
-                          const SizedBox(height: 14),
-
+                          const SizedBox(height: 16),
                           _buildStaggered(
                             index: 4,
-                            child: const Text(
-                              "Enter your email and we'll send you a reset code",
+                            child: Text(
+                              'Enter the reset code sent to ${widget.email}.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFFFFFFF0),
-                                fontSize: 16,
+                              style: const TextStyle(
+                                color: Color(0xFFAFAFAF),
+                                fontSize: 14,
                                 fontFamily: 'Syne',
-                                fontWeight: FontWeight.w400,
+                                height: 1.35,
                               ),
                             ),
                           ),
-
-                          const SizedBox(height: 30),
-
+                          const SizedBox(height: 24),
                           _buildStaggered(
                             index: 5,
                             child: Form(
                               key: _formKey,
                               child: TextFormField(
-                                controller: _emailController,
+                                controller: _codeController,
                                 style: const TextStyle(color: Colors.white),
                                 decoration: InputDecoration(
-                                  hintText: "Email address",
+                                  hintText: 'Reset code',
                                   hintStyle: TextStyle(color: hintColor),
                                   floatingLabelBehavior:
                                       FloatingLabelBehavior.never,
                                   filled: true,
-                                  fillColor: Colors.white.withValues(
-                                    alpha: 0.1,
-                                  ),
+                                  fillColor: Colors.white.withValues(alpha: 0.1),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(24),
                                     borderSide: BorderSide.none,
                                   ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 18,
+                                    horizontal: 16,
+                                  ),
                                   prefixIcon: Padding(
-                                    padding: const EdgeInsets.all(12.0),
+                                    padding: const EdgeInsets.all(12),
                                     child: SvgPicture.asset(
                                       'lib/features/onboarding/assets/Icon2.svg',
                                       width: 20,
@@ -210,51 +186,22 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
                                   ),
                                 ),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) {
-                                    return "Email is required";
-                                  }
-                                  if (!RegExp(
-                                    r'^[^@]+@[^@]+\.[^@]+',
-                                  ).hasMatch(v)) {
-                                    return "Enter a valid email";
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Reset code is required';
                                   }
                                   return null;
                                 },
                               ),
                             ),
                           ),
-
-                          const SizedBox(height: 20),
-
-                          if (_errorMessage != null)
-                            _buildStaggered(
-                              index: 6,
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(color: Colors.redAccent),
-                              ),
-                            ),
-
-                          if (_successMessage != null)
-                            _buildStaggered(
-                              index: 6,
-                              child: Text(
-                                _successMessage!,
-                                style: const TextStyle(
-                                  color: Colors.greenAccent,
-                                ),
-                              ),
-                            ),
-
-                          const SizedBox(height: 30),
-
+                          const SizedBox(height: 40),
                           _buildStaggered(
-                            index: 7,
+                            index: 6,
                             child: SizedBox(
                               width: double.infinity,
-                              height: 68,
+                              height: 67.99,
                               child: ElevatedButton(
-                                onPressed: _isLoading ? null : _sendResetLink,
+                                onPressed: _continueToResetPassword,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color.fromARGB(
                                     188,
@@ -267,33 +214,13 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage>
                                     borderRadius: BorderRadius.circular(24),
                                   ),
                                 ),
-                                child: _isLoading
-                                    ? const CircularProgressIndicator(
-                                        color: Colors.black,
-                                      )
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Text(
-                                            "Send Reset Code",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          SvgPicture.asset(
-                                            'lib/features/onboarding/assets/fleche.svg',
-                                            width: 20,
-                                            height: 20,
-                                            colorFilter: const ColorFilter.mode(
-                                              Colors.black,
-                                              BlendMode.srcIn,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                child: const Text(
+                                  'Continue',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
                               ),
                             ),
                           ),

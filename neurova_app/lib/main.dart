@@ -7,12 +7,21 @@ import 'features/auth/state/auth_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final container = ProviderContainer();
-  await container.read(authNotifierProvider.notifier).restoreSession();
+  
+  try {
+    final container = ProviderContainer();
+    await container.read(authNotifierProvider.notifier).restoreSession();
 
-  runApp(
-    UncontrolledProviderScope(container: container, child: const NeurovaApp()),
-  );
+    runApp(
+      UncontrolledProviderScope(container: container, child: const NeurovaApp()),
+    );
+  } catch (e) {
+    // If session restoration fails, still run the app
+    final container = ProviderContainer();
+    runApp(
+      UncontrolledProviderScope(container: container, child: const NeurovaApp()),
+    );
+  }
 }
 
 class NeurovaApp extends ConsumerWidget {

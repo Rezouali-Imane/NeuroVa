@@ -28,7 +28,7 @@ class AuthService {
       '/api/auth/reset-password',
       data: <String, dynamic>{
         'email': email,
-        'resetCode': code,
+        'resetcode': code,
         'newPassword': newPassword,
       },
     );
@@ -81,18 +81,20 @@ class AuthService {
     return 'Registration successful';
   }
 
-Future<Map<String, dynamic>> signInWithGoogle({required String idToken}) async {
-  final response = await _dio.post<dynamic>(
-    '/api/auth/google',
-    data: <String, dynamic>{'idToken': idToken},
-  );
+  Future<Map<String, dynamic>> signInWithGoogle({
+    required String idToken,
+  }) async {
+    final response = await _dio.post<dynamic>(
+      '/api/auth/google',
+      data: <String, dynamic>{'idToken': idToken},
+    );
 
-  final data = response.data as Map<String, dynamic>;
-  final token = data['accessToken']; 
-  await _localStorageService.saveAuthToken(token);
+    final data = response.data as Map<String, dynamic>;
+    final token = data['accessToken'];
+    await _localStorageService.saveAuthToken(token);
 
-  return data;
-}
+    return data;
+  }
 
   Future<void> logout() {
     return _localStorageService.clearAuthToken();
@@ -110,11 +112,23 @@ Future<Map<String, dynamic>> signInWithGoogle({required String idToken}) async {
   }
 
   Future<void> saveToken(String token) async {
-  await _localStorageService.saveAuthToken(token);
-}
+    await _localStorageService.saveAuthToken(token);
+  }
 
   Future<Map<String, dynamic>> resendVerificationCode() async {
-    final response = await _dio.post<dynamic>('/api/auth/resend-verification');
+    final token = await _localStorageService.readAuthToken();
+    if (token == null || token.isEmpty) {
+      throw const FormatException(
+        'Authentication token missing. Please sign in again.',
+      );
+    }
+
+    final response = await _dio.post<dynamic>(
+      '/api/auth/resend-verification',
+      options: Options(
+        headers: <String, String>{'Authorization': 'Bearer $token'},
+      ),
+    );
 
     if (response.data is Map<String, dynamic>) {
       return response.data as Map<String, dynamic>;
@@ -122,7 +136,7 @@ Future<Map<String, dynamic>> signInWithGoogle({required String idToken}) async {
 
     return <String, dynamic>{
       'success': true,
-      'message': 'Code sent to your email.',
+      'message': 'Verification link sent to your email.',
     };
   }
 
@@ -137,6 +151,4 @@ Future<Map<String, dynamic>> signInWithGoogle({required String idToken}) async {
     print(' FAILED to extract token. Data: $data');
     throw const FormatException('AccessToken missing in backend response.');
   }
-
-  
 }

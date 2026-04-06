@@ -8,6 +8,8 @@ import '../../../core/constants/app_constants.dart';
 import '../../../shared/services/local_storage_service.dart';
 import '../services/auth_service.dart';
 import 'auth_state.dart';
+import '../../ai/services/ai_service.dart';
+import '../../ai/state/ai_notifier.dart';
 
 final dioProvider = Provider<Dio>((Ref ref) {
   return Dio(
@@ -24,8 +26,13 @@ final localStorageServiceProvider = Provider<LocalStorageService>((Ref ref) {
   return LocalStorageService();
 });
 
+// Lazy initialize GoogleSignIn to avoid crashes during app startup
 final GoogleSignIn _googleSignIn = GoogleSignIn(
-  clientId: const String.fromEnvironment('GOOGLE_CLIENT_ID'),
+  serverClientId: const String.fromEnvironment(
+    'GOOGLE_CLIENT_ID',
+    defaultValue:
+        '721482377248-p28kgvusk83sufe5dn1dvga8esuspm8b.apps.googleusercontent.com',
+  ),
   scopes: ['email', 'profile'],
 );
 
@@ -41,6 +48,20 @@ final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((
 ) {
   return AuthNotifier(ref.read(authServiceProvider));
 });
+
+// AI Service Providers
+final aiServiceProvider = Provider<AIService>((Ref ref) {
+  final dio = ref.watch(dioProvider);
+  final localStorage = ref.watch(localStorageServiceProvider);
+  return AIService(dio, localStorage);
+});
+
+final aiNotifierProvider = StateNotifierProvider.family<AINotifier, AIState, String>(
+  (ref, userId) {
+    final aiService = ref.watch(aiServiceProvider);
+    return AINotifier(aiService, userId);
+  },
+);
 
 class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier(this._authService) : super(const AuthState.initial());
@@ -155,6 +176,54 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState.initial();
   }
 
+  Future<void> applyAccessToken(String token) async {
+    await _authService.saveToken(token);
+
+    state = state.copyWith(
+      token: token,
+      isverified: _extractIsVerifiedFromToken(token),
+      clearError: true,
+    );
+  }
+
+  void markEmailVerified() {
+    state = state.copyWith(isverified: true, clearError: true);
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      await _authService.resetPassword(
+        email: email,
+        code: code,
+        newPassword: newPassword,
+      );
+
+      state = state.copyWith(isLoading: false, clearError: true);
+    } on DioException catch (error) {
+      final message = _readDioError(error);
+      state = state.copyWith(
+        isLoading: false,
+        clearToken: true,
+        errorMessage: message,
+      );
+      throw Exception(message);
+    } catch (error) {
+      final message = error.toString();
+      state = state.copyWith(
+        isLoading: false,
+        clearToken: true,
+        errorMessage: message,
+      );
+      throw Exception(message);
+    }
+  }
+
   Future<bool?> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -205,22 +274,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> signInWithGithub() async {
-    
     state = state.copyWith(isLoading: true, clearError: true);
 
-    final url = Uri.parse('${AppConstants.apiBaseUrl}/api/auth/github');
+    final githubClientId = const String.fromEnvironment(
+      'GITHUB_CLIENT_ID',
+      defaultValue: 'Ov23lin97M4AuMTF0vgo',
+    );
+    final callbackUrl = '${AppConstants.apiBaseUrl}/api/auth/github/callback';
+    final url = Uri.https('github.com', '/login/oauth/authorize', {
+      'client_id': githubClientId,
+      'redirect_uri': callbackUrl,
+      'scope': 'read:user user:email',
+    });
 
     try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-        
-        state = state.copyWith(isLoading: false);
-      } else {
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
         state = state.copyWith(
           isLoading: false,
           errorMessage: 'authentication via github failed',
         );
+        return;
       }
+
+      state = state.copyWith(isLoading: false);
     } catch (error) {
       state = state.copyWith(isLoading: false, errorMessage: error.toString());
     }
@@ -229,16 +310,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> finalizeGithubLogin(String token) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await _authService.saveToken(token);
-
-      final isverified = _extractIsVerifiedFromToken(token);
-
-      state = state.copyWith(
-        isLoading: false,
-        token: token,
-        isverified: isverified,
-        clearError: true,
-      );
+      await applyAccessToken(token);
+      state = state.copyWith(isLoading: false, clearError: true);
     } catch (error) {
       state = state.copyWith(
         isLoading: false,
@@ -260,6 +333,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> verifyEmail({required String token}) async {
     try {
       await _authService.verifyEmail(token: token);
+      markEmailVerified();
     } on DioException catch (error) {
       throw Exception(_readDioError(error));
     } catch (error) {

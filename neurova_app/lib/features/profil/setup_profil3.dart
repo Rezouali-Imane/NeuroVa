@@ -289,7 +289,7 @@ class _SetupProfile3PageState extends ConsumerState<SetupProfile3Page> {
                                   children: [
                                     const Text(
                                       'Start Learning',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),

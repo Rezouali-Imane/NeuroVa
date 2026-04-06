@@ -16,7 +16,7 @@ class HomePage extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () => context.push('/settings', extra: authState.isverified),
+            onPressed: () => context.push('/profile', extra: authState.isverified),
           ),
         ],
       ),
@@ -66,7 +66,7 @@ class HomePage extends ConsumerWidget {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () =>
-                            context.push('/settings', extra: authState.isverified),
+                            context.push('/profile', extra: authState.isverified),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange[700],
                         ),
