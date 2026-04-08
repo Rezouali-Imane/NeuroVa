@@ -1,5 +1,17 @@
-export interface achivement {
-    achivementid: string;
+
+
+export enum XPSource {
+  TASK_COMPLETED = "TASK_COMPLETED",
+  SESSION_COMPLETED = "SESSION_COMPLETED",
+  STREAK_BONUS = "STREAK_BONUS",
+  CHALLENGE_COMPLETED = "CHALLENGE_COMPLETED",
+  ACHIEVEMENT_EARNED = "ACHIEVEMENT_EARNED",
+  NOTE_CREATED = "NOTE_CREATED",
+}
+
+
+export interface Achievement {
+    achievementid: string;
     userid: string;
     title: string;
     description?: string;
@@ -17,11 +29,11 @@ export interface Badge {
     earnedDate: Date;
 }
 
-export interface xptransaction {
+export interface XPTransaction {
     transactionid: string;
     userid: string;
     amount: number;
-    source: string;
+    source: XPSource;
     description?: string;
     createDate: Date;
 }
@@ -41,7 +53,7 @@ export interface LeaderboardEntry {
     recordDate: Date;
 }
 
-export interface dailychallenge {
+export interface DailyChallenge {
     challengeid: string;
     userid: string;
     templateid: string;
@@ -55,7 +67,7 @@ export interface ChallengeTemplate {
     templateid: string;
     title: string;
     description?: string;
-    pointsreward: number;
+    xpreward : number;
     condition: string;
 }
 
