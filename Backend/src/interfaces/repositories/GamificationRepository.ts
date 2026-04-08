@@ -65,4 +65,52 @@ export const GamificationRepository = {
     });
   },
 
+  //____________________Leaderboard___________________
+
+  async upsertLeaderboardEntry(data: any) {
+    const { leaderboardid, userid, xppoints } = data;
+
+    return await prisma.leaderboardentry.upsert({
+      where: {
+        leaderboardid_userid: {
+          leaderboardid,
+          userid,
+        },
+      },
+      update: {
+        xppoints: xppoints,
+      },
+      create: {
+        leaderboardid,
+        userid,
+        xppoints,
+        rank: 0,
+      },
+    });
+  },
+
+ async UpdateRanks(leaderboardid: string) {
+  const entries = await prisma.leaderboardentry.findMany({
+    where: { leaderboardid },
+    orderBy: { xppoints: "desc" },
+  });
+
+  const updates = entries.map((entry, index) => 
+    prisma.leaderboardentry.update({
+      where: { entryid: entry.entryid },
+      data: { rank: index + 1 },
+    })
+  );
+
+  return await prisma.$transaction(updates);
+},
+  async GetTopNusers(leaderboardid: string, limit: number) {
+    return await prisma.leaderboardentry.findMany({
+      where: { leaderboardid },
+      orderBy: { xppoints: "desc" },
+      take: limit,
+    });
+  },
+
 };
+
