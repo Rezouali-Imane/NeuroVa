@@ -82,3 +82,4 @@ neurova_app/macos/Pods/
 neurova_app/ios/Runner.xcworkspace/xcuserdata/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
+.vscode/launch.json 
