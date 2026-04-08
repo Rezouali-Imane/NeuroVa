@@ -1,37 +1,35 @@
 import { XPSource } from "../../entities/Gamification.entities.js";
 
 export interface AwardXPDTO {
-    userid: string;
-    amount: number;
-    source: XPSource;
-    description?: string;
+  userid: string;
+  amount: number;
+  source: XPSource;
+  description?: string;
 }
 
 export interface AwardBadgeDTO {
-    userid: string;
-    name: string;
-    description?: string;
-    iconurl?: string;
-    condition?: string;
+  userid: string;
+  name: string;
+  description?: string;
+  iconurl?: string;
+  condition?: string;
 }
 
 export interface AwardAchievementDTO {
-    userid: string;
-    title: string;
-    description?: string;
-    pointsreward: number;
- 
+  userid: string;
+  title: string;
+  description?: string;
+  pointsreward: number;
 }
 
 export interface AssignDailyChallengeDTO {
-    userid: string;
-    templateid: string;
-    expiresat: Date;
+  userid: string;
+  templateid: string;
+  expiresat: Date;
 }
 
 export interface getDailyChallengeDTO {
-    challengeid: string;
-
+  challengeid: string;
 }
 
 export interface GetLeaderboardDTO {
@@ -39,12 +37,17 @@ export interface GetLeaderboardDTO {
   limit?: number;
 }
 export interface updateLeaderboardDTO {
-    leaderboardid: string; 
-    userid: string;
-    xppoints: number; 
+  leaderboardid: string;
+  userid: string;
+  xppoints: number;
+}
+
+export interface updateStreakDTO {
+  userid: string;
+  bonusxp: number;
 }
 
 export interface GamificationResponseDTO {
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 }

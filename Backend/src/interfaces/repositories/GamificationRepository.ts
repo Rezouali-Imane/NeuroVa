@@ -7,6 +7,7 @@ import type {
   getDailyChallengeDTO,
   GetLeaderboardDTO,
   updateLeaderboardDTO,
+  updateStreakDTO,
 } from "../dtos/Gamification.dto.js";
 
 export const GamificationRepository = {
@@ -145,6 +146,18 @@ export const GamificationRepository = {
       where: { templateid },
     });
   },
+  //____________________Streak Bonus___________________
+  async updateStreakBonus(updateStreakDTO: updateStreakDTO) {
+    const user = await prisma.users.findUnique({
+      where: { userid: updateStreakDTO.userid },
+    });
+    if (!user) throw new Error("User not found");
 
+    const newStreakBonus = user.xppoints + updateStreakDTO.bonusxp;
 
+    return await prisma.users.update({
+      where: { userid: updateStreakDTO.userid },
+      data: { xppoints: newStreakBonus },
+    });
+  },
 };
