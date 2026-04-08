@@ -16,7 +16,7 @@ export interface Achievement {
     title: string;
     description?: string;
     pointsreward: number;
-    earneDate: Date;
+    earnedate: Date;
 }
 
 export interface Badge {
@@ -25,8 +25,8 @@ export interface Badge {
     name: string;
     description?: string;
     iconurl?: string;
-    condition: string;
-    earnedDate: Date;
+    condition?: string;
+    earnedate: Date;
 }
 
 export interface XPTransaction {
@@ -35,7 +35,7 @@ export interface XPTransaction {
     amount: number;
     source: XPSource;
     description?: string;
-    createDate: Date;
+    createdate: Date;
 }
 
 export interface Leaderboard {
@@ -50,7 +50,7 @@ export interface LeaderboardEntry {
     userid: string;
     rank: number;
     xppoints: number;
-    recordDate: Date;
+    recorddate: Date;
 }
 
 export interface DailyChallenge {
@@ -59,7 +59,7 @@ export interface DailyChallenge {
     templateid: string;
     iscompleted: boolean;
     assigndate: Date;
-    completedate: Date;
+    completedate?: Date;
     expiresat: Date;
 }
 
@@ -68,6 +68,6 @@ export interface ChallengeTemplate {
     title: string;
     description?: string;
     xpreward : number;
-    condition: string;
+    createdate: Date;
 }
 
