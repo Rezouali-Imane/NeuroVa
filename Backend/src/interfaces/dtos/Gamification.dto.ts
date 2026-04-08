@@ -39,6 +39,8 @@ export interface GetLeaderboardDTO {
 }
 export interface updateLeaderboardDTO {
     leaderboardid: string; 
+    userid: string;
+    xppoints: number; 
 }
 
 export interface GamificationResponseDTO {
