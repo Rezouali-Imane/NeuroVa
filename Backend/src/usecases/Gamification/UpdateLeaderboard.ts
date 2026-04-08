@@ -1,7 +1,7 @@
 import type { updateLeaderboardDTO } from "../../interfaces/dtos/Gamification.dto.js";
 import { GamificationRepository } from "../../interfaces/repositories/GamificationRepository.js";
 
-export const updateLeaderboard = async (data: updateLeaderboardDTO) => {
+export const UpdateLeaderboard = async (data: updateLeaderboardDTO) => {
     try {
         const updatedEntry = await GamificationRepository.upsertLeaderboardEntry(data);
         return {

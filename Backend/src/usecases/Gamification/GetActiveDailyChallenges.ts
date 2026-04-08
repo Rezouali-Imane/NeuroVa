@@ -1,6 +1,6 @@
 import {GamificationRepository} from "../../interfaces/repositories/GamificationRepository.js";
 
-export const GetDailyChallenges = async (userid: string) => {
+export const GetActiveDailyChallenges = async (userid: string) => {
     try {
         const dailyChallenges = await GamificationRepository.findactiveChallengeByUserId(userid);
         return {

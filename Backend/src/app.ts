@@ -9,6 +9,7 @@ import focusSessionRoutes from './interfaces/routes/FocusSession.routes.js';
 import noteRoutes from './interfaces/routes/Notes.routes.js';
 import { authMiddleware } from './infrastructure/middleware/authMiddleware.js';
 import notificationRoutes from './interfaces/routes/Notification.Routes.js';
+import gamificationRoutes from './interfaces/routes/Gamification.routes.js';
 
 const app: Application = express();
 
@@ -27,5 +28,6 @@ app.use('/api/notes', authMiddleware, noteRoutes);
 app.use('/api/ai', authMiddleware, aiRoutes);
 app.use('/api/focus-sessions', authMiddleware, focusSessionRoutes);
 app.use('/api/notifications', authMiddleware, notificationRoutes);
+app.use('/api/gamification', authMiddleware, gamificationRoutes);
 
 export default app;

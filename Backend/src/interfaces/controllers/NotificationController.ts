@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { AuthRequest } from "../middleware/authMiddleware.js";
+import type { AuthRequest } from "../../infrastructure/middleware/authMiddleware.js";
 
 import { CreateNotification } from "../../usecases/Notification/CreatNotification.js";
 import { DeleteNotification } from "../../usecases/Notification/DeleteNotification.js";
@@ -26,7 +26,8 @@ export const NotificationController = {
   async DeleteNotification(req: Request, res: Response) {
     try {
       const { userid } = (req as AuthRequest).user!;
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
+       if (!id) throw new Error("Notification ID is required");
       await DeleteNotification(id, userid);
       res
         .status(200)
@@ -53,7 +54,7 @@ export const NotificationController = {
   async markAsRead(req: Request, res: Response) {
     try {
       const { userid } = (req as AuthRequest).user!;
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
       await MarkNotificationRead(id, userid);
       res
         .status(200)

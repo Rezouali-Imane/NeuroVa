@@ -1,5 +1,5 @@
 import { NotificationRepository } from '../../interfaces/repositories/NotificationRepository.js';
-import type { CreateNotificationDTO } from '../../../interfaces/dtos/Notification.dto.js';
+import type { CreateNotificationDTO } from '../../interfaces/dtos/Notification.dto.js';
 
 export const SendPushNotification = async (userid: string, data: CreateNotificationDTO) => {
     if (!userid) throw new Error('User ID is required');
