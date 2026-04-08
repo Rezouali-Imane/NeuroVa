@@ -26,3 +26,36 @@ export interface xptransaction {
     createDate: Date;
 }
 
+export interface Leaderboard {
+    leaderboardid: string;
+    lastupdated: Date;
+    type: string;
+    scope: string;
+}
+export interface LeaderboardEntry {
+    entryid: string;
+    leaderboardid: string;
+    userid: string;
+    rank: number;
+    xppoints: number;
+    recordDate: Date;
+}
+
+export interface dailychallenge {
+    challengeid: string;
+    userid: string;
+    templateid: string;
+    iscompleted: boolean;
+    assigndate: Date;
+    completedate: Date;
+    expiresat: Date;
+}
+
+export interface ChallengeTemplate {
+    templateid: string;
+    title: string;
+    description?: string;
+    pointsreward: number;
+    condition: string;
+}
+
