@@ -25,7 +25,7 @@ export const GamificationRepository = {
       orderBy: { createdat: "desc" },
     });
   },
-
+  
   // ___________________Achievement___________________
 
   async CreateAchivement(data: AwardAchievementDTO) {
