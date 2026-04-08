@@ -1,0 +1,18 @@
+import {GamificationRepository} from "../../interfaces/repositories/GamificationRepository.js";
+
+export const GetDailyChallenges = async (userid: string) => {
+    try {
+        const dailyChallenges = await GamificationRepository.findactiveChallengeByUserId(userid);
+        return {
+            success: true,
+            message: "Daily challenges retrieved successfully",
+            data: dailyChallenges,
+        };
+    } catch (error) {
+
+        return {
+            success: false,
+            message: "Failed to retrieve daily challenges",
+        };
+    }
+}   

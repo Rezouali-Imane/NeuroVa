@@ -118,7 +118,7 @@ export const GamificationRepository = {
       data,
     });
   },
-  async fundChallengeById(getdailyChallengeDTO: getDailyChallengeDTO) {
+  async findChallengeById(getdailyChallengeDTO: getDailyChallengeDTO) {
     return await prisma.dailychallenge.findUnique({
       where: { challengeid: getdailyChallengeDTO.challengeid },
     });
