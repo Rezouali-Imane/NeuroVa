@@ -29,13 +29,14 @@ export interface AssignDailyChallengeDTO {
     expiresat: Date;
 }
 
-export interface CompleteDailyChallengeDTO {
+export interface getDailyChallengeDTO {
     challengeid: string;
 
 }
 
 export interface GetLeaderboardDTO {
   leaderboardid: string;
+  limit?: number;
 }
 export interface updateLeaderboardDTO {
     leaderboardid: string; 

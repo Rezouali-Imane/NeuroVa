@@ -1,11 +1,10 @@
-import { get } from "node:http";
 import prisma from "../../infrastructure/database/prisma.client.js";
 import type {
   AwardBadgeDTO,
   AwardAchievementDTO,
   AwardXPDTO,
   AssignDailyChallengeDTO,
-  CompleteDailyChallengeDTO,
+  getDailyChallengeDTO,
   GetLeaderboardDTO,
   updateLeaderboardDTO,
 } from "../dtos/Gamification.dto.js";
@@ -89,28 +88,63 @@ export const GamificationRepository = {
     });
   },
 
- async UpdateRanks(leaderboardid: string) {
-  const entries = await prisma.leaderboardentry.findMany({
-    where: { leaderboardid },
-    orderBy: { xppoints: "desc" },
-  });
-
-  const updates = entries.map((entry, index) => 
-    prisma.leaderboardentry.update({
-      where: { entryid: entry.entryid },
-      data: { rank: index + 1 },
-    })
-  );
-
-  return await prisma.$transaction(updates);
-},
-  async GetTopNusers(leaderboardid: string, limit: number) {
-    return await prisma.leaderboardentry.findMany({
-      where: { leaderboardid },
+  async UpdateRanks(GetLeaderboardDTO: GetLeaderboardDTO) {
+    const entries = await prisma.leaderboardentry.findMany({
+      where: { leaderboardid: GetLeaderboardDTO.leaderboardid },
       orderBy: { xppoints: "desc" },
-      take: limit,
+    });
+
+    const updates = entries.map((entry, index) =>
+      prisma.leaderboardentry.update({
+        where: { entryid: entry.entryid },
+        data: { rank: index + 1 },
+      }),
+    );
+
+    return await prisma.$transaction(updates);
+  },
+  async GetTopNusers(GetLeaderboardDTO: GetLeaderboardDTO) {
+    return await prisma.leaderboardentry.findMany({
+      where: { leaderboardid: GetLeaderboardDTO.leaderboardid },
+      orderBy: { xppoints: "desc" },
+      take: GetLeaderboardDTO.limit || 10,
     });
   },
 
-};
+  //____________________Daily Challenges___________________
+  async CreatDailyChallenge(data: AssignDailyChallengeDTO) {
+    return await prisma.dailychallenge.create({
+      data,
+    });
+  },
+  async fundChallengeById(getdailyChallengeDTO: getDailyChallengeDTO) {
+    return await prisma.dailychallenge.findUnique({
+      where: { challengeid: getdailyChallengeDTO.challengeid },
+    });
+  },
+  async findactiveChallengeByUserId(userid: string) {
+    const now = new Date();
+    return await prisma.dailychallenge.findFirst({
+      where: {
+        userid,
+        expiresat: { gt: now },
+        iscompleted: false,
+      },
+    });
+  },
+  async completeDailyChallenge(getdailyChallengeDTO: getDailyChallengeDTO) {
+    const now = new Date();
+    return await prisma.dailychallenge.update({
+      where: { challengeid: getdailyChallengeDTO.challengeid },
+      data: { iscompleted: true, completedat: now },
+    });
+  },
 
+  async getChallengeTemplateById(templateid: string) {
+    return await prisma.dailychallengetemplate.findUnique({
+      where: { templateid },
+    });
+  },
+
+
+};
