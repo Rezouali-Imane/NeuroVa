@@ -67,8 +67,8 @@ export const GamificationRepository = {
 
   //____________________Leaderboard___________________
 
-  async upsertLeaderboardEntry(data: any) {
-    const { leaderboardid, userid, xppoints } = data;
+  async upsertLeaderboardEntry(updateLeaderboardDTO: updateLeaderboardDTO) {
+    const { leaderboardid, userid, xppoints } = updateLeaderboardDTO;
 
     return await prisma.leaderboardentry.upsert({
       where: {
