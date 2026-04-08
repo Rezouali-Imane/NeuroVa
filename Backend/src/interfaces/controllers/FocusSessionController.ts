@@ -5,6 +5,7 @@ import { EndSession } from "../../usecases/sessions/EndSession.js";
 import { GetSessions } from "../../usecases/sessions/GetSession.js";
 import { GetSessionById } from "../../usecases/sessions/GetSessionById.js";
 import { DeleteSession } from "../../usecases/sessions/DeleteSession.js";
+import { CalculateFocusScore } from "../../usecases/sessions/CalculateFocusScore.js";
 
 import { CreateTimer } from "../../usecases/sessions/CreateTimer.js";
 import { UpdateTimer } from "../../usecases/sessions/UpdateTimer.js";
@@ -20,6 +21,7 @@ import { CreateAmbientSound } from "../../usecases/sessions/CreateAmbientSound.j
 import { UpdateAmbientSound } from "../../usecases/sessions/UpdateAmbientSound.js";
 import { GetAmbientSoundsBySettings, GetAmbientSoundById } from "../../usecases/sessions/GetAmbientSound.js";
 import { RemoveAmbientSound } from "../../usecases/sessions/DeleteAmbientSound.js";
+
 
 export const FocusSessionController = {
   async create(req: Request, res: Response) {
@@ -82,6 +84,17 @@ export const FocusSessionController = {
       res.status(400).json({ success: false, message: error.message });
     }
   },
+
+  async CalculateFocusScore(req: Request, res: Response) {
+    try {
+      const sessionid = req.params["sessionid"] as string;
+      const session = await CalculateFocusScore({ sessionid, focusscore: 0 });
+      res.status(200).json({ success: true, data: session });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
 
 
   async addTimer(req: Request, res: Response) {
