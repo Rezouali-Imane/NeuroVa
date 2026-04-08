@@ -5,18 +5,20 @@ export interface CreateFocusSessionDTO {
     scheduleid?: string | null;
     roomid?: string | null;
     starttime: Date;
-    endtime: Date;
     allowbreakminutes?: number;
-    focusscore?: number;
     status?: SessionStatus;
 }
 
 export interface UpdateFocusSessionDTO {
-    scheduleid?: string | null;
-    roomid?: string | null;
+    sessionid: string;
     starttime?: Date;
     endtime?: Date;
     allowbreakminutes?: number;
     focusscore?: number;
     status?: SessionStatus;
+}
+
+export interface CalculateFocusScoreDTO {
+    sessionid: string;
+    focusscore: number;
 }
