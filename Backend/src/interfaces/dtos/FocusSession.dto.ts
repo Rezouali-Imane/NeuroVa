@@ -5,6 +5,7 @@ export interface CreateFocusSessionDTO {
     scheduleid?: string | null;
     roomid?: string | null;
     starttime: Date;
+    focusscore: number;
     allowbreakminutes?: number;
     status?: SessionStatus;
 }
