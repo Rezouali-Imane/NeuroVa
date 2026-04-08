@@ -104,7 +104,7 @@ export const GamificationRepository = {
 
     return await prisma.$transaction(updates);
   },
-  async GetTopNusers(GetLeaderboardDTO: GetLeaderboardDTO) {
+  async GetLeaderboardTopN(GetLeaderboardDTO: GetLeaderboardDTO) {
     return await prisma.leaderboardentry.findMany({
       where: { leaderboardid: GetLeaderboardDTO.leaderboardid },
       orderBy: { xppoints: "desc" },
