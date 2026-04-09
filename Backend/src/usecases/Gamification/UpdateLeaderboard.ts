@@ -2,18 +2,13 @@ import type { updateLeaderboardDTO } from "../../interfaces/dtos/Gamification.dt
 import { GamificationRepository } from "../../interfaces/repositories/GamificationRepository.js";
 
 export const UpdateLeaderboard = async (data: updateLeaderboardDTO) => {
-    try {
-        const updatedEntry = await GamificationRepository.upsertLeaderboardEntry(data);
-        return {
-            success: true,
-            message: "Leaderboard updated successfully",
-            data: updatedEntry,
-        };
-    } catch (error) {
-        console.error("Error updating leaderboard:", error);
-        return {
-            success: false,
-            message: "Failed to update leaderboard",
-        };
-    }
+   await GamificationRepository.upsertLeaderboardEntry(data);
+   await GamificationRepository.updateRanks({
+       leaderboardid: data.leaderboardid,
+   });
+
+   return {
+       success: true,
+       message: "Leaderboard successfully updated",
+   };
 };

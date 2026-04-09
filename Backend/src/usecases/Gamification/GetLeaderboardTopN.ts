@@ -3,7 +3,7 @@ import { GamificationRepository } from "../../interfaces/repositories/Gamificati
 
 export const GetLeaderboardTopN = async (data: GetLeaderboardDTO) => {
     try {
-        const leaderboard = await GamificationRepository.GetLeaderboardTopN(data);
+        const leaderboard = await GamificationRepository.getLeaderboardTopN(data);
         return {
             success: true,
             message: "Leaderboard retrieved successfully",
@@ -13,7 +13,7 @@ export const GetLeaderboardTopN = async (data: GetLeaderboardDTO) => {
         console.error("Error retrieving leaderboard:", error);
         return {
             success: false,
-            message: "Failed to retrieve leaderboard",
+            message: error.message,
         };
     }
 }

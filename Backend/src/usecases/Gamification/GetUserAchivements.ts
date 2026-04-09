@@ -2,16 +2,16 @@ import { GamificationRepository } from "../../interfaces/repositories/Gamificati
 
 export const GetUserAchivements = async (userid: string) => {
     try {
-        const achivements = await GamificationRepository.GetAllAchivementsByUser(userid);
+        const achivements = await GamificationRepository.getAllAchievementsByUser(userid);
         return {
             success: true,
             message: "Achivements retrieved successfully",
             data: achivements,
         };
-}catch (error) {
+    }catch (error) {
         return {
             success: false,
-            message: "Failed to retrieve achivements",
+            message: error.message,
         };
     }
 }

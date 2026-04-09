@@ -43,7 +43,8 @@ export const GamificationController = {
   async updateLeaderboard(req: Request, res: Response) {
     try {
       const { userid } = (req as AuthRequest).user!;
-      const result = await UpdateLeaderboard({ ...req.body, userid });
+      const { leaderboardid, xppoints } = req.body;
+      const result = await UpdateLeaderboard({ leaderboardid, userid, xppoints });
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
@@ -63,8 +64,9 @@ export const GamificationController = {
 
   async completeChallenge(req: Request, res: Response) {
     try {
+      const { userid } = (req as AuthRequest).user!;
       const challengeid = req.params.id as string;
-      const result = await CompleteChallenge({ challengeid });
+      const result = await CompleteChallenge(userid, { challengeid });
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });

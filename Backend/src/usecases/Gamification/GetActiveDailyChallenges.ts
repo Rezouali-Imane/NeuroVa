@@ -2,7 +2,7 @@ import {GamificationRepository} from "../../interfaces/repositories/Gamification
 
 export const GetActiveDailyChallenges = async (userid: string) => {
     try {
-        const dailyChallenges = await GamificationRepository.findactiveChallengeByUserId(userid);
+        const dailyChallenges = await GamificationRepository.getAllChallengesByUser(userid);
         return {
             success: true,
             message: "Daily challenges retrieved successfully",

@@ -1,7 +1,7 @@
 import { GamificationRepository } from "../../interfaces/repositories/GamificationRepository.js";
 export const GetUserBadges = async (userid: string) => {
     try {
-        const badges = await GamificationRepository.GetAllBadgesByUser(userid);
+        const badges = await GamificationRepository.getAllBadgesByUser(userid);
         return {
             success: true,
             message: "Badges retrieved successfully",
@@ -10,7 +10,7 @@ export const GetUserBadges = async (userid: string) => {
     } catch (error) {
         return {
             success: false,
-            message: "Failed to retrieve badges",
+            message: error.message,
         };
     }
 };

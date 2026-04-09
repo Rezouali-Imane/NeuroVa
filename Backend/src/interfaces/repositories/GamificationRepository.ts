@@ -7,39 +7,55 @@ import type {
   getDailyChallengeDTO,
   GetLeaderboardDTO,
   updateLeaderboardDTO,
-  updateStreakDTO,
 } from "../dtos/Gamification.dto.js";
 
 export const GamificationRepository = {
   // ___________________XP Transactions___________________
 
-  async CreatXPtransaction(data: AwardXPDTO) {
+  async creatXPTransaction(data: AwardXPDTO) {
     return await prisma.xptransaction.create({
-      data,
+      data: {
+        userid : data.userid,
+        amount : data.amount,
+        source : data.source,
+        description : data.description,
+      },
     });
   },
 
-  async GetXPHistory(userid: string) {
+  async incrementuserXP(userid: string, amount: number) {
+    return await prisma.users.update({
+      where: { userid },
+      data: { xppoints: { increment: amount } },
+    });
+  },
+
+  async getXPHistory(userid: string) {
     return await prisma.xptransaction.findMany({
       where: { userid },
       orderBy: { createdat: "desc" },
     });
   },
-  
-  // ___________________Achievement___________________
 
-  async CreateAchivement(data: AwardAchievementDTO) {
+  // ___________________Achievements___________________
+
+  async createAchievement(data: AwardAchievementDTO) {
     return await prisma.achievement.create({
-      data,
+      data: {
+        userid : data.userid,
+        title: data.title,
+        description: data.description,
+        pointsreward: data.pointsreward,
+      },
     });
   },
 
-  async GetAchivementsByTitle(title: string, userid: string) {
+  async getAchievementsByTitle(title: string, userid: string) {
     return await prisma.achievement.findMany({
       where: { title, userid },
     });
   },
-  async GetAllAchivementsByUser(userid: string) {
+  async getAllAchievementsByUser(userid: string) {
     return await prisma.achievement.findMany({
       where: { userid },
     });
@@ -47,19 +63,25 @@ export const GamificationRepository = {
 
   // ___________________Badge___________________
 
-  async CreateBadge(data: AwardBadgeDTO) {
+  async createBadge(data: AwardBadgeDTO) {
     return await prisma.badge.create({
-      data,
+      data: {
+        userid : data.userid,
+        name: data.name,
+        description: data.description,
+        iconurl: data.iconurl,
+        condition: data.condition,
+      },
     });
   },
 
-  async GetBadgeByName(name: string, userid: string) {
+  async getBadgeByName(name: string, userid: string) {
     return await prisma.badge.findMany({
       where: { name, userid },
     });
   },
 
-  async GetAllBadgesByUser(userid: string) {
+  async getAllBadgesByUser(userid: string) {
     return await prisma.badge.findMany({
       where: { userid },
     });
@@ -67,31 +89,29 @@ export const GamificationRepository = {
 
   //____________________Leaderboard___________________
 
-  async upsertLeaderboardEntry(updateLeaderboardDTO: updateLeaderboardDTO) {
-    const { leaderboardid, userid, xppoints } = updateLeaderboardDTO;
-
+  async upsertLeaderboardEntry(data: updateLeaderboardDTO) {
     return await prisma.leaderboardentry.upsert({
       where: {
         leaderboardid_userid: {
-          leaderboardid,
-          userid,
+          leaderboardid: data.leaderboardid,
+          userid: data.userid,
         },
       },
       update: {
-        xppoints: xppoints,
+        xppoints: data.xppoints,
       },
       create: {
-        leaderboardid,
-        userid,
-        xppoints,
+        leaderboardid: data.leaderboardid,
+        userid: data.userid,
+        xppoints: data.xppoints,
         rank: 0,
       },
     });
   },
 
-  async UpdateRanks(GetLeaderboardDTO: GetLeaderboardDTO) {
+  async updateRanks(data: GetLeaderboardDTO) {
     const entries = await prisma.leaderboardentry.findMany({
-      where: { leaderboardid: GetLeaderboardDTO.leaderboardid },
+      where: { leaderboardid: data.leaderboardid },
       orderBy: { xppoints: "desc" },
     });
 
@@ -104,40 +124,53 @@ export const GamificationRepository = {
 
     return await prisma.$transaction(updates);
   },
-  async GetLeaderboardTopN(GetLeaderboardDTO: GetLeaderboardDTO) {
+
+  async getLeaderboardTopN(data: GetLeaderboardDTO) {
     return await prisma.leaderboardentry.findMany({
-      where: { leaderboardid: GetLeaderboardDTO.leaderboardid },
-      orderBy: { xppoints: "desc" },
-      take: GetLeaderboardDTO.limit || 10,
+      where: { leaderboardid: data.leaderboardid },
+      orderBy: { xppoints: "asc" },
+      take: data.limit ?? 10,
     });
   },
 
   //____________________Daily Challenges___________________
-  async CreatDailyChallenge(data: AssignDailyChallengeDTO) {
+  async creatDailyChallenge(data: AssignDailyChallengeDTO) {
     return await prisma.dailychallenge.create({
-      data,
+      data: {
+        userid : data.userid,
+        templateid : data.templateid,
+        expiresat : data.expiresat,
+      },
     });
   },
-  async findChallengeById(getdailyChallengeDTO: getDailyChallengeDTO) {
+
+  async findChallengeById(data: getDailyChallengeDTO) {
     return await prisma.dailychallenge.findUnique({
-      where: { challengeid: getdailyChallengeDTO.challengeid },
+      where: { challengeid: data.challengeid },
     });
   },
+
   async findactiveChallengeByUserId(userid: string) {
-    const now = new Date();
     return await prisma.dailychallenge.findFirst({
       where: {
         userid,
-        expiresat: { gt: now },
+        expiresat: { gt: new Date() },
         iscompleted: false,
       },
     });
   },
-  async completeDailyChallenge(getdailyChallengeDTO: getDailyChallengeDTO) {
-    const now = new Date();
+
+  async getAllChallengesByUser(userid: string) {
+    return await prisma.dailychallenge.findMany({
+      where: { userid },
+      orderBy: { assignedat: "desc" },
+    });
+  },
+
+  async completeDailyChallenge(data: getDailyChallengeDTO) {
     return await prisma.dailychallenge.update({
-      where: { challengeid: getdailyChallengeDTO.challengeid },
-      data: { iscompleted: true, completedat: now },
+      where: { challengeid: data.challengeid },
+      data: { iscompleted: true, completedat: new Date() },
     });
   },
 
@@ -146,18 +179,39 @@ export const GamificationRepository = {
       where: { templateid },
     });
   },
-  //____________________Streak Bonus___________________
-  async updateStreakBonus(updateStreakDTO: updateStreakDTO) {
-    const user = await prisma.users.findUnique({
-      where: { userid: updateStreakDTO.userid },
+  //____________________ Streak ___________________
+
+  async getlastCompletedSession(userid: string) {
+    return await prisma.focussession.findFirst({
+      where: {
+        userid,
+        status: "COMPLETED",
+        endtime: { not: null },
+      },
+      orderBy: { endtime: "desc"},
     });
-    if (!user) throw new Error("User not found");
+  },
 
-    const newStreakBonus = user.xppoints + updateStreakDTO.bonusxp;
+  async getCurrentStreak(userid: string) {
+    const student = await prisma.student.findUnique({
+      where: { userid },
+    });
+    return student?.focusstreak ?? 0;
+  },
 
-    return await prisma.users.update({
-      where: { userid: updateStreakDTO.userid },
-      data: { xppoints: newStreakBonus },
+  async updateStreak(userid: string, streak: number) {
+    return await prisma.student.update({
+      where: { userid },
+      data: { focusstreak: streak},
+    });
+  },
+
+  // ___________________ Focus Score___________________
+
+  async updateFocusScore(sessionid: string, score: number) {
+    return await prisma.focussession.update({
+      where: { sessionid },
+      data: { focusscore: score },
     });
   },
 };
