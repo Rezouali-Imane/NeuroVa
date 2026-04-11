@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../auth/state/auth_notifier.dart';
+import '../../shared/widgets/unified_bottom_nav_bar.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key, this.isVerified = false});
@@ -17,6 +18,7 @@ enum _ProfileTab { stats, achievements, leaderboard }
 
 class _ProfilePageState extends ConsumerState<ProfilePage> {
   _ProfileTab _selectedTab = _ProfileTab.stats;
+  int _selectedNavIndex = 4; // Profile is at index 4
   bool notificationsEnabled = true;
   bool hapticEnabled = true;
   bool focusRemindersEnabled = true;
@@ -692,7 +694,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: Colors.white,
+        activeThumbColor: Colors.white,
         activeTrackColor: const Color(0xFFB284BE),
         inactiveThumbColor: Colors.white,
         inactiveTrackColor: Colors.white.withOpacity(0.15),
@@ -1015,89 +1017,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildBottomNav() {
-    return Positioned(
-      left: 16,
-      right: 16,
-      bottom: 14,
-      child: Container(
-        height: 75,
-        decoration: BoxDecoration(
-          color: const Color(0xF40E0B16),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
-          boxShadow: const [
-            BoxShadow(color: Color(0x7F000000), blurRadius: 20, offset: Offset(0, 4)),
-            BoxShadow(color: Color(0xBF000000), blurRadius: 60, offset: Offset(0, 20)),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Expanded(child: _navItem(Icons.home_outlined, 'Home', false, () => context.go('/home'))),
-            Expanded(child: _navItem(Icons.check_box_outlined, 'Tasks', false, _showNavComingSoon)),
-            Expanded(child: _navItem(Icons.timer_outlined, 'Focus', false, _showNavComingSoon)),
-            Expanded(child: _navItem(Icons.auto_awesome_outlined, 'AI', false, () => context.go('/ai'))),
-            Expanded(child: _navItem(Icons.person_outline, 'Profile', true, () {})),
-          ],
-        ),
-      ),
+    return UnifiedBottomNavBar(
+      selectedIndex: _selectedNavIndex,
+      onNavItemTapped: (index) {
+        setState(() {
+          _selectedNavIndex = index;
+        });
+      },
     );
   }
 
-  Widget _navItem(
-    IconData icon,
-    String label,
-    bool selected,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        height: 58,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: selected ? const Color(0x14B284BE) : Colors.transparent,
-          border: Border.all(
-            color: selected ? const Color(0x24B284BE) : Colors.transparent,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: selected ? const Color(0xFFB284BE) : Colors.white.withOpacity(0.50),
-            ),
-            const SizedBox(height: 2),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'Syne',
-                  fontSize: 8,
-                  height: 1,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? const Color(0xFFB284BE) : Colors.white.withOpacity(0.50),
-                  letterSpacing: 0.20,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showNavComingSoon() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('This section will be connected next.')),
-    );
-  }
 }
 
 class _Pill extends StatelessWidget {

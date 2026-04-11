@@ -14,9 +14,12 @@ import '../../features/auth/reset_password_success_page.dart';
 import '../../features/auth/confirm_mail.dart';
 import '../../features/profile/profile_page.dart';
 import '../../features/settings/settings_page.dart';
-import '../../features/home/home_page.dart';
 import '../../features/ai/screens/ai_chat_screen.dart';
 import '../../features/auth/state/auth_notifier.dart';
+import '../../features/focus/dashboard1.dart';
+import '../../features/focus/focus_page.dart';
+import '../../features/tasks/tasks_page.dart';
+import '../../features/focus/menupage.dart' as menu_module;
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
@@ -35,7 +38,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final notifier = ref.watch(routerNotifierProvider);
 
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/dashboard',
     refreshListenable: notifier,
 
     redirect: (BuildContext context, GoRouterState state) {
@@ -47,6 +50,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final bool isOnboarding =
           state.matchedLocation == '/onboarding' ||
           state.matchedLocation == '/';
+      final bool isDashboard = state.matchedLocation == '/dashboard';
       final bool isConfirmingEmail = state.matchedLocation == '/confirm-email';
       final bool isResetting =
           state.matchedLocation.startsWith('/resetpassword') ||
@@ -62,14 +66,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             isConfirmingEmail ||
             isResetting ||
             isCallback ||
-            isSetupProfile) {
+            isSetupProfile ||
+            isDashboard) {
           return null;
         }
         return '/register';
       }
 
       if (isAuthenticated && (isLoggingIn || isRegistering || isOnboarding)) {
-        return '/home';
+        return '/dashboard';
       }
       return null;
     },
@@ -133,6 +138,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth-callback',
         builder: (context, state) {
+          final router = GoRouter.of(context);
           final token = state.uri.queryParameters['accessToken'];
           final isNewUser = state.uri.queryParameters['isNewUser'] == 'true';
           final emailVerified =
@@ -148,7 +154,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ref.read(authNotifierProvider.notifier).markEmailVerified();
               }
 
-              context.go('/profile');
+              router.go('/profile');
               return;
             }
 
@@ -158,12 +164,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   .finalizeGithubLogin(token);
 
               if (isNewUser) {
-                context.go('/setup-profile');
+                router.go('/setup-profile');
               } else {
-                context.go('/home');
+                router.go('/dashboard');
               }
             } else {
-              context.go('/login');
+              router.go('/login');
             }
           });
 
@@ -193,11 +199,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return const SetupProfil(signupEmail: '', signupPassword: '');
         },
       ),
-      GoRoute(
-        path: '/home',
-        builder: (BuildContext context, GoRouterState state) =>
-            const HomePage(),
-      ),
+
       GoRoute(
         path: '/ai',
         builder: (BuildContext context, GoRouterState state) {
@@ -226,6 +228,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             aiService: aiService,
           );
         },
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (BuildContext context, GoRouterState state) =>
+            const Dashboard1(),
+      ),
+      GoRoute(
+        path: '/tasks',
+        builder: (BuildContext context, GoRouterState state) =>
+            const TasksPage(),
+      ),
+      GoRoute(
+        path: '/focus',
+        builder: (BuildContext context, GoRouterState state) =>
+            const FocusPage(),
+      ),
+      GoRoute(
+        path: '/menu',
+        builder: (BuildContext context, GoRouterState state) =>
+            const menu_module.MenuPage(),
       ),
     ],
   );

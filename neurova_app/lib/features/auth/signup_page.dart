@@ -72,7 +72,7 @@ class _SignupPageState extends ConsumerState<SignupPage>
           if (isNewUser == true) {
             context.go('/setup-profile');
           } else {
-            context.go('/home');
+            context.go('/dashboard');
           }
         }
       } else if (authState.errorMessage != null) {

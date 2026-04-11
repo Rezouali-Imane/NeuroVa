@@ -46,7 +46,10 @@ final authServiceProvider = Provider<AuthService>((Ref ref) {
 final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((
   Ref ref,
 ) {
-  return AuthNotifier(ref.read(authServiceProvider));
+  return AuthNotifier(
+    ref.read(authServiceProvider),
+    ref.read(localStorageServiceProvider),
+  );
 });
 
 // AI Service Providers
@@ -64,9 +67,11 @@ final aiNotifierProvider = StateNotifierProvider.family<AINotifier, AIState, Str
 );
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._authService) : super(const AuthState.initial());
+  AuthNotifier(this._authService, this._localStorageService)
+      : super(const AuthState.initial());
 
   final AuthService _authService;
+  final LocalStorageService _localStorageService;
 
   Future<void> restoreSession() async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -97,6 +102,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final token = await _authService.login(email: email, password: password);
       final isverified = _extractIsVerifiedFromToken(token);
+      final userId = _extractUserIdFromToken(token);
+      
+      // Save userId for later use
+      if (userId != null) {
+        await _localStorageService.saveUserId(userId);
+      }
+      
       state = state.copyWith(
         isLoading: false,
         token: token,
@@ -280,7 +292,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       'GITHUB_CLIENT_ID',
       defaultValue: 'Ov23lin97M4AuMTF0vgo',
     );
-    final callbackUrl = '${AppConstants.apiBaseUrl}/api/auth/github/callback';
+      final callbackUrl = '${AppConstants.apiBaseUrl}/api/auth/github/callback';
     final url = Uri.https('github.com', '/login/oauth/authorize', {
       'client_id': githubClientId,
       'redirect_uri': callbackUrl,
@@ -387,6 +399,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return json['isverified'] as bool? ?? false;
     } catch (_) {
       return false;
+    }
+  }
+
+  String? _extractUserIdFromToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+
+      final payload = parts[1];
+      final paddedPayload = payload.padRight(
+        payload.length + (4 - payload.length % 4) % 4,
+        '=',
+      );
+
+      final decodedBytes = base64Url.decode(paddedPayload);
+      final decodedString = utf8.decode(decodedBytes);
+      final json = jsonDecode(decodedString) as Map<String, dynamic>;
+
+      return json['sub'] as String? ?? json['userid'] as String?;
+    } catch (_) {
+      return null;
     }
   }
 }

@@ -251,7 +251,7 @@ class _SetupProfile3PageState extends ConsumerState<SetupProfile3Page> {
                                                 bio: widget.bio,
                                               );
 
-                                          if (!mounted) return;
+                                          if (!context.mounted) return;
 
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
@@ -262,10 +262,10 @@ class _SetupProfile3PageState extends ConsumerState<SetupProfile3Page> {
                                             ),
                                           );
 
-                                          if (!mounted) return;
-                                          context.go('/home');
+                                          if (!context.mounted) return;
+                                          context.go('/dashboard');
                                         } catch (error) {
-                                          if (!mounted) return;
+                                          if (!context.mounted) return;
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
                                             SnackBar(
@@ -277,7 +277,7 @@ class _SetupProfile3PageState extends ConsumerState<SetupProfile3Page> {
                                             ),
                                           );
                                         } finally {
-                                          if (mounted) {
+                                          if (context.mounted) {
                                             setState(() {
                                               _isSubmitting = false;
                                             });

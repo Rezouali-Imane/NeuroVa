@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'focus_page.dart';
-import '../../features/tasks/tasks_page.dart';
-import '../../features/ai/ai_page.dart';
-import '../../features/profil/setup_profil1.dart';
-import '../../features/auth/login_page.dart';
+import 'package:go_router/go_router.dart';
+import '../../shared/widgets/unified_bottom_nav_bar.dart';
 
 class Dashboard1 extends StatefulWidget {
   const Dashboard1({super.key});
@@ -26,16 +23,16 @@ class _Dashboard1State extends State<Dashboard1> {
       case 0:
         break;
       case 1:
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const TasksPage()));
+        context.go('/tasks');
         break;
       case 2:
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const FocusPage()));
+        context.go('/focus');
         break;
       case 3:
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const AIPage()));
+        context.go('/ai');
         break;
       case 4:
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const SetupProfil()));
+        context.go('/profile');
         break;
     }
   }
@@ -50,6 +47,7 @@ class _Dashboard1State extends State<Dashboard1> {
         children: [
           SafeArea(
             child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -75,12 +73,7 @@ class _Dashboard1State extends State<Dashboard1> {
               ),
             ),
           ),
-          Positioned(
-            bottom: 30,
-            left: 20,
-            right: 20,
-            child: _buildBottomNav(),
-          ),
+          _buildBottomNav(),
         ],
       ),
     );
@@ -945,67 +938,9 @@ class _Dashboard1State extends State<Dashboard1> {
   }
 
   Widget _buildBottomNav() {
-    return Container(
-      height: 72,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1A24).withOpacity(0.98),
-        borderRadius: BorderRadius.circular(36),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.6),
-            blurRadius: 32,
-            offset: const Offset(0, 12),
-            spreadRadius: 4,
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildNavItem(icon: Icons.window, label: 'Home', index: 0),
-          _buildNavItem(icon: Icons.check_box_outlined, label: 'Tasks', index: 1),
-          _buildNavItem(icon: Icons.timer_outlined, label: 'Focus', index: 2),
-          _buildNavItem(icon: Icons.auto_awesome, label: 'AI', index: 3),
-          _buildNavItem(icon: Icons.person_outline, label: 'Profile', index: 4),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem({required IconData icon, required String label, required int index}) {
-    bool isActive = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => _onNavTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: isActive ? const EdgeInsets.symmetric(horizontal: 16, vertical: 12) : const EdgeInsets.all(12),
-        decoration: isActive
-            ? BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [const Color(0xFFB284BE).withOpacity(0.2), const Color(0xFFA2ADD0).withOpacity(0.05)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFB284BE).withOpacity(0.3)),
-              )
-            : const BoxDecoration(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: isActive ? const Color(0xFFB284BE) : Colors.white.withOpacity(0.45), size: 24),
-            if (isActive) ...[
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: const TextStyle(color: Color(0xFFB284BE), fontSize: 11, fontFamily: 'Syne', fontWeight: FontWeight.w700, letterSpacing: -0.3),
-              ),
-            ]
-          ],
-        ),
-      ),
+    return UnifiedBottomNavBar(
+      selectedIndex: _currentIndex,
+      onNavItemTapped: _onNavTapped,
     );
   }
 
@@ -1024,17 +959,14 @@ class _Dashboard1State extends State<Dashboard1> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFB284BE), Color(0xFFA2ADD0)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(10),
+                      SvgPicture.asset(
+                        'lib/features/onboarding/assets/logo.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFFB284BE),
+                          BlendMode.srcIn,
                         ),
-                        child: const Icon(Icons.flash_on, color: Colors.white, size: 16),
                       ),
                       const SizedBox(width: 12),
                       const Text(
@@ -1139,14 +1071,14 @@ class _Dashboard1State extends State<Dashboard1> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    _buildDrawerItem(icon: Icons.window, label: 'Dashboard', isActive: true),
-                    _buildDrawerItem(icon: Icons.check_box_outlined, label: 'Tasks', isActive: false),
-                    _buildDrawerItem(icon: Icons.timer_outlined, label: 'Focus', isActive: false),
-                    _buildDrawerItem(icon: Icons.auto_awesome, label: 'AI Assistant', isActive: false),
-                    _buildDrawerItem(icon: Icons.menu_book_outlined, label: 'Notes', isActive: false),
-                    _buildDrawerItem(icon: Icons.people_outline, label: 'Study Rooms', isActive: false),
-                    _buildDrawerItem(icon: Icons.shield_outlined, label: 'Discipline', isActive: false),
-                    _buildDrawerItem(icon: Icons.person_outline, label: 'Profile', isActive: false),
+                    _buildDrawerItem(icon: Icons.window, label: 'Dashboard', isActive: true, route: '/dashboard'),
+                    _buildDrawerItem(icon: Icons.check_box_outlined, label: 'Tasks', isActive: false, route: '/tasks'),
+                    _buildDrawerItem(icon: Icons.timer_outlined, label: 'Focus', isActive: false, route: '/focus'),
+                    _buildDrawerItem(icon: Icons.auto_awesome, label: 'AI Assistant', isActive: false, route: '/ai'),
+                    _buildDrawerItem(icon: Icons.menu_book_outlined, label: 'Notes', isActive: false, route: '/notes'),
+                    _buildDrawerItem(icon: Icons.people_outline, label: 'Study Rooms', isActive: false, route: '/study-rooms'),
+                    _buildDrawerItem(icon: Icons.shield_outlined, label: 'Discipline', isActive: false, route: '/discipline'),
+                    _buildDrawerItem(icon: Icons.person_outline, label: 'Profile', isActive: false, route: '/profile'),
                   ],
                 ),
               ),
@@ -1156,14 +1088,14 @@ class _Dashboard1State extends State<Dashboard1> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Column(
                 children: [
-                  _buildDrawerBottomItem(icon: Icons.notifications_none, label: 'Notifications'),
-                  _buildDrawerBottomItem(icon: Icons.settings_outlined, label: 'Settings'),
+                  _buildDrawerBottomItem(icon: Icons.notifications_none, label: 'Notifications', route: '/notifications'),
+                  _buildDrawerBottomItem(icon: Icons.settings_outlined, label: 'Settings', route: '/settings'),
                   _buildDrawerBottomItem(icon: Icons.help_outline, label: 'Help & FAQ'),
                   const SizedBox(height: 8),
                   ListTile(
                     leading: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 22),
                     title: const Text('Sign Out', style: TextStyle(color: Color(0xFFEF4444), fontSize: 15, fontFamily: 'Syne', fontWeight: FontWeight.w600)),
-                    onTap: () {},
+                    onTap: () => context.go('/login'),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                 ],
@@ -1175,7 +1107,7 @@ class _Dashboard1State extends State<Dashboard1> {
     );
   }
 
-  Widget _buildDrawerItem({required IconData icon, required String label, required bool isActive}) {
+  Widget _buildDrawerItem({required IconData icon, required String label, required bool isActive, String? route}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: isActive
@@ -1205,13 +1137,13 @@ class _Dashboard1State extends State<Dashboard1> {
           ),
         ),
         trailing: isActive ? const Icon(Icons.chevron_right, color: Color(0xFFB284BE), size: 20) : null,
-        onTap: () {},
+        onTap: route != null ? () => context.go(route) : null,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
 
-  Widget _buildDrawerBottomItem({required IconData icon, required String label}) {
+  Widget _buildDrawerBottomItem({required IconData icon, required String label, String? route}) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       leading: Icon(icon, color: Colors.white.withOpacity(0.55), size: 22),
@@ -1224,7 +1156,7 @@ class _Dashboard1State extends State<Dashboard1> {
           fontWeight: FontWeight.w500,
         ),
       ),
-      onTap: () {},
+      onTap: route != null ? () => context.go(route) : null,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     );
   }

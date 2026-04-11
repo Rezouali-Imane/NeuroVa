@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:go_router/go_router.dart';
 import '../models/ai_models.dart';
 import '../services/ai_service.dart';
 import '../state/ai_notifier.dart';
+import '../../../shared/widgets/unified_bottom_nav_bar.dart';
 
 enum _AITab { chat, agent, plans, knowledge }
 
@@ -29,6 +29,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   bool _isInitialized = false;
   bool _showConversation = false;
   _AITab _selectedTab = _AITab.chat;
+  int _selectedNavIndex = 3; // AI is at index 3
 
   @override
   void initState() {
@@ -639,14 +640,6 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _buildQuickAction(String label, VoidCallback onTap) {
-    return ElevatedButton.icon(
-      icon: const Icon(Icons.stars),
-      label: Text(label),
-      onPressed: onTap,
-    );
-  }
-
   Widget _buildChatMessage(AIMessage message) {
     final isUser = message.role == 'USER';
 
@@ -706,87 +699,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildBottomNav() {
-    return Positioned(
-      left: 16,
-      right: 16,
-      bottom: 14,
-      child: Container(
-        height: 75,
-        decoration: BoxDecoration(
-          color: const Color(0xF40E0B16),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          boxShadow: const [
-            BoxShadow(color: Color(0x7F000000), blurRadius: 20, offset: Offset(0, 4)),
-            BoxShadow(color: Color(0xBF000000), blurRadius: 60, offset: Offset(0, 20)),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Expanded(child: _navItem(Icons.home_outlined, 'Home', false, () => context.go('/home'))),
-            Expanded(child: _navItem(Icons.check_box_outlined, 'Tasks', false, _showComingSoon)),
-            Expanded(child: _navItem(Icons.timer_outlined, 'Focus', false, _showComingSoon)),
-            Expanded(child: _navItem(Icons.auto_awesome_outlined, 'AI', true, () {})),
-            Expanded(child: _navItem(Icons.person_outline, 'Profile', false, () => context.go('/profile'))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _navItem(
-    IconData icon,
-    String label,
-    bool selected,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        height: 58,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: selected ? const Color(0x14C8A2C8) : Colors.transparent,
-          border: Border.all(
-            color: selected ? const Color(0x24C8A2C8) : Colors.transparent,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: selected ? const Color(0xFFC8A2C8) : Colors.white.withValues(alpha: 0.50),
-            ),
-            const SizedBox(height: 2),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'Syne',
-                  fontSize: 8,
-                  height: 1,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? const Color(0xFFC8A2C8) : Colors.white.withValues(alpha: 0.50),
-                  letterSpacing: 0.20,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showComingSoon() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('This section will be connected next.')),
+    return UnifiedBottomNavBar(
+      selectedIndex: _selectedNavIndex,
+      onNavItemTapped: (index) {
+        setState(() {
+          _selectedNavIndex = index;
+        });
+      },
     );
   }
 

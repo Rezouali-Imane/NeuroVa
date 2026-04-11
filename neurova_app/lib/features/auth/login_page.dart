@@ -55,7 +55,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
       final authState = ref.read(authNotifierProvider);
 
       if (authState.isAuthenticated) {
-        context.go('/home');
+        if (!mounted) return;
+        context.go('/dashboard');
       }
     } finally {
       if (mounted) {
@@ -81,7 +82,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
           if (isNewUser == true) {
             context.go('/setup-profile');
           } else {
-            context.go('/home');
+            context.go('/dashboard');
           }
         }
       } else if (authState.errorMessage != null) {
