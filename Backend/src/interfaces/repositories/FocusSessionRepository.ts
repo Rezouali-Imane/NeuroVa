@@ -1,5 +1,5 @@
 import prisma from "../../infrastructure/database/prisma.client.js";
-import type { CreateFocusSessionDTO, UpdateFocusSessionDTO } from "../dtos/FocusSession.dto.js";
+import type { CreateFocusSessionDTO, UpdateFocusSessionDTO , CalculateFocusScoreDTO} from "../dtos/FocusSession.dto.js";
 
 export const FocusSessionRepository = {
     async create(data: CreateFocusSessionDTO) {
@@ -15,16 +15,16 @@ export const FocusSessionRepository = {
         });
     },
 
-    async findById(id: string) {
+    async findById(sessionid: string) {
         return await prisma.focussession.findUnique({
-            where: { sessionid: id },
+            where: { sessionid },
         });
     },
 
-    async update(sessionid: string, data: UpdateFocusSessionDTO) {
+    async update(updateData: UpdateFocusSessionDTO) {
         return await prisma.focussession.update({
-            where: { sessionid },
-            data,
+            where: { sessionid: updateData.sessionid },
+            data: updateData,
         });
     },
 
@@ -33,4 +33,11 @@ export const FocusSessionRepository = {
             where: { sessionid },
         });
     },
+    
+    async calculateFocusScore(calculateFocusScoreData: CalculateFocusScoreDTO) {
+        return await prisma.focussession.update({
+            where: { sessionid: calculateFocusScoreData.sessionid },
+            data: { focusscore: calculateFocusScoreData.focusscore },
+        });
+    }  
 };
