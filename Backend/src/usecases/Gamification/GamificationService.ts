@@ -1,11 +1,8 @@
 import type {
-  AwardAchievementDTO,
-  AwardBadgeDTO,
-  AwardXPDTO,
   GetLeaderboardDTO,
-  getDailyChallengeDTO,
-  updateLeaderboardDTO,
 } from "../../interfaces/dtos/Gamification.dto.js";
+import { XPSource } from "../../entities/Gamification.entities.js";
+import { GamificationRepository } from "../../interfaces/repositories/GamificationRepository.js";
 import { AssignDailyChallenge } from "./AssignDailyChallenge.js";
 import { AwardBadge } from "./AwardBadge.js";
 import { AwardXP } from "./AwardXP.js";
@@ -21,36 +18,86 @@ import { GetXPHistory } from "./GetXPHistory.js";
 import { UpdateLeaderboard } from "./UpdateLeaderboard.js";
 
 export class GamificationService {
-  static async awardXP(data: AwardXPDTO) {
-    return AwardXP(data);
+  // Diagram signature: awardXP(userId, amount, source)
+  static async awardXP(
+    userid: string,
+    amount: number,
+    source: XPSource,
+    description?: string,
+  ) {
+    return AwardXP({ userid, amount, source, ...(description != null ? { description } : {}) });
   }
 
-  static async checkAndAwardAchievements(data: AwardAchievementDTO) {
-    return CheckAndAwardAchievement(data);
+  // Diagram signature: checkAndAwardAchievements(userId)
+  static async checkAndAwardAchievements(userid: string) {
+    const streakState = await CalculateStreak(userid);
+    if (!streakState.success) {
+      return { success: false, message: "Could not evaluate achievements." };
+    }
+
+    const streak = typeof streakState.streak === "number" ? streakState.streak : 0;
+    if (streak < 7) {
+      return { success: true, message: "No new achievements yet." };
+    }
+
+    return CheckAndAwardAchievement({
+      userid,
+      title: "7-Day Focus Streak",
+      description: "Maintained focus streak for 7 consecutive days.",
+      pointsreward: 100,
+    });
   }
 
-  static async awardBadge(data: AwardBadgeDTO) {
-    return AwardBadge(data);
+  // Diagram signature: awardBadge(userId, badgeId)
+  static async awardBadge(userid: string, badgeId: string) {
+    return AwardBadge({
+      userid,
+      name: badgeId,
+      condition: `badge:${badgeId}`,
+    });
   }
 
-  static async updateLeaderboard(data: updateLeaderboardDTO) {
+  // Diagram signature: updateLeaderboard()
+  static async updateLeaderboard() {
+    const leaderboards = await GamificationRepository.getAllLeaderboards();
+    await Promise.all(
+      leaderboards.map((lb) =>
+        GamificationRepository.updateRanks({ leaderboardid: lb.leaderboardid }),
+      ),
+    );
+    return { success: true, message: "Leaderboard rankings refreshed." };
+  }
+
+  // Backward-compatible targeted leaderboard update.
+  static async updateLeaderboardEntry(data: {
+    leaderboardid: string;
+    userid: string;
+    xppoints: number;
+  }) {
     return UpdateLeaderboard(data);
   }
 
-  static async assignDailyChallenge(userid: string, templateid: string) {
-    return AssignDailyChallenge(userid, templateid);
+  // Diagram signature: assignDailyChallenge(userId)
+  static async assignDailyChallenge(userid: string) {
+    const template = await GamificationRepository.getFirstChallengeTemplate();
+    if (!template) {
+      return { success: false, message: "No challenge templates configured." };
+    }
+    return AssignDailyChallenge(userid, template.templateid);
   }
 
-  static async completeChallenge(data: getDailyChallengeDTO) {
-    return CompleteChallenge(data);
+  // Diagram signature: completeChallenge(challengeId)
+  static async completeChallenge(challengeid: string) {
+    return CompleteChallenge({ challengeid });
   }
 
   static async calculateStreak(userid: string) {
     return CalculateStreak(userid);
   }
 
-  static async getLeaderboardTopN(data: GetLeaderboardDTO) {
-    return GetLeaderboardTopN(data);
+  // Diagram signature: getLeaderboardTopN(n)
+  static async getLeaderboardTopN(n: number, leaderboardid: string = "global") {
+    return GetLeaderboardTopN({ leaderboardid, limit: n } as GetLeaderboardDTO);
   }
 
   static async getXPHistory(userid: string) {

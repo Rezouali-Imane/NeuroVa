@@ -3,6 +3,7 @@ import type {
   CreateNotificationDTO,
   UpdateNotificationSettingsDTO,
 } from "../../interfaces/dtos/Notification.dto.js";
+import { NotificationRepository } from "../../interfaces/repositories/NotificationRepository.js";
 import { CreateNotification } from "./CreateNotification.js";
 import { DeleteNotification } from "./DeleteNotification.js";
 import { getNotificationSettings } from "./GetNotificationSettings.js";
@@ -21,11 +22,24 @@ export class NotificationService {
     return CreateNotification({ userid, ...data });
   }
 
-  static async cancelNotification(notificationId: string, userid: string) {
+  // Diagram signature: cancelNotification(notificationId)
+  // userId remains optional for secured call paths.
+  static async cancelNotification(notificationId: string, userid?: string) {
+    if (!userid) {
+      if (!notificationId) {
+        throw new Error("Notification ID is required");
+      }
+      return NotificationRepository.delete(notificationId);
+    }
     return DeleteNotification(notificationId, userid);
   }
 
-  static async markAsRead(notificationId: string, userid: string) {
+  // Diagram signature: markAsRead(notificationId)
+  // userId remains optional for secured call paths.
+  static async markAsRead(notificationId: string, userid?: string) {
+    if (!userid) {
+      throw new Error("User ID is required to mark a notification as read.");
+    }
     return MarkNotificationRead(notificationId, userid);
   }
 
@@ -56,10 +70,10 @@ export class NotificationService {
   static async sendEmail(
     userid: string,
     subject: string,
-    message: string,
+    html: string,
     type: NotificationType = NotificationType.SYSTEM,
   ) {
-    return sendEmailNotification(userid, subject, message, type);
+    return sendEmailNotification(userid, subject, html, type);
   }
 
   static async getUserNotifications(userid: string) {

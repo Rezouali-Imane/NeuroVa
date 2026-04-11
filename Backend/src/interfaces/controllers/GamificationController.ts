@@ -37,7 +37,7 @@ export const GamificationController = {
     try {
       const { userid } = (req as AuthRequest).user!;
       const { leaderboardid, xppoints } = req.body;
-      const result = await GamificationService.updateLeaderboard({ leaderboardid, userid, xppoints });
+      const result = await GamificationService.updateLeaderboardEntry({ leaderboardid, userid, xppoints });
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
@@ -48,7 +48,7 @@ export const GamificationController = {
     try {
       const leaderboardid = req.params.id as string;
       const limit = parseInt(req.params.n as string) || 10;
-      const result = await GamificationService.getLeaderboardTopN({ leaderboardid, limit });
+      const result = await GamificationService.getLeaderboardTopN(limit, leaderboardid);
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
@@ -58,7 +58,7 @@ export const GamificationController = {
   async completeChallenge(req: Request, res: Response) {
     try {
       const challengeid = req.params.id as string;
-      const result = await GamificationService.completeChallenge({ challengeid });
+      const result = await GamificationService.completeChallenge(challengeid);
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
@@ -79,7 +79,7 @@ export const GamificationController = {
     try {
       const { userid } = (req as AuthRequest).user!;
       const { amount, source, description } = req.body;
-      await GamificationService.awardXP({ userid, amount, source, description });
+      await GamificationService.awardXP(userid, amount, source, description);
       res.status(200).json({ success: true, message: "XP awarded" });
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
@@ -89,13 +89,7 @@ export const GamificationController = {
   async checkAndAwardAchievement(req: Request, res: Response) {
     try {
       const { userid } = (req as AuthRequest).user!;
-      const { title, description, pointsreward } = req.body;
-      const result = await GamificationService.checkAndAwardAchievements({
-        userid,
-        title,
-        description,
-        pointsreward,
-      });
+      const result = await GamificationService.checkAndAwardAchievements(userid);
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
@@ -105,8 +99,8 @@ export const GamificationController = {
   async awardBadge(req: Request, res: Response) {
     try {
       const { userid } = (req as AuthRequest).user!;
-      const { name, description, iconurl, condition } = req.body;
-      const result = await GamificationService.awardBadge({ userid, name, description, iconurl, condition });
+      const { badgeid } = req.body;
+      const result = await GamificationService.awardBadge(userid, badgeid);
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
@@ -116,8 +110,7 @@ export const GamificationController = {
   async assignDailyChallenge(req: Request, res: Response) {
     try {
       const { userid } = (req as AuthRequest).user!;
-      const { templateid } = req.body;
-      const result = await GamificationService.assignDailyChallenge(userid, templateid);
+      const result = await GamificationService.assignDailyChallenge(userid);
       res.status(200).json(result);
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });

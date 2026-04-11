@@ -179,6 +179,18 @@ export const GamificationRepository = {
       where: { templateid },
     });
   },
+
+  async getFirstChallengeTemplate() {
+    return await prisma.dailychallengetemplate.findFirst({
+      orderBy: { createdat: "asc" },
+    });
+  },
+
+  async getAllLeaderboards() {
+    return await prisma.leaderboard.findMany({
+      select: { leaderboardid: true },
+    });
+  },
   //____________________ Streak ___________________
 
   async getLastCompletedSession(userid: string) {
