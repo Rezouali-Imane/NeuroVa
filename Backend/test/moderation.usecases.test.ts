@@ -1,0 +1,69 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const prismaMock = vi.hoisted(() => ({
+  digitaldisciplinesettings: {
+    upsert: vi.fn(),
+  },
+  contentmoderationpolicy: {
+    upsert: vi.fn(),
+    update: vi.fn(),
+  },
+}));
+
+vi.mock('../src/infrastructure/database/prisma.client.js', () => ({
+  default: prismaMock,
+}));
+
+import { ContentModerationService } from '../src/usecases/contentModeration/ContentModerationService.js';
+
+describe('content moderation service', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('blocks unsafe text content', async () => {
+    prismaMock.digitaldisciplinesettings.upsert.mockResolvedValue({
+      settingsid: 'set1',
+      userid: 'usr1',
+    });
+    prismaMock.contentmoderationpolicy.upsert.mockResolvedValue({
+      policyid: 'pol1',
+      sensitivecontentblockingenabled: true,
+      sensitivitylevel: 'SFW_STRICT',
+    });
+
+    const result = await ContentModerationService.analyzeText({
+      userid: 'usr1',
+      content: 'This contains violence and hate speech',
+    });
+
+    expect(result.decision).toBe('BLOCK');
+    expect(result.reason).toContain('Unsafe');
+  });
+
+  it('updates moderation policy', async () => {
+    prismaMock.digitaldisciplinesettings.upsert.mockResolvedValue({
+      settingsid: 'set1',
+      userid: 'usr1',
+    });
+    prismaMock.contentmoderationpolicy.upsert.mockResolvedValue({
+      policyid: 'pol1',
+      settingsid: 'set1',
+    });
+    prismaMock.contentmoderationpolicy.update.mockResolvedValue({
+      policyid: 'pol1',
+      sensitivecontentblockingenabled: true,
+      sensitivitylevel: 'SFW_STRICT',
+    });
+
+    const result = await ContentModerationService.updatePolicy('usr1', {
+      sensitivecontentblockingenabled: true,
+      sensitivitylevel: 'SFW_STRICT',
+    });
+
+    expect(result).toMatchObject({
+      sensitivecontentblockingenabled: true,
+      sensitivitylevel: 'SFW_STRICT',
+    });
+  });
+});

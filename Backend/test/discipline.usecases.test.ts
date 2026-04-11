@@ -4,37 +4,19 @@ const prismaMock = vi.hoisted(() => ({
   digitaldisciplinesettings: {
     findUnique: vi.fn(),
     create: vi.fn(),
-    update: vi.fn(),
-    upsert: vi.fn(),
   },
   blockedapp: {
     findFirst: vi.fn(),
     create: vi.fn(),
-    delete: vi.fn(),
-  },
-  blockedwebsite: {
-    findFirst: vi.fn(),
-    create: vi.fn(),
-    delete: vi.fn(),
   },
   usagelimit: {
-    create: vi.fn(),
     findFirst: vi.fn(),
   },
   usagelog: {
     create: vi.fn(),
-    findMany: vi.fn(),
   },
   disciplinealert: {
     create: vi.fn(),
-    findMany: vi.fn(),
-  },
-  disciplinescore: {
-    upsert: vi.fn(),
-  },
-  contentmoderationpolicy: {
-    upsert: vi.fn(),
-    update: vi.fn(),
   },
 }));
 
@@ -43,9 +25,8 @@ vi.mock('../src/infrastructure/database/prisma.client.js', () => ({
 }));
 
 import { DisciplineService } from '../src/usecases/discipline/DisciplineService.js';
-import { ContentModerationService } from '../src/usecases/contentModeration/ContentModerationService.js';
 
-describe('discipline and moderation services', () => {
+describe('discipline service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -99,51 +80,5 @@ describe('discipline and moderation services', () => {
 
     expect(result).toEqual({ logid: 'log1' });
     expect(prismaMock.disciplinealert.create).toHaveBeenCalledTimes(1);
-  });
-
-  it('blocks unsafe text content', async () => {
-    prismaMock.digitaldisciplinesettings.upsert.mockResolvedValue({
-      settingsid: 'set1',
-      userid: 'usr1',
-    });
-    prismaMock.contentmoderationpolicy.upsert.mockResolvedValue({
-      policyid: 'pol1',
-      sensitivecontentblockingenabled: true,
-      sensitivitylevel: 'SFW_STRICT',
-    });
-
-    const result = await ContentModerationService.analyzeText({
-      userid: 'usr1',
-      content: 'This contains violence and hate speech',
-    });
-
-    expect(result.decision).toBe('BLOCK');
-    expect(result.reason).toContain('Unsafe');
-  });
-
-  it('updates moderation policy', async () => {
-    prismaMock.digitaldisciplinesettings.upsert.mockResolvedValue({
-      settingsid: 'set1',
-      userid: 'usr1',
-    });
-    prismaMock.contentmoderationpolicy.upsert.mockResolvedValue({
-      policyid: 'pol1',
-      settingsid: 'set1',
-    });
-    prismaMock.contentmoderationpolicy.update.mockResolvedValue({
-      policyid: 'pol1',
-      sensitivecontentblockingenabled: true,
-      sensitivitylevel: 'SFW_STRICT',
-    });
-
-    const result = await ContentModerationService.updatePolicy('usr1', {
-      sensitivecontentblockingenabled: true,
-      sensitivitylevel: 'SFW_STRICT',
-    });
-
-    expect(result).toMatchObject({
-      sensitivecontentblockingenabled: true,
-      sensitivitylevel: 'SFW_STRICT',
-    });
   });
 });
