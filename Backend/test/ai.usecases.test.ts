@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import openai from '../src/infrastructure/ai/openai.client.js';
 import prisma from '../src/infrastructure/database/prisma.client.js';
+import { HmacClient } from '../src/infrastructure/hmac.client.js';
 import { getPrayerTimes } from '../src/infrastructure/external/prayertime.client.js';
 import * as pdfChunker from '../src/infrastructure/pdf.chunker.js';
 import * as embeddingClient from '../src/infrastructure/embedding.client.js';
@@ -95,7 +96,7 @@ describe('ai usecases', () => {
     vi.spyOn(prisma.task, 'findMany').mockResolvedValue([{ taskid: 'tsk1', title: 'Study', priority: 3, deadline: new Date('2026-01-02') }] as any);
     vi.spyOn(openai.chat.completions, 'create').mockResolvedValue({ choices: [{ message: { content: '{"taskid":"tsk1","durationMinutes":50,"reason":"Highest priority"}' } }] } as any);
     vi.spyOn(FocusSessionRepository, 'create').mockResolvedValue({ sessionid: 'ssn1' } as any);
-    vi.spyOn(prisma.task_focussession, 'create').mockResolvedValue({} as any);
+    vi.spyOn(prisma.sessiontask, 'create').mockResolvedValue({} as any);
     await expect(ScheduleFocusSession({ userid: 'usr1' })).resolves.toEqual({ sessionid: 'ssn1', suggestedTaskid: 'tsk1', durationMinutes: 50, reason: 'Highest priority', message: 'Focus session created! Open Neurova to start.' });
   });
 

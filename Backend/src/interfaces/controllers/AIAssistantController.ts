@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import multer from 'multer';
 import type { FileFilterCallback } from 'multer';
+import type { AuthRequest } from '../../infrastructure/middleware/authMiddleware.js';
 import { SendMessage } from '../../usecases/ai/SendMessage.js';
 import { GetChatHistory } from '../../usecases/ai/GetChatHistory.js';
 import { ClearChatHistory } from '../../usecases/ai/ClearChatHistory.js';
@@ -30,7 +31,7 @@ export const upload = multer({
 });
 
 // Middleware to extract and validate user ID from auth token
-export const extractUserId = (req: Request, res: Response, next: Function) => {
+export const extractUserId = (req: AuthRequest, res: Response, next: Function) => {
   try {
     // Assuming authMiddleware sets req.user
     if (!req.user) {
@@ -43,7 +44,7 @@ export const extractUserId = (req: Request, res: Response, next: Function) => {
 };
 
 export const AIAssistantController = {
-  async sendMessage(req: Request, res: Response) {
+  async sendMessage(req: AuthRequest, res: Response) {
     try {
       const result = await SendMessage(req.body);
       res.status(200).json({ success: true, data: result });
@@ -52,7 +53,7 @@ export const AIAssistantController = {
     }
   },
 
-  async getChatHistory(req: Request, res: Response) {
+  async getChatHistory(req: AuthRequest, res: Response) {
     try {
       const userid = req.params['userid'] as string;
       const requestUserId = (req.user as any)?.userid;
@@ -77,7 +78,7 @@ export const AIAssistantController = {
     }
   },
 
-  async clearChatHistory(req: Request, res: Response) {
+  async clearChatHistory(req: AuthRequest, res: Response) {
     try {
       const userid = req.params['userid'] as string;
       const requestUserId = (req.user as any)?.userid;
@@ -91,7 +92,7 @@ export const AIAssistantController = {
     }
   },
 
-  async generateStudyPlan(req: Request, res: Response) {
+  async generateStudyPlan(req: AuthRequest, res: Response) {
     try {
       const userid = req.params['userid'] as string;
       const requestUserId = (req.user as any)?.userid;
@@ -106,7 +107,7 @@ export const AIAssistantController = {
     }
   },
 
-  async analyzeWeakness(req: Request, res: Response) {
+  async analyzeWeakness(req: AuthRequest, res: Response) {
     try {
       const userid = req.params['userid'] as string;
       const requestUserId = (req.user as any)?.userid;
@@ -121,7 +122,7 @@ export const AIAssistantController = {
   },
 
 
-  async getMemory(req: Request, res: Response) {
+  async getMemory(req: AuthRequest, res: Response) {
     try {
       const userid = req.params['userid'] as string;
       const requestUserId = (req.user as any)?.userid;
@@ -135,7 +136,7 @@ export const AIAssistantController = {
     }
   },
 
-  async updateMemory(req: Request, res: Response) {
+  async updateMemory(req: AuthRequest, res: Response) {
     try {
       const userid = req.params['userid'] as string;
       const requestUserId = (req.user as any)?.userid;
@@ -149,7 +150,7 @@ export const AIAssistantController = {
     }
   },
 
-  async uploadDocument(req: Request, res: Response) {
+  async uploadDocument(req: AuthRequest, res: Response) {
     try {
       const file = req.file;
       if (!file) {
@@ -176,7 +177,7 @@ export const AIAssistantController = {
     }
   },
 
-  async getKnowledgeBase(req: Request, res: Response) {
+  async getKnowledgeBase(req: AuthRequest, res: Response) {
     try {
       const userid = req.params['userid'] as string;
       const requestUserId = (req.user as any)?.userid;
@@ -190,7 +191,7 @@ export const AIAssistantController = {
     }
   },
 
-  async deleteDocument(req: Request, res: Response) {
+  async deleteDocument(req: AuthRequest, res: Response) {
     try {
       const id = req.params['id'] as string;
       const result = await DeleteDocument(id);
@@ -200,7 +201,7 @@ export const AIAssistantController = {
     }
   },
 
-  async scheduleFocusSession(req: Request, res: Response) {
+  async scheduleFocusSession(req: AuthRequest, res: Response) {
     try {
       const userid = req.params['userid'] as string;
       const requestUserId = (req.user as any)?.userid;
@@ -215,7 +216,7 @@ export const AIAssistantController = {
     }
   },
 
-  async sendReminders(req: Request, res: Response) {
+  async sendReminders(req: AuthRequest, res: Response) {
     try {
       const userid = req.params['userid'] as string | undefined;
       if (userid) {

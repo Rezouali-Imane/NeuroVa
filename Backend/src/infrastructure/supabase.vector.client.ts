@@ -4,9 +4,15 @@ import 'dotenv/config';
 const supabaseUrl = process.env.SUPABASE_URL ?? '';
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY ?? '';
 
-let supabaseClient: any = null;
+type SupabaseChunkRow = {
+  chunkid: string;
+  content: string;
+  embedding?: number[] | string | null;
+};
 
-const getSupabaseClient = (): any => {
+let supabaseClient: ReturnType<typeof createClient> | null = null;
+
+const getSupabaseClient = (): ReturnType<typeof createClient> => {
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('Supabase vector search is not configured (SUPABASE_URL/SUPABASE_SERVICE_KEY missing).');
   }
@@ -27,8 +33,6 @@ export const searchSimilarChunks = async (
   
   // Use direct query instead of RPC (RPC function may not be defined)
   // Calculate similarity using Postgres built-in vector distance
-  const embeddingString = `[${queryEmbedding.join(',')}]`;
-  
   const { data, error } = await supabase
     .from('documentchunk')
     .select('chunkid, content, embedding')
@@ -40,38 +44,45 @@ export const searchSimilarChunks = async (
   if (!data || data.length === 0) return [];
   
   // Calculate similarity (cosine would be ideal, using euclidean for now)
-  const results = data
-    .map((chunk: any) => ({
+  const results = (data as SupabaseChunkRow[])
+    .map((chunk) => ({
       chunkid: chunk.chunkid,
       content: chunk.content,
       similarity: calculateEmbeddingSimilarity(queryEmbedding, chunk.embedding),
     }))
-    .sort((a, b) => b.similarity - a.similarity)
+    .sort((left, right) => right.similarity - left.similarity)
     .slice(0, matchCount);
   
   return results;
 };
 
 // Helper: Calculate cosine similarity between two embeddings
-const calculateEmbeddingSimilarity = (a: number[], b: any): number => {
-  if (!b || typeof b === 'string') {
+const calculateEmbeddingSimilarity = (a: number[], b: unknown): number => {
+  let vectorB: number[] | null = null;
+
+  if (Array.isArray(b)) {
+    vectorB = b;
+  } else if (typeof b === 'string') {
     try {
-      b = JSON.parse(b);
+      const parsed = JSON.parse(b);
+      vectorB = Array.isArray(parsed) ? parsed : null;
     } catch {
       return 0;
     }
   }
   
-  if (!Array.isArray(b) || a.length !== b.length) return 0;
+  if (!vectorB || a.length !== vectorB.length) return 0;
   
   let dotProduct = 0;
   let normA = 0;
   let normB = 0;
   
   for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
+    const valueA = a[i] ?? 0;
+    const valueB = vectorB[i] ?? 0;
+    dotProduct += valueA * valueB;
+    normA += valueA * valueA;
+    normB += valueB * valueB;
   }
   
   const denominator = Math.sqrt(normA * normB);
@@ -85,7 +96,7 @@ export const insertChunkWithEmbedding = async (
   const supabase = getSupabaseClient();
   const { error } = await supabase
     .from('documentchunk')
-    .update({ embedding: `[${embedding.join(',')}]` })
+    .update({ embedding: `[${embedding.join(',')}]` } as never)
     .eq('chunkid', chunkid);
 
   if (error) throw new Error(`Embedding insert error: ${error.message}`);

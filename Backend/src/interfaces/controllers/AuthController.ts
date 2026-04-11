@@ -56,7 +56,7 @@ export const AuthController = {
           lastname: user.lastname,
           username: user.username,
           email: user.email,
-          role: user.role,
+          role: user.userrole,
           isverified: user.isverified,
         },
       });
