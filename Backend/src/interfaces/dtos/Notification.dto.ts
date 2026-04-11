@@ -8,8 +8,8 @@ export interface CreateNotificationDTO {
   sessionid?: string;
   taskid?: string;
   scheduledtime?: Date;
-  isread: boolean;
-  createdat: Date;
+  isread?: boolean;
+  createdat?: Date;
 }
 
 export interface UpdateNotificationSettingsDTO {
