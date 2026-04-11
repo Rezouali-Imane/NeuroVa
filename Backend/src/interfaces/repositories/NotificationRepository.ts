@@ -6,7 +6,7 @@ import type {
 } from "../dtos/Notification.dto.js";
 
 export const NotificationRepository = {
-  async CreateNotification(data: CreateNotificationDTO) {
+  async createNotification(data: CreateNotificationDTO) {
     return await prisma.notification.create({
       data: {
         userid: data.userid,
@@ -16,8 +16,8 @@ export const NotificationRepository = {
         sessionid: data.sessionid ?? null,
         taskid: data.taskid ?? null,
         scheduledtime: data.scheduledtime ?? null,
-        isread: data.isread,
-        createdat: data.createdat,
+        isread: data.isread ?? false,
+        createdat: data.createdat ?? new Date(),
       },
     });
   },
@@ -100,5 +100,10 @@ export const NotificationRepository = {
         ...updateData,
       },
     });
+  },
+
+  // Backward-compatible alias while naming is normalized.
+  async CreateNotification(data: CreateNotificationDTO) {
+    return this.createNotification(data);
   },
 };

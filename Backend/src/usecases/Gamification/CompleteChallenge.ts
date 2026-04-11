@@ -25,12 +25,13 @@ export const CompleteChallenge = async (
     return { success: false, message: "Failed to complete challenge" };
   }
 
-  await GamificationRepository.CreatXPtransaction({
+  await GamificationRepository.createXPTransaction({
     userid: completedchallenge.userid,
     amount: 100,
     source: XPSource.CHALLENGE_COMPLETED,
     description: "Completed daily challenge",
   });
+  await GamificationRepository.incrementUserXP(completedchallenge.userid, 100);
   return {
     success: true,
     message: "Challenge completed and XP awarded successfully",

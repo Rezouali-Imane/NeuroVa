@@ -10,7 +10,7 @@ export const GetUserBadges = async (userid: string) => {
     } catch (error) {
         return {
             success: false,
-            message: error.message,
+            message: error instanceof Error ? error.message : "Failed to retrieve badges",
         };
     }
 };

@@ -12,7 +12,7 @@ export const GetActiveDailyChallenges = async (userid: string) => {
 
         return {
             success: false,
-            message: "Failed to retrieve daily challenges",
+            message: error instanceof Error ? error.message : "Failed to retrieve daily challenges",
         };
     }
-}   
+};

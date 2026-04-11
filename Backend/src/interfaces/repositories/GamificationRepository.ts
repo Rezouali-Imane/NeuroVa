@@ -12,18 +12,18 @@ import type {
 export const GamificationRepository = {
   // ___________________XP Transactions___________________
 
-  async creatXPTransaction(data: AwardXPDTO) {
+  async createXPTransaction(data: AwardXPDTO) {
     return await prisma.xptransaction.create({
       data: {
         userid : data.userid,
         amount : data.amount,
         source : data.source,
-        description : data.description,
+        ...(data.description != null ? { description: data.description } : {}),
       },
     });
   },
 
-  async incrementuserXP(userid: string, amount: number) {
+  async incrementUserXP(userid: string, amount: number) {
     return await prisma.users.update({
       where: { userid },
       data: { xppoints: { increment: amount } },
@@ -44,7 +44,7 @@ export const GamificationRepository = {
       data: {
         userid : data.userid,
         title: data.title,
-        description: data.description,
+        ...(data.description != null ? { description: data.description } : {}),
         pointsreward: data.pointsreward,
       },
     });
@@ -68,9 +68,9 @@ export const GamificationRepository = {
       data: {
         userid : data.userid,
         name: data.name,
-        description: data.description,
-        iconurl: data.iconurl,
-        condition: data.condition,
+        ...(data.description != null ? { description: data.description } : {}),
+        ...(data.iconurl != null ? { iconurl: data.iconurl } : {}),
+        ...(data.condition != null ? { condition: data.condition } : {}),
       },
     });
   },
@@ -128,13 +128,13 @@ export const GamificationRepository = {
   async getLeaderboardTopN(data: GetLeaderboardDTO) {
     return await prisma.leaderboardentry.findMany({
       where: { leaderboardid: data.leaderboardid },
-      orderBy: { xppoints: "asc" },
+      orderBy: { xppoints: "desc" },
       take: data.limit ?? 10,
     });
   },
 
   //____________________Daily Challenges___________________
-  async creatDailyChallenge(data: AssignDailyChallengeDTO) {
+  async createDailyChallenge(data: AssignDailyChallengeDTO) {
     return await prisma.dailychallenge.create({
       data: {
         userid : data.userid,
@@ -150,7 +150,7 @@ export const GamificationRepository = {
     });
   },
 
-  async findactiveChallengeByUserId(userid: string) {
+  async findActiveChallengeByUserId(userid: string) {
     return await prisma.dailychallenge.findFirst({
       where: {
         userid,
@@ -181,7 +181,7 @@ export const GamificationRepository = {
   },
   //____________________ Streak ___________________
 
-  async getlastCompletedSession(userid: string) {
+  async getLastCompletedSession(userid: string) {
     return await prisma.focussession.findFirst({
       where: {
         userid,
@@ -213,5 +213,22 @@ export const GamificationRepository = {
       where: { sessionid },
       data: { focusscore: score },
     });
+  },
+
+  // Backward-compatible aliases while imports are normalized.
+  async creatXPTransaction(data: AwardXPDTO) {
+    return this.createXPTransaction(data);
+  },
+  async incrementuserXP(userid: string, amount: number) {
+    return this.incrementUserXP(userid, amount);
+  },
+  async creatDailyChallenge(data: AssignDailyChallengeDTO) {
+    return this.createDailyChallenge(data);
+  },
+  async findactiveChallengeByUserId(userid: string) {
+    return this.findActiveChallengeByUserId(userid);
+  },
+  async getlastCompletedSession(userid: string) {
+    return this.getLastCompletedSession(userid);
   },
 };

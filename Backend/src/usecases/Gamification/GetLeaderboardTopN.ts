@@ -10,10 +10,9 @@ export const GetLeaderboardTopN = async (data: GetLeaderboardDTO) => {
             data: leaderboard,
         };
     } catch (error) {
-        console.error("Error retrieving leaderboard:", error);
         return {
             success: false,
-            message: error.message,
+            message: error instanceof Error ? error.message : "Failed to retrieve leaderboard",
         };
     }
-}
+};

@@ -7,5 +7,9 @@ export const CreateNotification = async (data: CreateNotificationDTO) => {
     if (!data.message || data.message.trim() === '') throw new Error('Message is required');
     if (!data.type) throw new Error('Notification type is required');
 
-    return await NotificationRepository.CreateNotification(data);
+        return await NotificationRepository.createNotification({
+            ...data,
+            isread: data.isread ?? false,
+            createdat: data.createdat ?? new Date(),
+        });
 };

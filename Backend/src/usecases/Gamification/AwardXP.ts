@@ -2,6 +2,6 @@ import { GamificationRepository } from "../../interfaces/repositories/Gamificati
 import type { AwardXPDTO } from "../../interfaces/dtos/Gamification.dto.js";
 
 export const AwardXP = async (dto: AwardXPDTO) => {
-    await GamificationRepository.creatXPTransaction(dto);
-    await GamificationRepository.incrementuserXP(dto.userid, dto.amount);
-}
+    await GamificationRepository.createXPTransaction(dto);
+    await GamificationRepository.incrementUserXP(dto.userid, dto.amount);
+};
