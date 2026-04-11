@@ -21,9 +21,9 @@ export const FocusSessionRepository = {
         });
     },
 
-    async update(updateData: UpdateFocusSessionDTO) {
+    async update(sessionid: string, updateData: UpdateFocusSessionDTO) {
         return await prisma.focussession.update({
-            where: { sessionid: updateData.sessionid },
+            where: { sessionid },
             data: updateData,
         });
     },
