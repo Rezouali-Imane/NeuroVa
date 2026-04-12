@@ -1,9 +1,11 @@
 import prisma from "../../infrastructure/database/prisma.client.js";
-import type { ConnectCalendarDTO, DisconnectCalendarDTO } from "../dtos/GoogleCalendar.dto.js";
+import type { ConnectCalendarDTO, DisconnectCalendarDTO ,SaveTokenDTO } from "../dtos/GoogleCalendar.dto.js";
+
+
 
 export const GoogleCalendarRepository = {
 
-   async connectCalendar(data: ConnectCalendarDTO) {
+   async connectCalendar(data: SaveTokenDTO) {
    return await prisma.$transaction(async (tx) => {
 
     const token = await tx.googlecalendartoken.create({
