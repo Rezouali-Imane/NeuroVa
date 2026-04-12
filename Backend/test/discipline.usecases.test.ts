@@ -24,7 +24,9 @@ vi.mock('../src/infrastructure/database/prisma.client.js', () => ({
   default: prismaMock,
 }));
 
-import { DisciplineService } from '../src/usecases/discipline/DisciplineService.js';
+import { GetSettings } from '../src/usecases/discipline/GetSettings.js';
+import { AddBlockedApp } from '../src/usecases/discipline/AddBlockedApp.js';
+import { LogUsage } from '../src/usecases/discipline/LogUsage.js';
 
 describe('discipline service', () => {
   beforeEach(() => {
@@ -38,7 +40,7 @@ describe('discipline service', () => {
       userid: 'usr1',
     });
 
-    const result = await DisciplineService.getSettings('usr1');
+    const result = await GetSettings('usr1');
 
     expect(prismaMock.digitaldisciplinesettings.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -56,7 +58,7 @@ describe('discipline service', () => {
     prismaMock.blockedapp.findFirst.mockResolvedValue(null);
     prismaMock.blockedapp.create.mockResolvedValue({ appid: 'app1', appname: 'TikTok' });
 
-    const result = await DisciplineService.addBlockedApp('usr1', { appname: 'TikTok' });
+    const result = await AddBlockedApp('usr1', { appname: 'TikTok' });
 
     expect(result).toEqual({ appid: 'app1', appname: 'TikTok' });
     expect(prismaMock.blockedapp.create).toHaveBeenCalledTimes(1);
@@ -73,7 +75,7 @@ describe('discipline service', () => {
     prismaMock.usagelog.create.mockResolvedValue({ logid: 'log1' });
     prismaMock.disciplinealert.create.mockResolvedValue({ alertid: 'a1' });
 
-    const result = await DisciplineService.logUsage('usr1', {
+    const result = await LogUsage('usr1', {
       appname: 'Instagram',
       usageminutes: 45,
     });
