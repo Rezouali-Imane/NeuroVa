@@ -22,3 +22,13 @@ export interface UpdateaccessTokenDTO {
   accesstoken: string;
   expiresat: Date;
 }
+
+export interface SyncTaskDTO {
+  taskid: string;
+  userid: string;
+}
+
+export interface SaveGoogleEventDTO {
+  taskid: string;
+  googleeventid: string;
+}

@@ -8,4 +8,7 @@ export interface GoogleCalendarService {
     access_token: string;
     expiry_date: number;
   }>;
+    syncTaskToGoogle(taskId: string, accessToken: string): Promise<{
+    googleeventid: string;
+  }>;
 }

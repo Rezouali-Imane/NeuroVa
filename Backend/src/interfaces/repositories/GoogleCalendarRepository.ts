@@ -2,6 +2,7 @@ import prisma from "../../infrastructure/database/prisma.client.js";
 import type {
   ConnectCalendarDTO,
   DisconnectCalendarDTO,
+  SaveGoogleEventDTO,
   SaveTokenDTO,
   UpdateaccessTokenDTO,
 } from "../dtos/GoogleCalendar.dto.js";
@@ -64,4 +65,21 @@ export const GoogleCalendarRepository = {
       },
     });
   },
+
+  async getAccessToken(userid: string) {
+  return await prisma.googlecalendartoken.findFirst({
+    where: { userid },
+  });
+},
+
+
+async saveGoogleEventId(data: SaveGoogleEventDTO) {
+  return await prisma.task.update({
+    where: { taskid: data.taskid },
+    data: {
+      googleeventid: data.googleeventid,
+      syncedwithgoogle: true,
+    },
+  });
+}
 };
