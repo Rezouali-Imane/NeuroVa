@@ -29,5 +29,26 @@ export const GoogleCalendarRepository = {
   });
 },
 
+async disconnectCalendar(data: DisconnectCalendarDTO) {
+  return await prisma.$transaction(async (tx) => {
+    
+    await tx.googlecalendarsync.deleteMany({
+      where: { userid: data.userid },
+    });
+
+    await tx.googlecalendartoken.deleteMany({
+      where: { userid: data.userid },
+    });
+
+    await tx.task.updateMany({
+      where: { userid: data.userid },
+      data: {
+        googleeventid: null,
+        syncedwithgoogle: false,
+      },
+    });
+  });
+}
+
 
 }
