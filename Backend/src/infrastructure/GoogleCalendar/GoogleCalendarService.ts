@@ -4,4 +4,8 @@ export interface GoogleCalendarService {
     refresh_token: string;
     expiry_date: number;
   }>;
+  refreshAccessToken(refreshToken: string, clientId: string): Promise<{
+    access_token: string;
+    expiry_date: number;
+  }>;
 }
