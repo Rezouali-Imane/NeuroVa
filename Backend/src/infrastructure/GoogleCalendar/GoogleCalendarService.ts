@@ -11,4 +11,10 @@ export interface GoogleCalendarService {
     syncTaskToGoogle(taskId: string, accessToken: string): Promise<{
     googleeventid: string;
   }>;
+    syncGoogleToTask(eventId: string, accessToken: string): Promise<{
+    title: string;
+    description: string;
+    duedate: Date;
+  }>;
+  deleteGoogleEvent(eventId: string, accessToken: string): Promise<void>;
 }

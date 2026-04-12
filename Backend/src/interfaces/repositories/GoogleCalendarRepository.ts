@@ -81,5 +81,37 @@ async saveGoogleEventId(data: SaveGoogleEventDTO) {
       syncedwithgoogle: true,
     },
   });
+},
+
+
+async createTaskFromGoogleEvent(data: {
+  userid: string;
+  title: string;
+   listid: string; 
+  description: string;
+  deadline: Date;  // ← duedate → deadline
+  googleeventid: string;
+}) {
+  return await prisma.task.create({
+    data: {
+      userid: data.userid,
+      title: data.title,
+      listid: data.listid,
+      description: data.description,
+      deadline: data.deadline, 
+      googleeventid: data.googleeventid,
+      syncwithgoogle: true,
+    },
+  });
+},
+
+async removeGoogleEventFromTask(taskid: string) {
+  return await prisma.task.update({
+    where: { taskid },
+    data: {
+      googleeventid: null,
+      syncedwithgoogle: false,
+    },
+  });
 }
 };

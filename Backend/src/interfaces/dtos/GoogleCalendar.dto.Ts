@@ -32,3 +32,15 @@ export interface SaveGoogleEventDTO {
   taskid: string;
   googleeventid: string;
 }
+
+export interface SyncGoogleToTaskDTO {
+  userid: string;
+  eventid: string;
+   listid: string;
+}
+
+export interface DeleteGoogleEventDTO {
+  userid: string;
+  taskid: string;
+  eventid: string;
+}
