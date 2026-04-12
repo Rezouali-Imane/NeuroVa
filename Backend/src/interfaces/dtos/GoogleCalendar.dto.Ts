@@ -13,4 +13,12 @@ export interface SaveTokenDTO {
 export interface DisconnectCalendarDTO {
   userid: string;
 }
-
+export interface refreshAccessTokenDTO {
+  userid: string;
+  refreshtoken: string;
+}
+export interface UpdateaccessTokenDTO {
+  userid: string;
+  accesstoken: string;
+  expiresat: Date;
+}
