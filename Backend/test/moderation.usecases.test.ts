@@ -14,7 +14,8 @@ vi.mock('../src/infrastructure/database/prisma.client.js', () => ({
   default: prismaMock,
 }));
 
-import { ContentModerationService } from '../src/usecases/contentModeration/ContentModerationService.js';
+import { AnalyzeText } from '../src/usecases/contentModeration/AnalyzeText.js';
+import { UpdatePolicy } from '../src/usecases/contentModeration/UpdatePolicy.js';
 
 describe('content moderation service', () => {
   beforeEach(() => {
@@ -32,7 +33,7 @@ describe('content moderation service', () => {
       sensitivitylevel: 'SFW_STRICT',
     });
 
-    const result = await ContentModerationService.analyzeText({
+    const result = await AnalyzeText({
       userid: 'usr1',
       content: 'This contains violence and hate speech',
     });
@@ -56,7 +57,7 @@ describe('content moderation service', () => {
       sensitivitylevel: 'SFW_STRICT',
     });
 
-    const result = await ContentModerationService.updatePolicy('usr1', {
+    const result = await UpdatePolicy('usr1', {
       sensitivecontentblockingenabled: true,
       sensitivitylevel: 'SFW_STRICT',
     });

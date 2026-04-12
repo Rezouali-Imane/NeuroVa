@@ -1,5 +1,6 @@
-import { ContentModerationService } from './ContentModerationService.js';
+import { ensurePolicy, classifyText } from './contentModeration.helpers.js';
 
 export const FilterContent = async (userid: string, content: string) => {
-  return ContentModerationService.filterContent(userid, content);
+  const policy = await ensurePolicy(userid);
+  return classifyText(content, policy.sensitivitylevel, policy.sensitivecontentblockingenabled);
 };

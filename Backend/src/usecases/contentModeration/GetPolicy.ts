@@ -1,5 +1,5 @@
-import { ContentModerationService } from './ContentModerationService.js';
+import { ensurePolicy } from './contentModeration.helpers.js';
 
 export const GetPolicy = async (userid: string) => {
-  return ContentModerationService.getPolicy(userid);
+  return ensurePolicy(userid);
 };
