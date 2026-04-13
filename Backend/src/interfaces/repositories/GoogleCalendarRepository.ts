@@ -89,7 +89,7 @@ async createTaskFromGoogleEvent(data: {
   title: string;
    listid: string; 
   description: string;
-  deadline: Date;  // ← duedate → deadline
+  deadline: Date; 
   googleeventid: string;
 }) {
   return await prisma.task.create({
