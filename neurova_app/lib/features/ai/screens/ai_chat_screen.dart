@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import '../../../shared/services/local_storage_service.dart';
 import '../models/ai_models.dart';
 import '../services/ai_service.dart';
 import '../state/ai_notifier.dart';
@@ -30,6 +34,18 @@ class _AIChatScreenState extends State<AIChatScreen> {
   bool _showConversation = false;
   _AITab _selectedTab = _AITab.chat;
   int _selectedNavIndex = 3; // AI is at index 3
+  final SpeechToText _speechToText = SpeechToText();
+  final FlutterTts _flutterTts = FlutterTts();
+  final ImagePicker _imagePicker = ImagePicker();
+  final LocalStorageService _localStorageService = LocalStorageService();
+  bool _voiceCallMode = false;
+  bool _isListening = false;
+  bool _isSpeaking = false;
+  bool _speechReady = false;
+  String _lastRecognizedWords = '';
+  String _voicePersona = 'Balanced';
+  String _voiceSpeedPreset = 'Normal';
+  List<Map<String, dynamic>> _availableVoices = [];
 
   @override
   void initState() {
@@ -56,6 +72,181 @@ class _AIChatScreenState extends State<AIChatScreen> {
     });
 
     _initializeChat();
+    _initializeVoiceChat();
+    _loadSavedVoiceSettings();
+  }
+
+  Future<void> _loadSavedVoiceSettings() async {
+    final savedPersona = await _localStorageService.readAIVoicePersona();
+    final savedSpeed = await _localStorageService.readAIVoiceSpeedPreset();
+
+    if (!mounted) return;
+
+    setState(() {
+      if (savedPersona != null && savedPersona.isNotEmpty) {
+        _voicePersona = savedPersona;
+      }
+      if (savedSpeed != null && savedSpeed.isNotEmpty) {
+        _voiceSpeedPreset = savedSpeed;
+      }
+    });
+
+    await _applyVoiceStyle();
+  }
+
+  Future<void> _initializeVoiceChat() async {
+    _speechReady = await _speechToText.initialize(
+      onStatus: (status) {
+        final normalized = status.toLowerCase();
+        if (normalized == 'listening') {
+          if (mounted) setState(() => _isListening = true);
+          return;
+        }
+
+        if (_isListening && mounted) {
+          setState(() => _isListening = false);
+        }
+      },
+      onError: (_) {
+        if (mounted) setState(() => _isListening = false);
+      },
+    );
+
+    await _flutterTts.awaitSpeakCompletion(true);
+
+    final dynamic voices = await _flutterTts.getVoices;
+    if (voices is List) {
+      _availableVoices = voices
+          .whereType<Map>()
+          .map((v) => Map<String, dynamic>.from(v))
+          .toList();
+    }
+
+    await _applyVoiceStyle();
+  }
+
+  double _speedRateForPreset(String preset) {
+    switch (preset) {
+      case 'Slow':
+        return 0.40;
+      case 'Fast':
+        return 0.58;
+      default:
+        return 0.48;
+    }
+  }
+
+  double _pitchForPersona(String persona) {
+    switch (persona) {
+      case 'Warm':
+        return 0.92;
+      case 'Energetic':
+        return 1.08;
+      case 'Mentor':
+        return 0.86;
+      default:
+        return 1.0;
+    }
+  }
+
+  Future<void> _applyVoiceStyle() async {
+    await _flutterTts.setSpeechRate(_speedRateForPreset(_voiceSpeedPreset));
+    await _flutterTts.setPitch(_pitchForPersona(_voicePersona));
+
+    if (_availableVoices.isNotEmpty) {
+      Map<String, dynamic>? preferred;
+
+      if (_voicePersona == 'Warm') {
+        preferred = _availableVoices.firstWhere(
+          (v) => (v['name']?.toString().toLowerCase().contains('female') ?? false),
+          orElse: () => _availableVoices.first,
+        );
+      } else if (_voicePersona == 'Mentor') {
+        preferred = _availableVoices.firstWhere(
+          (v) => (v['name']?.toString().toLowerCase().contains('male') ?? false),
+          orElse: () => _availableVoices.first,
+        );
+      } else {
+        preferred = _availableVoices.first;
+      }
+
+      final voiceName = preferred['name']?.toString();
+      final voiceLocale = preferred['locale']?.toString();
+      if (voiceName != null && voiceLocale != null) {
+        await _flutterTts.setVoice({'name': voiceName, 'locale': voiceLocale});
+      }
+    }
+  }
+
+  Future<void> _showVoiceSettingsDialog() async {
+    String draftPersona = _voicePersona;
+    String draftSpeed = _voiceSpeedPreset;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Voice Settings'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Persona'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: ['Balanced', 'Warm', 'Energetic', 'Mentor']
+                      .map(
+                        (option) => ChoiceChip(
+                          label: Text(option),
+                          selected: draftPersona == option,
+                          onSelected: (_) => setDialogState(() => draftPersona = option),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 16),
+                const Text('Speed'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: ['Slow', 'Normal', 'Fast']
+                      .map(
+                        (option) => ChoiceChip(
+                          label: Text(option),
+                          selected: draftSpeed == option,
+                          onSelected: (_) => setDialogState(() => draftSpeed = option),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final navigator = Navigator.of(context);
+                  setState(() {
+                    _voicePersona = draftPersona;
+                    _voiceSpeedPreset = draftSpeed;
+                  });
+                  await _localStorageService.saveAIVoicePersona(draftPersona);
+                  await _localStorageService.saveAIVoiceSpeedPreset(draftSpeed);
+                  await _applyVoiceStyle();
+                  navigator.pop();
+                },
+                child: const Text('Apply'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _initializeChat() async {
@@ -90,6 +281,156 @@ class _AIChatScreenState extends State<AIChatScreen> {
     await _notifier.sendMessage(content, directChat: true);
   }
 
+  Future<void> _pickAndSendImage() async {
+    final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null) return;
+
+    final prompt = _messageController.text.trim();
+    _messageController.clear();
+
+    if (!_showConversation) {
+      setState(() {
+        _showConversation = true;
+      });
+    }
+
+    await _notifier.sendImageMessage(
+      pickedFile.path,
+      prompt: prompt,
+      directChat: true,
+    );
+  }
+
+  Future<void> _toggleVoiceCallMode() async {
+    if (_voiceCallMode) {
+      await _stopVoiceCallMode();
+      return;
+    }
+
+    if (!_speechReady) {
+      _speechReady = await _speechToText.initialize();
+    }
+    if (!_speechReady) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone is not available on this device.')),
+        );
+      }
+      return;
+    }
+
+    try {
+      setState(() {
+        _voiceCallMode = true;
+        _showConversation = true;
+        _lastRecognizedWords = '';
+      });
+
+      await _notifier.connectVoiceCall();
+      await _startListeningCycle();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _voiceCallMode = false;
+          _isListening = false;
+          _isSpeaking = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Voice call unavailable: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopVoiceCallMode() async {
+    setState(() {
+      _voiceCallMode = false;
+      _isListening = false;
+      _isSpeaking = false;
+    });
+    await _speechToText.stop();
+    await _flutterTts.stop();
+    await _notifier.disconnectVoiceCall();
+  }
+
+  Future<void> _startListeningCycle() async {
+    if (!_voiceCallMode || _isSpeaking) return;
+    if (!_speechReady) return;
+
+    _lastRecognizedWords = '';
+    setState(() => _isListening = true);
+
+    await _speechToText.listen(
+      onResult: (result) async {
+        if (mounted) {
+          setState(() {
+            _lastRecognizedWords = result.recognizedWords.trim();
+          });
+        }
+        if (result.finalResult && _lastRecognizedWords.isNotEmpty) {
+          await _speechToText.stop();
+          if (mounted) setState(() => _isListening = false);
+          await _handleVoiceTurn(_lastRecognizedWords);
+        }
+      },
+      pauseFor: const Duration(seconds: 3),
+      listenFor: const Duration(minutes: 2),
+      listenOptions: SpeechListenOptions(
+        partialResults: true,
+        cancelOnError: true,
+      ),
+    );
+  }
+
+  Future<void> _handleVoiceTurn(String transcript) async {
+    if (!_voiceCallMode) return;
+
+    final before = _stateNotifier.value.messages.length;
+    await _notifier.sendRealtimeVoiceTurn(transcript, directChat: true);
+
+    final messages = _stateNotifier.value.messages;
+    String? assistantReply;
+    for (int i = messages.length - 1; i >= 0; i--) {
+      final m = messages[i];
+      if (m.role == 'ASSISTANT') {
+        assistantReply = m.content;
+        break;
+      }
+    }
+
+    if (messages.length <= before || assistantReply == null || assistantReply.trim().isEmpty) {
+      if (_voiceCallMode) await _startListeningCycle();
+      return;
+    }
+
+    setState(() => _isSpeaking = true);
+    await _flutterTts.speak(assistantReply);
+    if (mounted) setState(() => _isSpeaking = false);
+
+    if (_voiceCallMode) {
+      await _startListeningCycle();
+    }
+  }
+
+  Future<void> _interruptAndListenNow() async {
+    if (!_voiceCallMode) return;
+    await _flutterTts.stop();
+    if (mounted) {
+      setState(() {
+        _isSpeaking = false;
+      });
+    }
+    await _startListeningCycle();
+  }
+
+  String _voiceStatus(AIState state) {
+    if (!_voiceCallMode) return 'Voice off';
+    if (_isListening) return 'Listening...';
+    if (state.isSending) return 'Thinking...';
+    if (_isSpeaking) return 'Speaking...';
+    return 'Ready';
+  }
+
   Future<void> _sendPresetPrompt(String prompt) async {
     _messageController.text = prompt;
     await _sendMessage();
@@ -97,6 +438,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   @override
   void dispose() {
+    _speechToText.stop();
+    _flutterTts.stop();
     _messageController.dispose();
     _scrollController.dispose();
     _stateNotifier.dispose();
@@ -203,6 +546,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           ],
                         ),
                       ),
+                    if (_voiceCallMode) _buildVoiceCallPanel(state),
                     _buildInputBar(state),
                     const SizedBox(height: 90),
                   ],
@@ -621,6 +965,37 @@ class _AIChatScreenState extends State<AIChatScreen> {
           const SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
+              color: _voiceCallMode
+                  ? const Color(0x3357F5AA)
+                  : Colors.white.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: IconButton(
+              tooltip: _voiceCallMode ? 'End voice call mode' : 'Start voice call mode',
+              icon: Icon(
+                _voiceCallMode
+                    ? Icons.call_end
+                    : Icons.phone_in_talk_outlined,
+                color: _voiceCallMode ? const Color(0xFF57F5AA) : Colors.white70,
+              ),
+              onPressed: state.isSending ? null : _toggleVoiceCallMode,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: IconButton(
+              tooltip: 'Send image to AI',
+              icon: const Icon(Icons.image_outlined, color: Colors.white70),
+              onPressed: state.isSending ? null : _pickAndSendImage,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(14),
             ),
@@ -775,6 +1150,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
       position: const RelativeRect.fromLTRB(100, 50, 0, 0),
       items: [
         PopupMenuItem(
+          onTap: _showVoiceSettingsDialog,
+          child: const Text('Voice Settings'),
+        ),
+        PopupMenuItem(
           onTap: _showStudyPlanDialog,
           child: const Text('Study Plan'),
         ),
@@ -815,6 +1194,89 @@ class _AIChatScreenState extends State<AIChatScreen> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildVoiceCallPanel(AIState state) {
+    final status = _voiceStatus(state);
+    final canInterrupt = _isSpeaking || state.isSending;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1628),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF2A2440)),
+      ),
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _isListening
+                  ? const Color(0xFF57F5AA)
+                  : _isSpeaking
+                      ? const Color(0xFFA2ADD0)
+                      : state.isSending
+                          ? const Color(0xFFF8B878)
+                          : const Color(0xFF666A80),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Voice Call: $status',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Syne',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                if (_lastRecognizedWords.isNotEmpty)
+                  Text(
+                    _lastRecognizedWords,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontFamily: 'Syne',
+                      fontSize: 12,
+                    ),
+                  ),
+                const SizedBox(height: 2),
+                Text(
+                  '$_voicePersona • $_voiceSpeedPreset',
+                  style: const TextStyle(
+                    color: Color(0xFF9AA0B8),
+                    fontFamily: 'Syne',
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (canInterrupt)
+            TextButton.icon(
+              onPressed: _interruptAndListenNow,
+              icon: const Icon(Icons.graphic_eq, size: 16),
+              label: const Text('Interrupt'),
+            )
+          else
+            TextButton.icon(
+              onPressed: _startListeningCycle,
+              icon: const Icon(Icons.mic, size: 16),
+              label: const Text('Speak'),
+            ),
+        ],
+      ),
     );
   }
 }

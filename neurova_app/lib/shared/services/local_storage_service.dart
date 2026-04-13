@@ -46,4 +46,24 @@ class LocalStorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('userId');
   }
+
+  Future<void> saveAIVoicePersona(String persona) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(AppConstants.aiVoicePersonaKey, persona);
+  }
+
+  Future<String?> readAIVoicePersona() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(AppConstants.aiVoicePersonaKey);
+  }
+
+  Future<void> saveAIVoiceSpeedPreset(String preset) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(AppConstants.aiVoiceSpeedPresetKey, preset);
+  }
+
+  Future<String?> readAIVoiceSpeedPreset() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(AppConstants.aiVoiceSpeedPresetKey);
+  }
 }
