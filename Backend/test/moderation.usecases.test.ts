@@ -4,6 +4,10 @@ const prismaMock = vi.hoisted(() => ({
   digitaldisciplinesettings: {
     upsert: vi.fn(),
   },
+  blockedwebsite: {
+    findMany: vi.fn(),
+    createMany: vi.fn(),
+  },
   contentmoderationpolicy: {
     upsert: vi.fn(),
     update: vi.fn(),
@@ -27,6 +31,8 @@ describe('content moderation service', () => {
       settingsid: 'set1',
       userid: 'usr1',
     });
+    prismaMock.blockedwebsite.findMany.mockResolvedValue([]);
+    prismaMock.blockedwebsite.createMany.mockResolvedValue({ count: 1 });
     prismaMock.contentmoderationpolicy.upsert.mockResolvedValue({
       policyid: 'pol1',
       sensitivecontentblockingenabled: true,
@@ -47,6 +53,8 @@ describe('content moderation service', () => {
       settingsid: 'set1',
       userid: 'usr1',
     });
+    prismaMock.blockedwebsite.findMany.mockResolvedValue([]);
+    prismaMock.blockedwebsite.createMany.mockResolvedValue({ count: 1 });
     prismaMock.contentmoderationpolicy.upsert.mockResolvedValue({
       policyid: 'pol1',
       settingsid: 'set1',

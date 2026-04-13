@@ -1,32 +1,9 @@
 import prisma from '../../infrastructure/database/prisma.client.js';
 import type { UpdateContentModerationPolicyDTO } from '../../interfaces/dtos/ContentModeration.dto.js';
-
-const ensurePolicy = async (userid: string) => {
-  const settings = await prisma.digitaldisciplinesettings.upsert({
-    where: { userid },
-    update: {},
-    create: {
-      userid,
-      filterlevel: 'NORMAL',
-      dailyfreeminutes: 0,
-      customblockingenabled: false,
-      faithmodeenabled: false,
-    },
-  });
-
-  return prisma.contentmoderationpolicy.upsert({
-    where: { settingsid: settings.settingsid },
-    update: {},
-    create: {
-      settingsid: settings.settingsid,
-      sensitivecontentblockingenabled: false,
-      sensitivitylevel: 'NORMAL',
-    },
-  });
-};
+import { ensureModerationContext } from '../../infrastructure/content-moderation/moderation.utils.js';
 
 export const UpdatePolicy = async (userid: string, data: UpdateContentModerationPolicyDTO) => {
-  const policy = await ensurePolicy(userid);
+  const { policy } = await ensureModerationContext(userid);
 
   const updateData: {
     sensitivecontentblockingenabled?: boolean;

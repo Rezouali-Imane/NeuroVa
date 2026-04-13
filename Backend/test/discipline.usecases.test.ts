@@ -9,6 +9,9 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
     create: vi.fn(),
   },
+  blockedwebsite: {
+    createMany: vi.fn(),
+  },
   usagelimit: {
     findFirst: vi.fn(),
   },
@@ -38,7 +41,9 @@ describe('discipline service', () => {
     prismaMock.digitaldisciplinesettings.create.mockResolvedValue({
       settingsid: 'set1',
       userid: 'usr1',
+      blockedwebsite: [],
     });
+    prismaMock.blockedwebsite.createMany.mockResolvedValue({ count: 1 });
 
     const result = await GetSettings('usr1');
 
