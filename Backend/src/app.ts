@@ -14,6 +14,7 @@ import { authMiddleware } from './infrastructure/middleware/authMiddleware.js';
 import notificationRoutes from './interfaces/routes/Notification.Routes.js';
 import gamificationRoutes from './interfaces/routes/Gamification.routes.js';
 
+
 const app: Application = express();
 
 app.use(cors());

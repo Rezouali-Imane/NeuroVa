@@ -53,7 +53,7 @@ export const googleCalendarService: GoogleCalendarService = {
     const { data } = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: {
-        summary: taskId, // replace with actual task title if available
+        summary: taskId,
         start: { dateTime: new Date().toISOString() },
         end: { dateTime: new Date().toISOString() },
       },
