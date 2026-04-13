@@ -38,7 +38,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final notifier = ref.watch(routerNotifierProvider);
 
   return GoRouter(
-    initialLocation: '/dashboard',
+    initialLocation: '/onboarding',
     refreshListenable: notifier,
 
     redirect: (BuildContext context, GoRouterState state) {
