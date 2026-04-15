@@ -9,7 +9,7 @@ import type {
 
 export const GoogleCalendarRepository = {
   async connectCalendar(data: SaveTokenDTO) {
-    return await prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx) => {
       const token = await tx.googlecalendartoken.create({
         data: {
           userid: data.userid,
@@ -35,17 +35,17 @@ export const GoogleCalendarRepository = {
 
   
   async disconnectCalendar(data: DisconnectCalendarDTO) {
-    return await prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx) => {
       await tx.googlecalendarsync.deleteMany({
-        where: { userid: data.userid },
+        where: {userid: data.userid},
       });
 
       await tx.googlecalendartoken.deleteMany({
-        where: { userid: data.userid },
+        where: {userid: data.userid},
       });
 
       await tx.task.updateMany({
-        where: { userid: data.userid },
+        where: {userid: data.userid},
         data: {
           googleeventid: null,
           syncedwithgoogle: false,
@@ -57,8 +57,8 @@ export const GoogleCalendarRepository = {
 
 
   async updateAccessToken(data: UpdateaccessTokenDTO) {
-    return await prisma.googlecalendartoken.updateMany({
-      where: { userid: data.userid },
+    return prisma.googlecalendartoken.updateMany({
+      where: {userid: data.userid},
       data: {
         accesstoken: data.accesstoken,
         expiresat: data.expiresat,
@@ -67,15 +67,15 @@ export const GoogleCalendarRepository = {
   },
 
   async getAccessToken(userid: string) {
-  return await prisma.googlecalendartoken.findFirst({
-    where: { userid },
+  return prisma.googlecalendartoken.findFirst({
+    where: {userid},
   });
 },
 
 
 async saveGoogleEventId(data: SaveGoogleEventDTO) {
-  return await prisma.task.update({
-    where: { taskid: data.taskid },
+  return prisma.task.update({
+    where: {taskid: data.taskid},
     data: {
       googleeventid: data.googleeventid,
       syncedwithgoogle: true,
@@ -92,26 +92,45 @@ async createTaskFromGoogleEvent(data: {
   deadline: Date; 
   googleeventid: string;
 }) {
-  return await prisma.task.create({
+  return prisma.task.create({
     data: {
       userid: data.userid,
       title: data.title,
       listid: data.listid,
       description: data.description,
-      deadline: data.deadline, 
+      deadline: data.deadline,
       googleeventid: data.googleeventid,
-      syncwithgoogle: true,
+      syncedwithgoogle: true,
     },
   });
 },
 
 async removeGoogleEventFromTask(taskid: string) {
-  return await prisma.task.update({
-    where: { taskid },
+  return prisma.task.update({
+    where: {taskid},
     data: {
       googleeventid: null,
       syncedwithgoogle: false,
     },
   });
-}
+},
+
+  async getSync(userid: string) {
+    return prisma.googlecalendarsync.findFirst({
+      where: {userid},
+    });
+  },
+
+  async getUnsyncedTasks(userid: string) {
+    return prisma.task.findMany({
+      where: {userid, syncedwithgoogle: false},
+    });
+  },
+
+  async updateLastSynced(userid: string) {
+    return prisma.googlecalendarsync.updateMany({
+      where: {userid},
+      data: {lastsyncedat: new Date()},
+    });
+  },
 };

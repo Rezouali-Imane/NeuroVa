@@ -4,9 +4,11 @@ import { connectGoogleCalendar } from "../../usecases/GoogleCalendar/ConnectToGo
 import { disconnectGoogleCalendar } from "../../usecases/GoogleCalendar/DisconectGoogleClendar.js";
 import { syncGoogleToTask } from "../../usecases/GoogleCalendar/SyncGoogleToTask.js";
 import { syncTaskToGoogle } from "../../usecases/GoogleCalendar/SyncTaskToGoogle.js";
-import { refreshToken } from "../../usecases/GoogleCalendar/RefreshToken.js";
+// import { refreshToken } from "../../usecases/GoogleCalendar/RefreshToken.js";
 import { deleteGoogleEvent } from "../../usecases/GoogleCalendar/DeleteGoogleEvent.js";
-import { googleCalendarService } from '../../infrastructure/GoogleCalendar/GoogleCalendarServiceImpl.js'; 
+import { googleCalendarService } from '../../infrastructure/GoogleCalendar/GoogleCalendarServiceImpl.js';
+import { updateCalendarEvent } from '../../usecases/GoogleCalendar/UpdateCalendarEvent.js';
+import { fullSync } from '../../usecases/GoogleCalendar/FullSync.js';
 
 export const GoogleCalendarController = {
   async ConnectGoogleCalendar(req: AuthRequest, res: Response) {
@@ -44,17 +46,17 @@ export const GoogleCalendarController = {
     }
   },
 
-async RefreshToken(req: AuthRequest, res: Response) {
-    try {
-        const { userid } = (req as AuthRequest).user!;
-        const { refreshtoken } = req.body;
-        const result = await refreshToken({ userid, refreshtoken }, googleCalendarService);
-        res.status(200).json({ success: true, data: result });
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        res.status(400).json({ success: false, message });
-    }
-},
+// async RefreshToken(req: AuthRequest, res: Response) {
+//     try {
+//         const { userid } = (req as AuthRequest).user!;
+//         const { refreshtoken } = req.body;
+//         const result = await refreshToken({ userid, refreshtoken }, googleCalendarService);
+//         res.status(200).json({ success: true, data: result });
+//     } catch (error) {
+//         const message = error instanceof Error ? error.message : String(error);
+//         res.status(400).json({ success: false, message });
+//     }
+// },
 
   async SyncGoogleToTask(req: AuthRequest, res: Response) {
     try {
@@ -73,6 +75,30 @@ async RefreshToken(req: AuthRequest, res: Response) {
       const { userid } = (req as AuthRequest).user!;
       const { eventid, taskid } = req.body;
       const result = await deleteGoogleEvent({ userid, eventid, taskid }, googleCalendarService);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      res.status(400).json({ success: false, message });
+    }
+  },
+
+  async UpdateCalendarEvent(req: AuthRequest, res: Response) {
+    try {
+      const { userid } = (req as AuthRequest).user!;
+      const { taskid } = req.body;
+      const result = await updateCalendarEvent(userid, taskid, googleCalendarService);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      res.status(400).json({ success: false, message });
+    }
+  },
+
+  async FullSync(req: AuthRequest, res: Response) {
+    try {
+      const { userid } = (req as AuthRequest).user!;
+      const { listid } = req.body;
+      const result = await fullSync(userid, listid, googleCalendarService);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

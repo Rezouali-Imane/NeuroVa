@@ -1,6 +1,6 @@
-
 import { google } from 'googleapis';
 import type { GoogleCalendarService } from './GoogleCalendarService.js';
+import prisma from "../database/prisma.client.js";
 
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
 const redirectUri = process.env.GOOGLE_REDIRECT_URI!;
@@ -46,14 +46,18 @@ export const googleCalendarService: GoogleCalendarService = {
     };
   },
 
-  async syncTaskToGoogle(taskId, accessToken) {
+  async syncTaskToGoogle(taskId: string, accessToken: string) {
+    const task = await prisma.task.findUnique({ where: { taskid: taskId}});
+    if (!task) throw new Error('Task not found');
+
     const oauth2Client = createOAuthClient(process.env.GOOGLE_CLIENT_ID!, accessToken);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     const { data } = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: {
-        summary: taskId,
+        summary: task.title,
+        description: task.description ?? '',
         start: { dateTime: new Date().toISOString() },
         end: { dateTime: new Date().toISOString() },
       },
@@ -87,6 +91,25 @@ export const googleCalendarService: GoogleCalendarService = {
     await calendar.events.delete({
       calendarId: 'primary',
       eventId,
+    });
+  },
+
+  async updateCalendarEvent(eventId: string, accessToken: string, data: { title: string; description?: string; deadline?: Date }) {
+    const oauth2Client = createOAuthClient(process.env.GOOGLE_CLIENT_ID!, accessToken);
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    const startTime = data.deadline ?? new Date();
+    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+
+    await calendar.events.patch({
+      calendarId: 'primary',
+      eventId,
+      requestBody: {
+        summary: data.title,
+        description: data.description ?? '',
+        start: { dateTime: startTime.toISOString() },
+        end: { dateTime: endTime.toISOString() },
+      },
     });
   },
 };

@@ -2,7 +2,7 @@ export interface GoogleCalendarSync {
     syncid: string;
     userid: string;
     tokenid: string;
-    calendarid: string;
-    lastsyncedat?:Date;
+    googlecalendarid: string;
+    lastsyncedat?: Date;
     isenabled: boolean;
 }

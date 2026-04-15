@@ -1,10 +1,8 @@
-
-
-export interface GoogleCalendarSync{
- tokkenid : string ;
- userid: String ;
- accesstoken: String ;
- refreshtoken: String ;
- expirsat : Date ;
- createdat : Date ;
+export interface GoogleCalendarToken {
+ tokenid: string;
+ userid: string;
+ accesstoken: string;
+ refreshtoken: string;
+ expiresat: Date;
+ createdat: Date;
 }
