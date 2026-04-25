@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:neurova_app/features/auth/state/auth_notifier.dart';
+import 'package:neurova_app/shared/theme/app_theme.dart';
+import 'package:neurova_app/shared/widgets/profile_view_shell.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
 import 'state/tasks_notifier.dart';
 import 'models/task_model.dart';
@@ -14,6 +16,62 @@ class TasksPage extends ConsumerStatefulWidget {
   ConsumerState<TasksPage> createState() => _TasksPageState();
 }
 
+class _MiniSpinnerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white54;
+
+    final rect = Offset.zero & size;
+    canvas.drawArc(rect.deflate(4), 0, pi * 1.5, false, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _RingPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color backgroundColor;
+  final double strokeWidth;
+
+  _RingPainter({required this.progress, required this.color, required this.backgroundColor, this.strokeWidth = 6});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = size.width / 2;
+
+    final bgPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    canvas.drawCircle(center, radius, bgPaint);
+
+    final progressPaint = Paint()
+      ..shader = LinearGradient(colors: [color.withOpacity(1.0), color.withOpacity(0.8)]).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2,
+      2 * pi * (progress.clamp(0.0, 1.0)),
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
 class _TasksPageState extends ConsumerState<TasksPage> {
   int selectedIndex = 1;
   int selectedTab = 0;
@@ -21,6 +79,28 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   String selectedCategory = "OTHER";
   final TextEditingController taskController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
+
+  // Private UI state (underscored names are used throughout the file).
+  String _activeView = 'tasks';
+  DateTime _selectedDate = DateTime.now();
+  DateTime _visibleMonth = DateTime.now();
+  String _calendarScope = 'Month View';
+  TimeOfDay _selectedTime = const TimeOfDay(hour: 12, minute: 0);
+
+  // Additional controllers used by the sheet
+  final TextEditingController _projectController = TextEditingController();
+
+  // Aliases so existing code can use underscored names without changing UI code.
+  TextEditingController get _searchController => searchController;
+  TextEditingController get _titleController => taskController;
+  int get _selectedTab => selectedTab;
+  set _selectedTab(int v) => selectedTab = v;
+  int get _selectedNavIndex => selectedIndex;
+  set _selectedNavIndex(int v) => selectedIndex = v;
+  String get _selectedPriority => selectedPriority;
+  set _selectedPriority(String v) => selectedPriority = v;
+  String get _selectedCategory => selectedCategory;
+  set _selectedCategory(String v) => selectedCategory = v;
 
   @override
   void initState() {
@@ -34,6 +114,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   void dispose() {
     taskController.dispose();
     searchController.dispose();
+    _projectController.dispose();
     super.dispose();
   }
 
@@ -55,6 +136,15 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     int inProgress = tasksState.tasks.where((t) => t.status == 'IN_PROGRESS').length;
     int pending = tasksState.tasks.where((t) => t.status == 'PENDING').length;
     double progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+    // Local aliases expected by the UI code below
+    final allTasks = tasksState.tasks;
+    final state = tasksState;
+    final int todoCount = pending;
+    final int inProgressCount = inProgress;
+    final int doneCount = completedTasks;
+    final visibleTasks = _applyFilters(filteredTasks, _searchController.text.trim().toLowerCase());
+    final int progressPercentInt = progressPercent.round();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -97,7 +187,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                   _buildHeader(allTasks),
                   const SizedBox(height: 16),
                   if (_activeView == 'tasks') ...[
-                    _buildProgressCard(progressPercent, todoCount, inProgressCount, doneCount),
+                    _buildProgressCard(progressPercentInt, todoCount, inProgressCount, doneCount),
                     const SizedBox(height: 16),
                     _buildSearch(),
                     const SizedBox(height: 14),
@@ -108,7 +198,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                     const SizedBox(height: 12),
                   ],
                   if (state.isLoading)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 40),
                       child: Center(
                         child: Column(
@@ -1287,6 +1377,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     return '${format(dt)} - ${format(end)}';
   }
 
+  
+
   _TaskStatusConfig _statusConfig(String status) {
     switch (status) {
       case 'COMPLETED':
@@ -1646,7 +1738,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                   ],
                 ),
               ),
-            );
+            ),
+          )         );
+         
           },
         );
       },
@@ -1693,8 +1787,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     );
   }
 
-  Widget _buildCategoryItem(String text, Function setModalState) {
-    final isSelected = selectedCategory == text;
+  Widget _buildCategoryItem(String label, String value, IconData icon, VoidCallback onTap) {
+    final isSelected = _selectedCategory == value;
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -1749,6 +1843,61 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     );
   }
 
+  Widget _sheetInput(TextEditingController controller, String hint) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14101F),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF2A2440)),
+      ),
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white, fontFamily: 'Syne'),
+        decoration: InputDecoration(border: InputBorder.none, hintText: hint, hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35))),
+      ),
+    );
+  }
+
+  Widget _sheetDateTimeField({required String label, required String value, required IconData icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0x55FFFFFF),
+              fontFamily: 'Syne',
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 52,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: const Color(0x332B2140),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF2A2440)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: const Color(0xFFD4B6EA)),
+                const SizedBox(width: 10),
+                Expanded(child: Text(value, style: const TextStyle(color: Color(0xFFE9DCF8), fontFamily: 'Syne'))),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _priorityChip(String value, String label, void Function(void Function()) setModalState) {
     final selected = _selectedPriority == value;
     return Expanded(
@@ -1795,10 +1944,35 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             fontSize: 12,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
-        ],
+        ),
       ),
     );
   }
+
+  String _categoryTitle(String category) {
+    switch (category.toUpperCase()) {
+      case 'DESIGN':
+        return 'Design';
+      case 'DEVELOPMENT':
+        return 'Development';
+      case 'RESEARCH':
+        return 'Research';
+      case 'STUDY':
+        return 'Study';
+      case 'PERSONAL':
+        return 'Personal';
+      case 'OTHER':
+      default:
+        final s = category.toLowerCase();
+        return s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : category;
+    }
+  }
+}
+
+class _TaskStatusConfig {
+  final String label;
+  final Color color;
+  const _TaskStatusConfig({required this.label, required this.color});
 }
 
 class ProgressCirclePainter extends CustomPainter {

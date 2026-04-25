@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+// ignore: unused_import
 import '../../shared/theme/app_theme.dart' show AppTypography;
 
 class ProfileViewShell extends StatelessWidget {
