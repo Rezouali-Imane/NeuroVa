@@ -8,6 +8,7 @@ import '../onboarding/background.dart';
 import '../../shared/widgets/entry_reveal.dart';
 import 'package:go_router/go_router.dart';
 import 'state/auth_notifier.dart';
+import '../../core/theme/app_theme.dart' as core_theme;
 
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
@@ -24,6 +25,8 @@ class _SignupPageState extends ConsumerState<SignupPage>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+
+  core_theme.NeuropaColors get _nc => Theme.of(context).extension<core_theme.NeuropaColors>()!;
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -97,7 +100,7 @@ class _SignupPageState extends ConsumerState<SignupPage>
 
   @override
   Widget build(BuildContext context) {
-    final hintColor = Colors.white.withValues(alpha: 0.4);
+    final hintColor = _nc.textMuted;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -118,11 +121,11 @@ class _SignupPageState extends ConsumerState<SignupPage>
                       const SizedBox(height: 18),
                       _buildStaggered(
                         index: 1,
-                        child: const Text(
+                        child: Text(
                           'join now',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Color(0xFFFFFFF0),
+                            color: _nc.textPrimary,
                             fontSize: 56,
                             fontFamily: 'Syne',
                             fontWeight: FontWeight.w900,
@@ -134,11 +137,11 @@ class _SignupPageState extends ConsumerState<SignupPage>
                       const SizedBox(height: 14),
                       _buildStaggered(
                         index: 2,
-                        child: const Text(
+                        child: Text(
                           'Start your AI-powered learning journey',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Color(0xFFFFFFF0),
+                            color: _nc.textPrimary,
                             fontSize: 16,
                             fontFamily: 'Syne',
                             fontWeight: FontWeight.w400,
@@ -266,21 +269,21 @@ class _SignupPageState extends ConsumerState<SignupPage>
                                   height: 20,
                                   decoration: BoxDecoration(
                                     color: _agreeTerms
-                                        ? Colors.white
-                                        : Colors.white.withValues(alpha: 0.12),
+                                        ? _nc.textPrimary
+                                        : _nc.surface.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(5),
                                     border: Border.all(
-                                      color: Colors.white.withValues(
+                                      color: _nc.textMuted.withValues(
                                         alpha: 0.7,
                                       ),
                                       width: 1.2,
                                     ),
                                   ),
                                   child: _agreeTerms
-                                      ? const Icon(
+                                      ? Icon(
                                           Icons.check,
                                           size: 14,
-                                          color: Colors.black,
+                                          color: _nc.background,
                                         )
                                       : null,
                                 ),
@@ -289,15 +292,15 @@ class _SignupPageState extends ConsumerState<SignupPage>
                                 textAlign: TextAlign.center,
                                 text: TextSpan(
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.6),
+                                    color: _nc.textSecondary,
                                     fontSize: 12,
                                   ),
                                   children: [
                                     const TextSpan(text: 'I agree to the '),
                                     TextSpan(
                                       text: 'Terms of Service',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: _nc.textPrimary,
                                         decoration: TextDecoration.underline,
                                       ),
                                       recognizer: TapGestureRecognizer()
@@ -308,8 +311,8 @@ class _SignupPageState extends ConsumerState<SignupPage>
                                     const TextSpan(text: ' and '),
                                     TextSpan(
                                       text: 'Privacy Policy',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: _nc.textPrimary,
                                         decoration: TextDecoration.underline,
                                       ),
                                       recognizer: TapGestureRecognizer()
@@ -402,14 +405,14 @@ class _SignupPageState extends ConsumerState<SignupPage>
                             Expanded(
                               child: Container(
                                 height: 1,
-                                color: Colors.white.withValues(alpha: 0.10),
+                                color: _nc.textMuted.withValues(alpha: 0.2),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Text(
                               'or sign up with',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.40),
+                                color: _nc.textMuted,
                                 fontSize: 14,
                               ),
                             ),
@@ -417,7 +420,7 @@ class _SignupPageState extends ConsumerState<SignupPage>
                             Expanded(
                               child: Container(
                                 height: 1,
-                                color: Colors.white.withValues(alpha: 0.10),
+                                color: _nc.textMuted.withValues(alpha: 0.2),
                               ),
                             ),
                           ],
@@ -455,7 +458,7 @@ class _SignupPageState extends ConsumerState<SignupPage>
                               TextSpan(
                                 text: 'Already have an account? ',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                  color: _nc.textSecondary,
                                   fontSize: 14,
                                   fontFamily: 'Inter',
                                   fontWeight: FontWeight.w400,
@@ -463,8 +466,8 @@ class _SignupPageState extends ConsumerState<SignupPage>
                               ),
                               TextSpan(
                                 text: 'Log In',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: _nc.textPrimary,
                                   fontSize: 14,
                                   fontFamily: 'Syne',
                                   fontWeight: FontWeight.w600,
@@ -549,8 +552,8 @@ class _SignupPageState extends ConsumerState<SignupPage>
                   key: ValueKey<bool>(isObscured),
                   width: 20,
                   height: 20,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white70,
+                  colorFilter: ColorFilter.mode(
+                    _nc.textSecondary,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -565,7 +568,7 @@ class _SignupPageState extends ConsumerState<SignupPage>
                     width: 2.2,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.40),
+                      color: _nc.textMuted,
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -617,8 +620,8 @@ class _SignupPageState extends ConsumerState<SignupPage>
                   iconPath,
                   width: 20,
                   height: 20,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white70,
+                  colorFilter: ColorFilter.mode(
+                    _nc.textSecondary,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -636,7 +639,7 @@ class _SignupPageState extends ConsumerState<SignupPage>
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.10),
+          color: Colors.white.withValues(alpha: 0.1),
           width: 0.752,
         ),
         borderRadius: BorderRadius.circular(24),
@@ -647,12 +650,12 @@ class _SignupPageState extends ConsumerState<SignupPage>
           iconPath,
           width: 20,
           height: 20,
-          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(_nc.textPrimary, BlendMode.srcIn),
         ),
         label: Text(
           label,
-          style: const TextStyle(
-            color: Color.fromRGBO(255, 255, 255, 0.8),
+          style: TextStyle(
+            color: _nc.textPrimary.withValues(alpha: 0.8),
             fontFamily: 'Inter',
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -670,6 +673,7 @@ class _BrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = Theme.of(context).extension<core_theme.NeuropaColors>()!;
     return Center(
       child: SizedBox(
         width: 147,
@@ -683,13 +687,13 @@ class _BrandHeader extends StatelessWidget {
                 'lib/features/onboarding/assets/logo.svg',
                 width: 51,
                 height: 39,
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
+                colorFilter: ColorFilter.mode(
+                  nc.textPrimary,
                   BlendMode.srcIn,
                 ),
               ),
             ),
-            const Positioned(
+            Positioned(
               left: 32,
               top: 24,
               child: SizedBox(
@@ -698,7 +702,7 @@ class _BrandHeader extends StatelessWidget {
                 child: Text(
                   'NEUROVA',
                   style: TextStyle(
-                    color: Color(0xFFFFFFF0),
+                    color: nc.textPrimary,
                     fontSize: 20,
                     fontFamily: 'Syne',
                     fontWeight: FontWeight.w700,

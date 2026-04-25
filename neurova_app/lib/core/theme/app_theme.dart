@@ -1,112 +1,154 @@
 import 'package:flutter/material.dart';
 
+/// App theme configuration for dark and light modes
 class AppTheme {
   AppTheme._();
 
-  // Neurova color palette
-  static const Color lilac = Color(0xFFC8A2C8);         // Lilac
-  static const Color amethystSmoke = Color(0xFFB284BE); // Amethyst Smoke
-  static const Color powderBlue = Color(0xFFA2ADD0);    // Powder Blue
-  static const Color lemonChiffon = Color(0xFFECEBBD);  // Lemon Chiffon
-  static const Color lightCaramel = Color(0xFFF8B878);  // Light Caramel
-
-  static ThemeData get light {
-    final base = ThemeData(
-      useMaterial3: true,
+  // ─── DARK MODE ────────────────────────────────────────────────────────
+  static ThemeData dark() {
+    return ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: const Color(0xFF0D0D14),
       fontFamily: 'Syne',
-      colorScheme: const ColorScheme.light(
-        primary: lilac,
-        secondary: amethystSmoke,
-        surface: powderBlue,
-        error: Color(0xFFD32F2F),
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onSurface: Colors.black,
-        onError: Colors.white,
+      useMaterial3: false,
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFFC8B8E8), // Lilac
+        secondary: Color(0xFFBEB0D0), // Amethyst Smoke
+        tertiary: Color(0xFFE8C898), // Light Caramel
+        surface: Color(0xFF16161F),
+        onPrimary: Color(0xFF3d2f6a),
+        onSurface: Color(0xFFFFFFFF),
       ),
-      scaffoldBackgroundColor: powderBlue,
-      textTheme: TextTheme(
-        displayLarge: TextStyle(
-          fontFamily: 'Syne',
-          fontWeight: FontWeight.w800,
-          fontSize: 48,
-          color: Color(0xFF243B53),
-        ),
-        displayMedium: TextStyle(
-          fontFamily: 'Syne',
-          fontWeight: FontWeight.w700,
-          fontSize: 36,
-          color: Color(0xFF243B53),
-        ),
-        displaySmall: TextStyle(
-          fontFamily: 'Syne',
-          fontWeight: FontWeight.w600,
-          fontSize: 28,
-          color: Color(0xFF243B53),
-        ),
-        headlineMedium: TextStyle(
-          fontFamily: 'Syne',
-          fontWeight: FontWeight.w700,
-          fontSize: 24,
-          color: Color(0xFF243B53),
-        ),
-        headlineSmall: TextStyle(
-          fontFamily: 'Syne',
-          fontWeight: FontWeight.w600,
-          fontSize: 20,
-          color: Color(0xFF243B53),
-        ),
-        titleLarge: TextStyle(
-          fontFamily: 'Syne',
-          fontWeight: FontWeight.w700,
-          fontSize: 18,
-          color: Color(0xFF243B53),
-        ),
-        bodyLarge: TextStyle(
-          fontFamily: 'Syne',
-          fontWeight: FontWeight.w500,
-          fontSize: 16,
-          color: Color(0xFF243B53),
-        ),
-        bodyMedium: TextStyle(
-          fontFamily: 'Syne',
-          fontWeight: FontWeight.w400,
-          fontSize: 14,
-          color: Color(0xFF243B53),
-        ),
-        labelLarge: TextStyle(
-          fontFamily: 'Syne',
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-          color: Color(0xFF243B53),
-        ),
-      ),
+      cardColor: const Color(0xFF16161F),
+      dividerColor: const Color(0x14FFFFFF),
+      extensions: const [NeuropaColors.dark],
     );
+  }
 
-    return base.copyWith(
-      appBarTheme: const AppBarTheme(
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: powderBlue,
-        foregroundColor: Colors.black,
+  // ─── LIGHT MODE ───────────────────────────────────────────────────────
+  static ThemeData light() {
+    return ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: const Color(0xFFF5F2FA),
+      fontFamily: 'Syne',
+      useMaterial3: false,
+      colorScheme: const ColorScheme.light(
+        primary: Color(0xFFC8B8E8), // Lilac (same accent, different surfaces)
+        secondary: Color(0xFFBEB0D0), // Amethyst Smoke
+        tertiary: Color(0xFFE8C898), // Light Caramel
+        surface: Color(0xFFFFFFFF),
+        onPrimary: Color(0xFF3d2f6a),
+        onSurface: Color(0xFF1A1030),
       ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: lightCaramel,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        ),
-      ),
-      cardTheme: CardThemeData(
-        color: Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
+      cardColor: const Color(0xFFFFFFFF),
+      dividerColor: const Color(0x18C8B8E8),
+      extensions: const [NeuropaColors.light],
+    );
+  }
+}
+
+/// Semantic color extension for Neurova's intentional palette
+class NeuropaColors extends ThemeExtension<NeuropaColors> {
+  final Color background;
+  final Color surface;
+  final Color surfaceElevated;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color lilacSurface;
+  final Color amethystSurface;
+  final Color blueSurface;
+  final Color lemonSurface;
+  final Color caramelSurface;
+
+  const NeuropaColors({
+    required this.background,
+    required this.surface,
+    required this.surfaceElevated,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.lilacSurface,
+    required this.amethystSurface,
+    required this.blueSurface,
+    required this.lemonSurface,
+    required this.caramelSurface,
+  });
+
+  // Dark mode colors
+  static const dark = NeuropaColors(
+    background: Color(0xFF0D0D14),
+    surface: Color(0xFF16161F),
+    surfaceElevated: Color(0xFF1E1E2C),
+    textPrimary: Color(0xFFFFFFFF),
+    textSecondary: Color(0xFFB8B0C8),
+    textMuted: Color(0xFF6A6480),
+    lilacSurface: Color(0xFFC8B8E8),
+    amethystSurface: Color(0xFFBEB0D0),
+    blueSurface: Color(0xFFB8D4E8),
+    lemonSurface: Color(0xFFF5EFC0),
+    caramelSurface: Color(0xFFE8C898),
+  );
+
+  // Light mode colors
+  static const light = NeuropaColors(
+    background: Color(0xFFF5F2FA),
+    surface: Color(0xFFFFFFFF),
+    surfaceElevated: Color(0xFFF0ECFA),
+    textPrimary: Color(0xFF1A1030),
+    textSecondary: Color(0xFF6A5888),
+    textMuted: Color(0xFF9888B8),
+    lilacSurface: Color(0xFFC8B8E8),
+    amethystSurface: Color(0xFFBEB0D0),
+    blueSurface: Color(0xFFB8D4E8),
+    lemonSurface: Color(0xFFF5EFC0),
+    caramelSurface: Color(0xFFE8C898),
+  );
+
+  @override
+  ThemeExtension<NeuropaColors> copyWith({
+    Color? background,
+    Color? surface,
+    Color? surfaceElevated,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? textMuted,
+    Color? lilacSurface,
+    Color? amethystSurface,
+    Color? blueSurface,
+    Color? lemonSurface,
+    Color? caramelSurface,
+  }) {
+    return NeuropaColors(
+      background: background ?? this.background,
+      surface: surface ?? this.surface,
+      surfaceElevated: surfaceElevated ?? this.surfaceElevated,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      textMuted: textMuted ?? this.textMuted,
+      lilacSurface: lilacSurface ?? this.lilacSurface,
+      amethystSurface: amethystSurface ?? this.amethystSurface,
+      blueSurface: blueSurface ?? this.blueSurface,
+      lemonSurface: lemonSurface ?? this.lemonSurface,
+      caramelSurface: caramelSurface ?? this.caramelSurface,
+    );
+  }
+
+  @override
+  ThemeExtension<NeuropaColors> lerp(ThemeExtension<NeuropaColors>? other, double t) {
+    if (other is! NeuropaColors) return this;
+    return NeuropaColors(
+      background: Color.lerp(background, other.background, t) ?? background,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+      surfaceElevated: Color.lerp(surfaceElevated, other.surfaceElevated, t) ?? surfaceElevated,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t) ?? textPrimary,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t) ?? textSecondary,
+      textMuted: Color.lerp(textMuted, other.textMuted, t) ?? textMuted,
+      lilacSurface: Color.lerp(lilacSurface, other.lilacSurface, t) ?? lilacSurface,
+      amethystSurface: Color.lerp(amethystSurface, other.amethystSurface, t) ?? amethystSurface,
+      blueSurface: Color.lerp(blueSurface, other.blueSurface, t) ?? blueSurface,
+      lemonSurface: Color.lerp(lemonSurface, other.lemonSurface, t) ?? lemonSurface,
+      caramelSurface: Color.lerp(caramelSurface, other.caramelSurface, t) ?? caramelSurface,
     );
   }
 }

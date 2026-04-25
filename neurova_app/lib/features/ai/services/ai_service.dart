@@ -611,6 +611,27 @@ class AIService {
     }
   }
 
+  // Get AI insights for dashboard
+  Future<List<AIInsight>> getInsights(String userId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await _dio.get<dynamic>(
+        '/api/ai/insights/$userId',
+        options: _requestOptions(headers),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data['data'] as List<dynamic>;
+        return data
+            .map((item) => AIInsight.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      throw Exception('Failed to fetch AI insights');
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // Handle and standardize errors
   Exception _handleError(dynamic error) {
     if (error is DioException) {

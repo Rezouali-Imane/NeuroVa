@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../auth/state/auth_notifier.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
+import '../../core/theme/app_theme.dart';
+import '../../shared/theme/app_theme.dart' show AppTypography;
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key, this.isVerified = false});
@@ -25,6 +27,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   bool faithModeEnabled = false;
   String _displayName = 'Loading...';
   String _displayEmail = 'Fetching account details';
+
+  NeuropaColors get _nc => Theme.of(context).extension<NeuropaColors>()!;
 
   @override
   void initState() {
@@ -94,7 +98,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF13111A),
+      backgroundColor: _nc.background,
       body: Stack(
         children: [
           Positioned(
@@ -153,8 +157,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6B3FA0), Color(0xFFB284BE), Color(0xFFA2ADD0)],
+        gradient: LinearGradient(
+          colors: [_nc.lilacSurface.withOpacity(0.35), _nc.lilacSurface.withOpacity(0.25), _nc.amethystSurface.withOpacity(0.2)],
         ),
       ),
       child: Padding(
@@ -168,17 +172,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   height: 72,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.22),
+                    color: _nc.textPrimary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: Colors.white.withOpacity(0.45), width: 1.4),
+                    border: Border.all(color: _nc.textPrimary.withOpacity(0.25), width: 1.4),
                   ),
                   child: Text(
                     _initialsFromName(_displayName),
-                    style: TextStyle(
-                      fontFamily: 'Syne',
-                      color: Colors.white,
+                    style: AppTypography.headline3.copyWith(
+                      color: _nc.textPrimary,
                       fontWeight: FontWeight.w800,
-                      fontSize: 28,
                     ),
                   ),
                 ),
@@ -191,11 +193,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         _displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Syne',
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 24,
+                        style: AppTypography.headline2.copyWith(
+                          color: _nc.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 3),
@@ -203,10 +202,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         _displayEmail,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Syne',
-                          color: Color(0x99FFFFFF),
-                          fontSize: 12,
+                        style: AppTypography.caption.copyWith(
+                          color: _nc.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -229,29 +226,32 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                color: Colors.black.withOpacity(0.18),
+                color: _nc.surfaceElevated.withOpacity(0.6),
               ),
               child: Column(
                 children: [
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Row(
                     children: [
-                      Text(
-                        '⚡ Level 5 → Level 6',
-                        style: TextStyle(
-                          fontFamily: 'Syne',
-                          color: Color(0xB3FFFFFF),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                      Expanded(
+                        child: Text(
+                          '⚡ Level 5 → Level 6',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.caption.copyWith(
+                            color: _nc.textSecondary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      Text(
-                        '140/300 XP',
-                        style: TextStyle(
-                          fontFamily: 'Syne',
-                          color: Color(0xFFF8B878),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(width: 8),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '140/300 XP',
+                          style: AppTypography.caption.copyWith(
+                            color: _nc.caramelSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
@@ -262,8 +262,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     child: LinearProgressIndicator(
                       value: 140 / 300,
                       minHeight: 10,
-                      backgroundColor: Colors.white.withOpacity(0.15),
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.9)),
+                      backgroundColor: _nc.textPrimary.withOpacity(0.15),
+                      valueColor: AlwaysStoppedAnimation<Color>(_nc.lilacSurface),
                     ),
                   ),
                 ],
@@ -280,9 +280,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1628),
+        color: _nc.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2A2440)),
+        border: Border.all(color: _nc.surfaceElevated),
       ),
       child: Row(
         children: [
@@ -308,20 +308,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(13),
             gradient: selected
-                ? const LinearGradient(
-                    colors: [Color(0x28B284BE), Color(0x14A2ADD0)],
+                ? LinearGradient(
+                    colors: [_nc.lilacSurface.withOpacity(0.15), _nc.amethystSurface.withOpacity(0.08)],
                   )
                 : null,
             border: Border.all(
-              color: selected ? const Color(0x44B284BE) : Colors.transparent,
+              color: selected ? _nc.lilacSurface.withOpacity(0.3) : Colors.transparent,
             ),
           ),
           child: Text(
             label,
-            style: TextStyle(
-              fontFamily: 'Syne',
-              color: selected ? const Color(0xFFB284BE) : Colors.white54,
-              fontSize: 11,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.body2.copyWith(
+              color: selected ? _nc.lilacSurface : _nc.textSecondary,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
             ),
           ),
@@ -435,23 +435,37 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Column(
       children: [
         _cardShell(
-          child: ListTile(
-            leading: const Text('🏆', style: TextStyle(fontSize: 22)),
-            title: const Text(
-              '4/6 Unlocked',
-              style: TextStyle(
-                fontFamily: 'Syne',
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            subtitle: Text(
-              '2 achievements remaining',
-              style: TextStyle(
-                fontFamily: 'Syne',
-                color: Colors.white.withOpacity(0.38),
-                fontSize: 12,
-              ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                const Text('🏆', style: TextStyle(fontSize: 22)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '4/6 Unlocked',
+                        style: TextStyle(
+                          fontFamily: 'Syne',
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '2 achievements remaining',
+                        style: TextStyle(
+                          fontFamily: 'Syne',
+                          color: Colors.white.withOpacity(0.38),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -672,58 +686,96 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: _leadingIcon(icon),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontFamily: 'Syne',
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontFamily: 'Syne',
-          color: Colors.white.withOpacity(0.32),
-          fontSize: 11,
-        ),
-      ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeThumbColor: Colors.white,
-        activeTrackColor: const Color(0xFFB284BE),
-        inactiveThumbColor: Colors.white,
-        inactiveTrackColor: Colors.white.withOpacity(0.15),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          _leadingIcon(icon),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: 'Syne',
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontFamily: 'Syne',
+                    color: Colors.white.withOpacity(0.32),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => onChanged(!value),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 44,
+              height: 24,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                color: value ? const Color(0xFFB284BE) : Colors.white10,
+              ),
+              child: Align(
+                alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _menuRow(_MenuData item) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: _leadingIcon(item.icon),
-      title: Text(
-        item.title,
-        style: const TextStyle(
-          fontFamily: 'Syne',
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          _leadingIcon(item.icon),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontFamily: 'Syne',
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.subtitle,
+                  style: TextStyle(
+                    fontFamily: 'Syne',
+                    color: Colors.white.withOpacity(0.32),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: Colors.white38, size: 18),
+        ],
       ),
-      subtitle: Text(
-        item.subtitle,
-        style: TextStyle(
-          fontFamily: 'Syne',
-          color: Colors.white.withOpacity(0.32),
-          fontSize: 11,
-        ),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white38),
-      onTap: () {},
     );
   }
 
@@ -744,7 +796,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       borderRadius: BorderRadius.circular(16),
       onTap: _handleSignOut,
       child: Container(
-        height: 56,
+        height: 54,
         decoration: BoxDecoration(
           color: const Color(0x19F5576C),
           borderRadius: BorderRadius.circular(16),
@@ -761,7 +813,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 fontFamily: 'Syne',
                 color: Color(0xFFF5576C),
                 fontWeight: FontWeight.w700,
-                fontSize: 22,
+                fontSize: 18,
               ),
             ),
           ],
@@ -775,7 +827,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       borderRadius: BorderRadius.circular(16),
       onTap: () => context.go('/settings'),
       child: Container(
-        height: 56,
+        height: 54,
         decoration: BoxDecoration(
           color: const Color(0x141A6EFF),
           borderRadius: BorderRadius.circular(16),
@@ -792,7 +844,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 fontFamily: 'Syne',
                 color: Color(0xFF8AA8FF),
                 fontWeight: FontWeight.w700,
-                fontSize: 20,
+                fontSize: 18,
               ),
             ),
           ],
@@ -804,19 +856,56 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Future<void> _handleSignOut() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+      builder: (dialogContext) => Dialog(
+        backgroundColor: const Color(0xFF1A1628),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Sign Out', style: TextStyle(color: Colors.white, fontFamily: 'Syne', fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Text('Are you sure you want to sign out?', style: TextStyle(color: Colors.white.withOpacity(0.7), fontFamily: 'Syne', fontSize: 13)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(dialogContext).pop(false),
+                      child: Container(
+                        height: 42,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF2A2440)),
+                        ),
+                        child: const Text('Cancel', style: TextStyle(color: Colors.white70, fontFamily: 'Syne', fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(dialogContext).pop(true),
+                      child: Container(
+                        height: 42,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0x19F5576C),
+                          border: Border.all(color: const Color(0x66F5576C)),
+                        ),
+                        child: const Text('Sign Out', style: TextStyle(color: Color(0xFFF5576C), fontFamily: 'Syne', fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Sign Out'),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -893,111 +982,123 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             : null,
         color: highlighted ? null : const Color(0xFF1A1628),
       ),
-      child: ListTile(
-        minLeadingWidth: 0,
-        horizontalTitleGap: 10,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
           children: [
-            Container(
-              width: 28,
-              alignment: Alignment.center,
-              child: Text(
-                '$rank',
-                style: TextStyle(
-                  fontFamily: 'Syne',
-                  color: Colors.white.withOpacity(0.42),
-                  fontWeight: FontWeight.w700,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 28,
+                  alignment: Alignment.center,
+                  child: Text(
+                    '$rank',
+                    style: TextStyle(
+                      fontFamily: 'Syne',
+                      color: Colors.white.withOpacity(0.42),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.20),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: accent.withOpacity(0.35)),
+                  ),
+                  child: Text(
+                    initials,
+                    style: TextStyle(
+                      fontFamily: 'Syne',
+                      color: accent,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Syne',
+                            color: highlighted ? accent : Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      if (isYou)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accent.withOpacity(0.20),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'YOU',
+                            style: TextStyle(
+                              fontFamily: 'Syne',
+                              color: accent,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  Text(
+                    '🔥 $streak',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Syne',
+                      color: Colors.white.withOpacity(0.32),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: accent.withOpacity(0.20),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: accent.withOpacity(0.35)),
-              ),
-              child: Text(
-                initials,
-                style: TextStyle(
-                  fontFamily: 'Syne',
-                  color: accent,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-          ],
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Syne',
-                  color: highlighted ? accent : Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            if (isYou)
-              Container(
-                margin: const EdgeInsets.only(left: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: accent.withOpacity(0.20),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'YOU',
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  xp,
                   style: TextStyle(
                     fontFamily: 'Syne',
-                    color: accent,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
+                    color: highlighted ? accent : Colors.white.withOpacity(0.70),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
-          ],
-        ),
-        subtitle: Text(
-          '🔥 $streak',
-          style: TextStyle(
-            fontFamily: 'Syne',
-            color: Colors.white.withOpacity(0.32),
-            fontSize: 11,
-          ),
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              xp,
-              style: TextStyle(
-                fontFamily: 'Syne',
-                color: highlighted ? accent : Colors.white.withOpacity(0.70),
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            Text(
-              'XP',
-              style: TextStyle(
-                fontFamily: 'Syne',
-                color: Colors.white.withOpacity(0.28),
-                fontSize: 10,
-              ),
+                Text(
+                  'XP',
+                  style: TextStyle(
+                    fontFamily: 'Syne',
+                    color: Colors.white.withOpacity(0.28),
+                    fontSize: 10,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

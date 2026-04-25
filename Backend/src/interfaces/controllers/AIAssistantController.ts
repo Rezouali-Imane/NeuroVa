@@ -15,6 +15,7 @@ import { ScheduleFocusSession } from '../../usecases/ai/Schedulefocussession.js'
 import { SendTaskReminders } from '../../usecases/ai/Sendtaskreminders.js';
 import { SendImageMessage } from '../../usecases/ai/SendImageMessage.js';
 import { TranscribeAudio } from '../../usecases/ai/TranscribeAudio.js';
+import { GetInsights } from '../../usecases/ai/GetInsights.js';
 import { FilterContent } from '../../usecases/contentModeration/FilterContent.js';
 import { AnalyzeImage } from '../../usecases/contentModeration/AnalyzeImage.js';
 import {
@@ -411,6 +412,21 @@ export const AIAssistantController = {
       }
       const result = await SendTaskReminders(userid);
       res.status(200).json({ success: true, data: result });
+    } catch (error: any) {
+      handleAIError(error, res);
+    }
+  },
+
+  async getInsights(req: AuthRequest, res: Response) {
+    try {
+      const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      // Validate user can only access their own insights
+      validateUserAccess(requestUserId, userid);
+
+      const insights = await GetInsights(userid);
+      res.status(200).json({ success: true, data: insights });
     } catch (error: any) {
       handleAIError(error, res);
     }

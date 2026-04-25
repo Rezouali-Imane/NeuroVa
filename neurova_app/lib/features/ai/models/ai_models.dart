@@ -209,3 +209,64 @@ class ToolResult {
     );
   }
 }
+
+// AI Insight model for dashboard insights
+class AIInsight {
+  final String id;
+  final String title;
+  final String content;
+  final String? icon;
+  final String category; // productivity, focus, wellbeing, learning
+  final DateTime createdAt;
+
+  AIInsight({
+    required this.id,
+    required this.title,
+    required this.content,
+    this.icon,
+    required this.category,
+    required this.createdAt,
+  });
+
+  factory AIInsight.fromJson(Map<String, dynamic> json) {
+    return AIInsight(
+      id: json['id'] ?? '',
+      title: json['title'] ?? 'AI INSIGHT',
+      content: json['content'] ?? '',
+      icon: json['icon'],
+      category: json['category'] ?? 'productivity',
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'content': content,
+      'icon': icon,
+      'category': category,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  AIInsight copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? icon,
+    String? category,
+    DateTime? createdAt,
+  }) {
+    return AIInsight(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      icon: icon ?? this.icon,
+      category: category ?? this.category,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+}

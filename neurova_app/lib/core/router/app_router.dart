@@ -20,6 +20,11 @@ import '../../features/focus/dashboard1.dart';
 import '../../features/focus/focus_page.dart';
 import '../../features/tasks/tasks_page.dart';
 import '../../features/focus/menupage.dart' as menu_module;
+import '../../features/notes/notes_page.dart';
+import '../../features/study_rooms/study_rooms_page.dart';
+import '../../features/discipline/discipline_page.dart';
+import '../../features/calendar/calendar_page.dart';
+import 'page_transitions.dart';
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
@@ -87,57 +92,80 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       GoRoute(
         path: '/onboarding',
-        builder: (BuildContext context, GoRouterState state) =>
-            const OnboardingPage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const OnboardingPage(),
+          name: '/onboarding',
+        ),
       ),
 
       GoRoute(
         path: '/confirm-email',
-        builder: (BuildContext context, GoRouterState state) {
+        pageBuilder: (BuildContext context, GoRouterState state) {
           final email = state.extra as String? ?? '';
-          return ConfirmEmailPage(email: email);
+          return buildTransitionPage<void>(
+            child: ConfirmEmailPage(email: email),
+            name: '/confirm-email',
+          );
         },
       ),
       GoRoute(
         path: '/login',
-        builder: (BuildContext context, GoRouterState state) =>
-            const LoginPage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const LoginPage(),
+          name: '/login',
+        ),
       ),
 
       GoRoute(
         path: '/register',
-        builder: (BuildContext context, GoRouterState state) =>
-            const RegisterPage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const RegisterPage(),
+          name: '/register',
+        ),
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (BuildContext context, GoRouterState state) =>
-            const ForgotPasswordPage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const ForgotPasswordPage(),
+          name: '/forgot-password',
+        ),
       ),
 
       GoRoute(
         path: '/reset-code',
-        builder: (BuildContext context, GoRouterState state) =>
-            ResetCodePage(email: state.extra as String? ?? ''),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: ResetCodePage(email: state.extra as String? ?? ''),
+          name: '/reset-code',
+        ),
       ),
 
       GoRoute(
         path: '/resetpassword',
-        builder: (BuildContext context, GoRouterState state) {
+        pageBuilder: (BuildContext context, GoRouterState state) {
           final extra = state.extra;
+          late Widget child;
           if (extra is Map<String, String>) {
-            return ResetPasswordPage(
+            child = ResetPasswordPage(
               email: extra['email'] ?? '',
               code: extra['code'] ?? '',
             );
+          } else {
+            child = ResetPasswordPage(email: extra as String? ?? '', code: '');
           }
-
-          return ResetPasswordPage(email: extra as String? ?? '', code: '');
+          return buildTransitionPage<void>(
+            child: child,
+            name: '/resetpassword',
+          );
         },
       ),
       GoRoute(
         path: '/auth-callback',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final router = GoRouter.of(context);
           final token = state.uri.queryParameters['accessToken'];
           final isNewUser = state.uri.queryParameters['isNewUser'] == 'true';
@@ -173,36 +201,50 @@ final routerProvider = Provider<GoRouter>((ref) {
             }
           });
 
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return buildTransitionPage<void>(
+            child: const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+            name: '/auth-callback',
           );
         },
       ),
       GoRoute(
         path: '/resetpassword-success',
-        builder: (BuildContext context, GoRouterState state) =>
-            const ResetPasswordSuccessPage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const ResetPasswordSuccessPage(),
+          name: '/resetpassword-success',
+        ),
       ),
       GoRoute(
         path: '/profile',
-        builder: (BuildContext context, GoRouterState state) =>
-            const ProfilePage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const ProfilePage(),
+          name: '/profile',
+        ),
       ),
       GoRoute(
         path: '/settings',
-        builder: (BuildContext context, GoRouterState state) =>
-            const SettingsPage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const SettingsPage(),
+          name: '/settings',
+        ),
       ),
       GoRoute(
         path: '/setup-profile',
-        builder: (BuildContext context, GoRouterState state) {
-          return const SetupProfil(signupEmail: '', signupPassword: '');
-        },
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const SetupProfil(signupEmail: '', signupPassword: ''),
+          name: '/setup-profile',
+        ),
       ),
 
       GoRoute(
         path: '/ai',
-        builder: (BuildContext context, GoRouterState state) {
+        pageBuilder: (BuildContext context, GoRouterState state) {
           final authState = ref.read(authNotifierProvider);
           final aiService = ref.read(aiServiceProvider);
 
@@ -223,31 +265,78 @@ final routerProvider = Provider<GoRouter>((ref) {
             }
           }
 
-          return AIChatScreen(
-            userId: userId,
-            aiService: aiService,
+          return buildTransitionPage<void>(
+            child: AIChatScreen(
+              userId: userId,
+              aiService: aiService,
+            ),
+            name: '/ai',
           );
         },
       ),
       GoRoute(
         path: '/dashboard',
-        builder: (BuildContext context, GoRouterState state) =>
-            const Dashboard1(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const Dashboard1(),
+          name: '/dashboard',
+        ),
       ),
       GoRoute(
         path: '/tasks',
-        builder: (BuildContext context, GoRouterState state) =>
-            const TasksPage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const TasksPage(),
+          name: '/tasks',
+        ),
       ),
       GoRoute(
         path: '/focus',
-        builder: (BuildContext context, GoRouterState state) =>
-            const FocusPage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const FocusPage(),
+          name: '/focus',
+        ),
+      ),
+      GoRoute(
+        path: '/notes',
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const NotesPage(),
+          name: '/notes',
+        ),
+      ),
+      GoRoute(
+        path: '/rooms',
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const StudyRoomsPage(),
+          name: '/rooms',
+        ),
+      ),
+      GoRoute(
+        path: '/discipline',
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const DisciplinePage(),
+          name: '/discipline',
+        ),
+      ),
+      GoRoute(
+        path: '/calendar',
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const CalendarPage(),
+          name: '/calendar',
+        ),
       ),
       GoRoute(
         path: '/menu',
-        builder: (BuildContext context, GoRouterState state) =>
-            const menu_module.MenuPage(),
+        pageBuilder: (BuildContext context, GoRouterState state) =>
+            buildTransitionPage<void>(
+          child: const menu_module.MenuPage(),
+          name: '/menu',
+        ),
       ),
     ],
   );
