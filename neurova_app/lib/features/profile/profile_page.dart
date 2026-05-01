@@ -137,7 +137,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           ),
           SafeArea(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
               children: [
                 _buildProfileCard(),
                 const SizedBox(height: 20),
@@ -147,8 +147,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ],
             ),
           ),
-          _buildBottomNav(),
         ],
+      ),
+      bottomNavigationBar: UnifiedBottomNavBar(
+        selectedIndex: _selectedNavIndex,
+        onNavItemTapped: (index) {
+          setState(() {
+            _selectedNavIndex = index;
+          });
+        },
       ),
     );
   }
@@ -1116,18 +1123,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       child: child,
     );
   }
-
-  Widget _buildBottomNav() {
-    return UnifiedBottomNavBar(
-      selectedIndex: _selectedNavIndex,
-      onNavItemTapped: (index) {
-        setState(() {
-          _selectedNavIndex = index;
-        });
-      },
-    );
-  }
-
 }
 
 class _Pill extends StatelessWidget {

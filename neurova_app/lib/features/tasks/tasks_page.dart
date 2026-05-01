@@ -182,7 +182,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             ),
             SafeArea(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 120),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                 children: [
                   _buildHeader(allTasks),
                   const SizedBox(height: 16),
@@ -233,12 +233,12 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 ],
               ),
             ),
-            UnifiedBottomNavBar(
-              selectedIndex: _selectedNavIndex,
-              onNavItemTapped: (index) => setState(() => _selectedNavIndex = index),
-            ),
           ],
         ),
+      ),
+      bottomNavigationBar: UnifiedBottomNavBar(
+        selectedIndex: _selectedNavIndex,
+        onNavItemTapped: (index) => setState(() => _selectedNavIndex = index),
       ),
     );
   }

@@ -238,7 +238,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
             SafeArea(
               child: SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 120),
+                padding: const EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -265,10 +265,10 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                 ),
               ),
             ),
-            _buildBottomNav(),
           ],
         ),
       ),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 

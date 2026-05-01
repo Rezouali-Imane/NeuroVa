@@ -634,7 +634,7 @@ class _FocusPageState extends State<FocusPage> {
           children: [
             SafeArea(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 182),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
                   Row(
                     children: [
@@ -963,14 +963,14 @@ class _FocusPageState extends State<FocusPage> {
                 ],
               ),
           ),
-            UnifiedBottomNavBar(
-              selectedIndex: _selectedNavIndex,
-              onNavItemTapped: (index) {
-                setState(() => _selectedNavIndex = index);
-              },
-            ),
           ],
         ),
+      ),
+      bottomNavigationBar: UnifiedBottomNavBar(
+        selectedIndex: _selectedNavIndex,
+        onNavItemTapped: (index) {
+          setState(() => _selectedNavIndex = index);
+        },
       ),
     );
   }

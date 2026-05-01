@@ -77,6 +77,10 @@ class AINotifier extends StateNotifier<AIState> {
     await _aiService.disconnectVoiceCallChannel();
   }
 
+  void replaceMessages(List<AIMessage> messages) {
+    state = state.copyWith(messages: messages, error: '', hasError: false);
+  }
+
   // Send message to AI
   Future<void> sendMessage(String content, {bool directChat = false}) async {
     try {
