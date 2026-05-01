@@ -17,9 +17,11 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    return Consumer(
+      builder: (context, ref, _) {
+        final authState = ref.watch(authNotifierProvider);
 
-    return Scaffold(
+        return Scaffold(
       backgroundColor: const Color(0xFF13111A),
       body: ProfileViewShell(
         child: Stack(
@@ -242,6 +244,8 @@ class _HomePageState extends ConsumerState<HomePage> {
           });
         },
       ),
+    );
+      },
     );
   }
 
