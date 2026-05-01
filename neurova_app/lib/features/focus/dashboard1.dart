@@ -550,30 +550,6 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
     );
   }
 
-  Widget _heroBadge(String title, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.16),
-        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-        border: Border.all(color: Colors.white.withOpacity(0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AppTypography.caption.copyWith(color: Colors.white.withOpacity(0.8)),
-          ),
-          Text(
-            value,
-            style: AppTypography.body1.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTopStats() {
     return Row(
       children: [

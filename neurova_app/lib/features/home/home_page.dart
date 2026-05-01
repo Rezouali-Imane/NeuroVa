@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/profile_view_shell.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
 import '../auth/state/auth_notifier.dart';
@@ -17,7 +16,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   int _selectedNavIndex = 0;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
 
     return Scaffold(
@@ -274,3 +273,4 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
   }
+}

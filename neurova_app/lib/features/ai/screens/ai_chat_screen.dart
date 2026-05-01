@@ -1086,55 +1086,6 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _buildConversationHeader(int messageCount) {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              colors: [Color(0xFFC8B8E8), Color(0xFFA2ADD0)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: const Icon(Icons.forum_outlined, color: Colors.white, size: 22),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Conversation',
-                style: AppTypography.title2.copyWith(color: Colors.white, fontSize: 16),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                '$messageCount messages · dashboard styled',
-                style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.glassBackground,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppColors.glassBorderLight),
-          ),
-          child: Text(
-            _selectedTab.name.toUpperCase(),
-            style: AppTypography.label.copyWith(color: AppColors.textSecondary),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildAgentTab() {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),

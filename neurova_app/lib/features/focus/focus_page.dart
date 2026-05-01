@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../../shared/theme/app_theme.dart' show AppTypography;
 import 'dart:async';
 
 import '../../shared/widgets/profile_view_shell.dart';

@@ -10,12 +10,12 @@ import { AnalyzeWeakness } from '../../usecases/ai/Analyzeweakness.js';
 import { GetStudentMemory } from '../../usecases/ai/Getstudentmemory.js';
 import { UpdateStudentMemory } from '../../usecases/ai/Updatestudentmemory.js';
 import { ProcessDocument } from '../../usecases/ai/Processdocument.js';
+import { GetInsights } from '../../usecases/ai/GetInsights.js';
 import { GetKnowledgeBase, DeleteDocument } from '../../usecases/ai/Knowledgebase.usecases.js';
 import { ScheduleFocusSession } from '../../usecases/ai/Schedulefocussession.js';
 import { SendTaskReminders } from '../../usecases/ai/Sendtaskreminders.js';
 import { SendImageMessage } from '../../usecases/ai/SendImageMessage.js';
 import { TranscribeAudio } from '../../usecases/ai/TranscribeAudio.js';
-import { GetInsights } from '../../usecases/ai/GetInsights.js';
 import { FilterContent } from '../../usecases/contentModeration/FilterContent.js';
 import { AnalyzeImage } from '../../usecases/contentModeration/AnalyzeImage.js';
 import {

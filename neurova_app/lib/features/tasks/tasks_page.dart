@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:neurova_app/features/auth/state/auth_notifier.dart';
 import 'package:neurova_app/shared/theme/app_theme.dart';
@@ -1744,102 +1743,6 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildPriorityItem(
-      String value, String text, Function setModalState) {
-    final bool isSelected = selectedPriority == value;
-    return GestureDetector(
-      onTap: () {
-        setModalState(() {
-          selectedPriority = value;
-        });
-      },
-      child: Container(
-        height: 42,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0x17F8B878)
-              : Colors.white.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0x50F8B878)
-                : const Color(0xFF2A2440),
-            width: 0.75,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: isSelected
-                  ? const Color(0xFFF8B878)
-                  : Colors.white.withValues(alpha: 0.35),
-              fontSize: 13,
-              fontFamily: 'Syne',
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryItem(String label, String value, IconData icon, VoidCallback onTap) {
-    final isSelected = _selectedCategory == value;
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0x55FFFFFF),
-              fontFamily: 'Syne',
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            height: 52,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: const Color(0x332B2140),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF6A4F8A), width: 1.1),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFB38FD6).withValues(alpha: 0.12),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      color: Color(0xFFE9DCF8),
-                      fontFamily: 'Syne',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Icon(icon, color: const Color(0xFFD4B6EA), size: 16),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
