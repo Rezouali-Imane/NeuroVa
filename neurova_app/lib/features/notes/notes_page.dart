@@ -1,96 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/theme/app_theme.dart' show AppColors, AppTypography;
 import '../../shared/widgets/profile_view_shell.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
+import './models/note_module.dart';
+import './state/note_notifier.dart';
 
-class Note {
-  final String id;
-  final String title;
-  final String content;
-  final String category;
-  final List<String> tags;
-  final bool isPinned;
-  final DateTime updatedAt;
-
-  const Note({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.category,
-    required this.tags,
-    required this.isPinned,
-    required this.updatedAt,
-  });
-
-  Note copyWith({
-    String? id,
-    String? title,
-    String? content,
-    String? category,
-    List<String>? tags,
-    bool? isPinned,
-    DateTime? updatedAt,
-  }) {
-    return Note(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      content: content ?? this.content,
-      category: category ?? this.category,
-      tags: tags ?? this.tags,
-      isPinned: isPinned ?? this.isPinned,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
-}
-
-class NotesPage extends StatefulWidget {
+class NotesPage extends ConsumerStatefulWidget {
   const NotesPage({super.key});
 
   @override
-  State<NotesPage> createState() => _NotesPageState();
+  ConsumerState<NotesPage> createState() => _NotesPageState();
 }
 
-class _NotesPageState extends State<NotesPage> {
+class _NotesPageState extends ConsumerState<NotesPage> {
   int _selectedNavIndex = 1;
   String _searchQuery = '';
   String _selectedCategory = 'All';
-  late List<Note> _notes;
 
   @override
   void initState() {
     super.initState();
-    _notes = _seedNotes();
+    Future.microtask(() {
+      ref.read(notesNotifierProvider.notifier).fetchNotes();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final nc = Theme.of(context).extension<NeuropaColors>() ?? NeuropaColors.dark;
+    final notesState = ref.watch(notesNotifierProvider);
+    final notes = notesState.notes;
+
 
     final availableCategories = <String>{
-      ..._notes.map((note) => note.category.trim()).where((category) => category.isNotEmpty),
-    }.toList()
-      ..sort();
+      ...notes.map((note) => note.title.trim()).where((t) => t.isNotEmpty),
+    };
 
-    final categories = ['All', ...availableCategories];
+    final categories = ['All'];
 
     final selectedCategory =
         categories.contains(_selectedCategory) ? _selectedCategory : 'All';
 
-    final filteredNotes = _notes.where((note) {
+    final filteredNotes = notes.where((note) {
       final query = _searchQuery.toLowerCase();
       final matchesSearch = query.isEmpty ||
           note.title.toLowerCase().contains(query) ||
-          note.content.toLowerCase().contains(query) ||
-          note.category.toLowerCase().contains(query);
-      final matchesCategory =
-          selectedCategory == 'All' || note.category == selectedCategory;
-
-      return matchesSearch && matchesCategory;
+          (note.content ?? '').toLowerCase().contains(query);
+      return matchesSearch;
     }).toList();
-
-    final pinnedNotes = filteredNotes.where((n) => n.isPinned).toList();
-    final unpinnedNotes = filteredNotes.where((n) => !n.isPinned).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -129,35 +88,35 @@ class _NotesPageState extends State<NotesPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 120),
                 children: [
-                  _buildHeader(filteredVisible: filteredNotes.length, total: _notes.length, nc: nc),
+                  _buildHeader(
+                    filteredVisible: filteredNotes.length,
+                    total: notes.length,
+                    nc: nc,
+                  ),
                   const SizedBox(height: 16),
                   _buildSearchBar(),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    height: 42,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: categories.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final category = categories[index];
-                        return _buildCategoryChip(category);
-                      },
-                    ),
-                  ),
                   const SizedBox(height: 18),
-                  if (_notes.isEmpty)
+                  if (notesState.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 40),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFB284BE),
+                          strokeWidth: 3,
+                        ),
+                      ),
+                    )
+                  else if (notesState.error != null)
+                    _buildError(notesState.error!)
+                  else if (notes.isEmpty)
                     _buildEmptyState()
                   else ...[
-                    if (pinnedNotes.isNotEmpty) ...[
-                      _buildSectionHeader(label: 'PINNED', icon: Icons.push_pin),
-                      const SizedBox(height: 10),
-                      _buildNotesGrid(pinnedNotes, context),
-                      const SizedBox(height: 18),
-                    ],
-                    _buildSectionHeader(label: 'ALL NOTES', icon: Icons.menu_book_outlined),
+                    _buildSectionHeader(
+                      label: 'ALL NOTES',
+                      icon: Icons.menu_book_outlined,
+                    ),
                     const SizedBox(height: 10),
-                    _buildNotesGrid(unpinnedNotes, context),
+                    _buildNotesGrid(filteredNotes, context),
                   ],
                 ],
               ),
@@ -209,7 +168,7 @@ class _NotesPageState extends State<NotesPage> {
                     BoxShadow(
                       color: AppColors.purple.withValues(alpha: 0.35),
                       blurRadius: 16,
-                      offset: Offset(0, 6),
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -242,14 +201,8 @@ class _NotesPageState extends State<NotesPage> {
       style: AppTypography.body2.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: 'Search notes...',
-        hintStyle: AppTypography.body2.copyWith(
-          color: AppColors.textMuted,
-        ),
-        prefixIcon: Icon(
-          Icons.search,
-          color: AppColors.textMuted,
-          size: 20,
-        ),
+        hintStyle: AppTypography.body2.copyWith(color: AppColors.textMuted),
+        prefixIcon: Icon(Icons.search, color: AppColors.textMuted, size: 20),
         filled: true,
         fillColor: AppColors.cardBackgroundLight,
         border: OutlineInputBorder(
@@ -264,10 +217,7 @@ class _NotesPageState extends State<NotesPage> {
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: AppColors.purple.withValues(alpha: 0.8)),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 14,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       ),
     );
   }
@@ -279,24 +229,16 @@ class _NotesPageState extends State<NotesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.menu_book_rounded,
-              color: Color(0xFF7D749C),
-              size: 42,
-            ),
+            const Icon(Icons.menu_book_rounded, color: Color(0xFF7D749C), size: 42),
             const SizedBox(height: 10),
             Text(
               'No notes yet',
-              style: AppTypography.headline3.copyWith(
-                color: Colors.white,
-              ),
+              style: AppTypography.headline3.copyWith(color: Colors.white),
             ),
             const SizedBox(height: 4),
             Text(
               'Tap + to create your first note',
-              style: AppTypography.body2.copyWith(
-                color: const Color(0xFF8E88A8),
-              ),
+              style: AppTypography.body2.copyWith(color: const Color(0xFF8E88A8)),
             ),
           ],
         ),
@@ -304,31 +246,17 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
-  Widget _buildCategoryChip(String category) {
-    final isSelected = _selectedCategory == category;
-
-    return GestureDetector(
-      onTap: () => setState(() => _selectedCategory = category),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: isSelected
-              ? AppColors.purple.withValues(alpha: 0.18)
-              : AppColors.cardBackgroundLight,
-          border: Border.all(
-            color: isSelected
-                ? AppColors.purple.withValues(alpha: 0.42)
-                : AppColors.glassBorderLight,
-          ),
-        ),
-        child: Text(
-          category,
-          style: AppTypography.body2.copyWith(
-            color: isSelected ? AppColors.white : AppColors.textSecondary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+  Widget _buildError(String error) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0x33F5576C),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0x66F5576C)),
+      ),
+      child: Text(
+        error,
+        style: const TextStyle(color: Color(0xFFF5576C), fontFamily: 'Syne'),
       ),
     );
   }
@@ -383,7 +311,7 @@ class _NotesPageState extends State<NotesPage> {
 
   Widget _buildNoteCard(Note note, BuildContext context) {
     final nc = Theme.of(context).extension<NeuropaColors>() ?? NeuropaColors.dark;
-    final colorSeed = (note.category + note.title).toLowerCase();
+    final colorSeed = note.title.toLowerCase();
     final isWarm = colorSeed.contains('plan') ||
         colorSeed.contains('dev') ||
         colorSeed.contains('study') ||
@@ -440,16 +368,12 @@ class _NotesPageState extends State<NotesPage> {
                     const Icon(Icons.access_time_rounded, color: Color(0xFF6A6484), size: 12),
                     const SizedBox(width: 3),
                     Text(
-                      _formatDate(note.updatedAt),
+                      _formatDate(note.createdat),
                       style: AppTypography.caption.copyWith(
                         color: const Color(0xFF6A6484),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (note.isPinned) ...[
-                      const SizedBox(width: 6),
-                      const Icon(Icons.push_pin, color: Color(0xFFE0B46E), size: 12),
-                    ],
                   ],
                 ),
               ],
@@ -468,7 +392,7 @@ class _NotesPageState extends State<NotesPage> {
             const SizedBox(height: 8),
             Expanded(
               child: Text(
-                note.content,
+                note.content ?? '',
                 maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.body2.copyWith(
@@ -476,27 +400,6 @@ class _NotesPageState extends State<NotesPage> {
                   height: 1.5,
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    '# ${note.category.isEmpty ? 'General' : note.category}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body2.copyWith(
-                      color: isWarm ? const Color(0xFFE0B46E) : const Color(0xFFD5AEFF),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _showNoteOptions(note, context, nc),
-                  child: const Icon(Icons.more_horiz, color: Color(0xFF77708F), size: 18),
-                ),
-              ],
             ),
           ],
         ),
@@ -512,30 +415,23 @@ class _NotesPageState extends State<NotesPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => _CreateNoteSheet(onSubmit: (title, content) {
-        setState(() {
-          _notes = [
-            Note(
-              id: DateTime.now().microsecondsSinceEpoch.toString(),
-              title: title.trim().isEmpty ? 'Untitled' : title.trim(),
-              content: content.trim(),
-              category: _selectedCategory == 'All' ? 'General' : _selectedCategory,
-              tags: const [],
-              isPinned: false,
-              updatedAt: DateTime.now(),
+      builder: (context) => _CreateNoteSheet(
+        onSubmit: (title, content) async {
+          await ref.read(notesNotifierProvider.notifier).createNote(
+            title: title.trim().isEmpty ? 'Untitled' : title.trim(),
+            content: content.trim().isEmpty ? null : content.trim(),
+          );
+          if (!context.mounted) return;
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Note created'),
+              backgroundColor: nc.lilacSurface,
+              duration: const Duration(seconds: 2),
             ),
-            ..._notes,
-          ];
-        });
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Note created'),
-            backgroundColor: nc.lilacSurface,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 
@@ -549,20 +445,13 @@ class _NotesPageState extends State<NotesPage> {
       ),
       builder: (context) => _NoteDetailSheet(
         note: note,
-        onUpdate: (title, content) {
-          setState(() {
-            _notes = _notes
-                .map(
-                  (n) => n.id == note.id
-                      ? n.copyWith(
-                          title: title.trim().isEmpty ? 'Untitled' : title.trim(),
-                          content: content.trim(),
-                          updatedAt: DateTime.now(),
-                        )
-                      : n,
-                )
-                .toList();
-          });
+        onUpdate: (title, content) async {
+          await ref.read(notesNotifierProvider.notifier).updateNote(
+            noteId: note.noteid,
+            title: title.trim().isEmpty ? 'Untitled' : title.trim(),
+            content: content.trim().isEmpty ? null : content.trim(),
+          );
+          if (!context.mounted) return;
           Navigator.pop(context);
         },
         onDelete: () {
@@ -588,31 +477,16 @@ class _NotesPageState extends State<NotesPage> {
             GestureDetector(
               onTap: () {
                 Navigator.pop(context);
-                setState(() {
-                  _notes = _notes
-                      .map(
-                        (n) => n.id == note.id
-                            ? n.copyWith(
-                                isPinned: !n.isPinned,
-                                updatedAt: DateTime.now(),
-                              )
-                            : n,
-                      )
-                      .toList();
-                });
+                _showNoteDetail(note, context, nc);
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
                   children: [
-                    Icon(
-                      note.isPinned ? Icons.pin : Icons.pin_outlined,
-                      color: nc.lilacSurface,
-                      size: 20,
-                    ),
+                    Icon(Icons.edit_outlined, color: nc.lilacSurface, size: 20),
                     const SizedBox(width: 16),
                     Text(
-                      note.isPinned ? 'Unpin' : 'Pin',
+                      'Edit',
                       style: AppTypography.body2.copyWith(color: nc.textPrimary),
                     ),
                   ],
@@ -645,125 +519,39 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   void _handleDeleteNote(Note note, BuildContext context, NeuropaColors nc) {
-    setState(() {
-      _notes = _notes.where((n) => n.id != note.id).toList();
-    });
+    ref.read(notesNotifierProvider.notifier).deleteNote(note.noteid);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Note deleted'),
         backgroundColor: AppColors.error,
         duration: const Duration(seconds: 3),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () {
-            setState(() {
-              _notes = [note.copyWith(updatedAt: DateTime.now()), ..._notes];
-            });
-          },
-        ),
       ),
     );
   }
 
   String _formatDate(DateTime date) {
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     final month = months[date.month - 1];
     final now = DateTime.now();
-
-    if (date.year == now.year) {
-      return '$month ${date.day}';
-    }
-
+    if (date.year == now.year) return '$month ${date.day}';
     return '$month ${date.day}, ${date.year}';
   }
 
   Widget _buildBottomNav() {
     return UnifiedBottomNavBar(
       selectedIndex: _selectedNavIndex,
-      onNavItemTapped: (index) {
-        setState(() {
-          _selectedNavIndex = index;
-        });
-      },
+      onNavItemTapped: (index) => setState(() => _selectedNavIndex = index),
     );
-  }
-
-  List<Note> _seedNotes() {
-    final now = DateTime.now();
-    return [
-      Note(
-        id: '1',
-        title: 'Merge Sort Algorithm',
-        content: 'Merge sort runs in O(n log n). It uses divide and conquer and is stable.',
-        category: 'CS',
-        tags: const ['algorithms'],
-        isPinned: true,
-        updatedAt: now.subtract(const Duration(days: 4)),
-      ),
-      Note(
-        id: '2',
-        title: '7-Day Study Plan',
-        content: 'Day 1: Data Structures. Day 2: Algorithms. Day 3: System Design.',
-        category: 'Planning',
-        tags: const ['study'],
-        isPinned: true,
-        updatedAt: now.subtract(const Duration(days: 3)),
-      ),
-      Note(
-        id: '3',
-        title: 'React Hooks Cheatsheet',
-        content: 'useState, useEffect, useContext, useMemo, useCallback in practical cases.',
-        category: 'Dev',
-        tags: const ['react'],
-        isPinned: false,
-        updatedAt: now.subtract(const Duration(days: 2)),
-      ),
-      Note(
-        id: '4',
-        title: 'UI Design Principles',
-        content: 'Gestalt laws, visual hierarchy, whitespace, typography scales, color contrast.',
-        category: 'Design',
-        tags: const ['ui'],
-        isPinned: false,
-        updatedAt: now.subtract(const Duration(days: 1)),
-      ),
-      Note(
-        id: '5',
-        title: 'Node API Checklist',
-        content: 'Auth middleware, validation, typed DTOs, structured logs, integration tests.',
-        category: 'Dev',
-        tags: const ['backend'],
-        isPinned: false,
-        updatedAt: now.subtract(const Duration(hours: 18)),
-      ),
-      Note(
-        id: '6',
-        title: 'Math Fundamentals',
-        content: 'Review vectors, matrix basics, probability rules, Bayes intuition.',
-        category: 'Math',
-        tags: const ['revision'],
-        isPinned: false,
-        updatedAt: now.subtract(const Duration(hours: 10)),
-      ),
-    ];
   }
 }
 
+
+
 class _CreateNoteSheet extends StatefulWidget {
-  final Function(String title, String content) onSubmit;
+  final Future<void> Function(String title, String content) onSubmit;
 
   const _CreateNoteSheet({required this.onSubmit});
 
@@ -774,6 +562,7 @@ class _CreateNoteSheet extends StatefulWidget {
 class _CreateNoteSheetState extends State<_CreateNoteSheet> {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -834,23 +623,41 @@ class _CreateNoteSheetState extends State<_CreateNoteSheet> {
           SizedBox(
             width: double.infinity,
             child: GestureDetector(
-              onTap: () {
-                widget.onSubmit(_titleController.text, _contentController.text);
-              },
+              onTap: _isLoading
+                  ? null
+                  : () async {
+                      setState(() => _isLoading = true);
+                      await widget.onSubmit(
+                        _titleController.text,
+                        _contentController.text,
+                      );
+                      if (mounted) setState(() => _isLoading = false);
+                    },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: nc.lilacSurface,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  'Create',
-                  textAlign: TextAlign.center,
-                  style: AppTypography.body2.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                child: _isLoading
+                    ? const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        'Create',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.body2.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -860,9 +667,10 @@ class _CreateNoteSheetState extends State<_CreateNoteSheet> {
   }
 }
 
+
 class _NoteDetailSheet extends StatefulWidget {
   final Note note;
-  final Function(String title, String content) onUpdate;
+  final Future<void> Function(String title, String content) onUpdate;
   final VoidCallback onDelete;
 
   const _NoteDetailSheet({
@@ -878,12 +686,13 @@ class _NoteDetailSheet extends StatefulWidget {
 class _NoteDetailSheetState extends State<_NoteDetailSheet> {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.note.title);
-    _contentController = TextEditingController(text: widget.note.content);
+    _contentController = TextEditingController(text: widget.note.content ?? '');
   }
 
   @override
@@ -961,23 +770,41 @@ class _NoteDetailSheetState extends State<_NoteDetailSheet> {
               const SizedBox(width: 10),
               Expanded(
                 child: GestureDetector(
-                  onTap: () {
-                    widget.onUpdate(_titleController.text, _contentController.text);
-                  },
+                  onTap: _isLoading
+                      ? null
+                      : () async {
+                          setState(() => _isLoading = true);
+                          await widget.onUpdate(
+                            _titleController.text,
+                            _contentController.text,
+                          );
+                          if (mounted) setState(() => _isLoading = false);
+                        },
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
                       color: nc.lilacSurface,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      'Update',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.body2.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            'Update',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.body2.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
               ),
