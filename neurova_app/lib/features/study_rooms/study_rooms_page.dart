@@ -1,93 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/theme/app_theme.dart' show AppColors, AppTypography;
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
+import './models/studyroom_module.dart';
+import './state/studyroom_notifier.dart';
 
-class StudyRoom {
-  final String id;
-  final String name;
-  final String host;
-  final String subject;
-  final String focusMode;
-  final List<String> participants;
-  final int maxParticipants;
-  final List<String> tags;
-  final Duration elapsed;
-  final bool isLive;
-
-  StudyRoom({
-    required this.id,
-    required this.name,
-    required this.host,
-    required this.subject,
-    required this.focusMode,
-    required this.participants,
-    this.maxParticipants = 10,
-    required this.tags,
-    required this.elapsed,
-    this.isLive = true,
-  });
-}
-
-class StudyRoomsPage extends StatefulWidget {
+class StudyRoomsPage extends ConsumerStatefulWidget {
   const StudyRoomsPage({super.key});
 
   @override
-  State<StudyRoomsPage> createState() => _StudyRoomsPageState();
+  ConsumerState<StudyRoomsPage> createState() => _StudyRoomsPageState();
 }
 
-class _StudyRoomsPageState extends State<StudyRoomsPage> {
-  int _selectedNavIndex = 2; // Focus is at index 2
+class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
+  int _selectedNavIndex = 2;
   final TextEditingController _searchController = TextEditingController();
   String _selectedFocusMode = 'All';
-  StudyRoom? _activeRoom;
-
-  late List<StudyRoom> _rooms;
 
   @override
   void initState() {
     super.initState();
-    _rooms = [
-      StudyRoom(
-        id: '1',
-        name: 'Algorithms Deep Dive',
-        host: 'Sarah K.',
-        subject: 'Computer Science',
-        focusMode: 'Pomodoro',
-        participants: ['SK', 'JL', 'PM', 'CW'],
-        tags: ['#Algorithms', '#LeetCode', '#DataStructures'],
-        elapsed: const Duration(minutes: 18, seconds: 34),
-      ),
-      StudyRoom(
-        id: '2',
-        name: 'UX Design Sprint',
-        host: 'Amara T.',
-        subject: 'Design',
-        focusMode: 'Deep Work',
-        participants: ['AT', 'YB'],
-        tags: ['#Figma', '#UXResearch', '#Wireframing'],
-        elapsed: const Duration(minutes: 35, seconds: 12),
-      ),
-      StudyRoom(
-        id: '3',
-        name: 'Calculus Problem Set',
-        host: 'Mike J.',
-        subject: 'Mathematics',
-        focusMode: 'Flexible',
-        participants: ['MJ', 'LH', 'NK'],
-        tags: ['#Calculus', '#Integration', '#Derivatives'],
-        elapsed: const Duration(minutes: 5, seconds: 48),
-      ),
-      StudyRoom(
-        id: '4',
-        name: 'History Essay Review',
-        host: 'Emma R.',
-        subject: 'History',
-        focusMode: 'Pomodoro',
-        participants: ['ER', 'TS'],
-        tags: ['#Essay', '#WorldHistory', '#Analysis'],
-        elapsed: const Duration(minutes: 22, seconds: 15),
-      ),
-    ];
+    Future.microtask(() {
+      ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
+    });
   }
 
   @override
@@ -96,199 +31,289 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
     super.dispose();
   }
 
-  List<StudyRoom> _getFilteredRooms() {
-    return _rooms.where((room) {
+  List<StudyRoom> _getFilteredRooms(List<StudyRoom> rooms) {
+    return rooms.where((room) {
       final matchesSearch = _searchController.text.isEmpty ||
-          room.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-          room.subject.toLowerCase().contains(_searchController.text.toLowerCase());
+          room.roomname
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase()) ||
+          room.subject
+              .toLowerCase()
+              .contains(_searchController.text.toLowerCase());
       final matchesMode =
-          _selectedFocusMode == 'All' || room.focusMode == _selectedFocusMode;
+          _selectedFocusMode == 'All' || room.focusmode == _selectedFocusMode;
       return matchesSearch && matchesMode;
     }).toList();
   }
 
-  void _joinRoom(StudyRoom room) {
-    setState(() {
-      _activeRoom = room;
-    });
+  Future<void> _handleJoinRoom(StudyRoom room) async {
+    try {
+      await ref.read(studyRoomNotifierProvider.notifier).joinRoom(room.roomcode);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Joined ${room.roomname}!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to join: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
-  void _leaveRoom() {
-    setState(() {
-      _activeRoom = null;
-    });
+  Future<void> _handleCreateRoom({
+    required String roomname,
+    required String subject,
+    required String focusmode,
+    required bool ispublic,
+  }) async {
+    try {
+      await ref.read(studyRoomNotifierProvider.notifier).createRoom(
+            roomname: roomname,
+            subject: subject,
+            focusmode: focusmode,
+            ispublic: ispublic,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Room created successfully!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create room: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_activeRoom != null) {
-      return _buildActiveRoomView();
+    final studyRoomState = ref.watch(studyRoomNotifierProvider);
+    final activeRoom = studyRoomState.activeRoom;
+    final recentRooms = studyRoomState.recentRooms;
+
+    if (activeRoom != null) {
+      return _buildActiveRoomView(activeRoom);
     }
 
     return Scaffold(
       backgroundColor: const Color(0xFF13111A),
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Study\nRooms',
-                              style: TextStyle(
-                                fontFamily: 'Syne',
-                                color: Colors.white,
-                                fontSize: 48,
-                                fontWeight: FontWeight.w900,
-                                height: 0.9,
-                              ),
-                            ),
+                      const Expanded(
+                        child: Text(
+                          'Study\nRooms',
+                          style: TextStyle(
+                            fontFamily: 'Syne',
+                            color: Colors.white,
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            height: 0.9,
                           ),
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.purple,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.purple.withValues(alpha: 0.3),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.add, color: Colors.white, size: 28),
-                              onPressed: () => _showCreateRoomDialog(),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '${_rooms.fold(0, (sum, room) => sum + room.participants.length)} students studying now',
-                        style: AppTypography.body2.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 15,
                         ),
                       ),
-                      const SizedBox(height: 14),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        width: 56,
+                        height: 56,
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: AppColors.success.withValues(alpha: 0.28),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.success,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              '${_getFilteredRooms().length} rooms active · Live collab enabled',
-                              style: AppTypography.body2.copyWith(
-                                color: AppColors.success,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              ),
+                          shape: BoxShape.circle,
+                          color: AppColors.purple,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.purple.withValues(alpha: 0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
+                        child: IconButton(
+                          icon: const Icon(Icons.add, color: Colors.white, size: 28),
+                          onPressed: () => _showCreateRoomDialog(),
+                        ),
                       ),
                     ],
                   ),
-                ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    children: [
-                      TextField(
-                        controller: _searchController,
-                        onChanged: (value) => setState(() {}),
-                        decoration: InputDecoration(
-                          hintText: 'Search rooms, subjects, tags...',
-                          hintStyle: TextStyle(
-                            color: AppColors.textMuted,
-                            fontFamily: 'Syne',
-                          ),
-                          prefixIcon: Icon(Icons.search, color: AppColors.textMuted),
-                          filled: true,
-                          fillColor: AppColors.glassBackground,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: AppColors.glassBorderLight),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: AppColors.glassBorderLight),
-                          ),
-                        ),
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        height: 40,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: ['All', 'Pomodoro', 'Deep Work', 'Flexible']
-                              .map((mode) {
-                            final selected = _selectedFocusMode == mode;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 10),
-                              child: FilterChip(
-                                label: Text(mode),
-                                selected: selected,
-                                backgroundColor: AppColors.glassBackground,
-                                selectedColor:
-                                    AppColors.purple.withValues(alpha: 0.24),
-                                labelStyle: TextStyle(
-                                  color: selected
-                                      ? AppColors.purple
-                                      : AppColors.textSecondary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                side: BorderSide(
-                                  color: selected
-                                      ? AppColors.purple.withValues(alpha: 0.5)
-                                      : AppColors.glassBorderLight,
-                                ),
-                                onSelected: (value) {
-                                  setState(() {
-                                    _selectedFocusMode = mode;
-                                  });
-                                },
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ..._getFilteredRooms().map((room) => _buildRoomCard(room)),
-                    ],
+                  const SizedBox(height: 12),
+                  Text(
+                    '${recentRooms.fold(0, (sum, room) => sum + room.participants.length)} students studying now',
+                    style: AppTypography.body2.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.success.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.success,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          '${recentRooms.length} rooms available',
+                          style: AppTypography.body2.copyWith(
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            if (studyRoomState.isLoading)
+              const Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFB284BE),
+                    strokeWidth: 3,
+                  ),
+                ),
+              )
+            else if (studyRoomState.error != null)
+              Container(
+                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0x33F5576C),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0x66F5576C)),
+                ),
+                child: Text(
+                  studyRoomState.error!,
+                  style: const TextStyle(color: Color(0xFFF5576C), fontFamily: 'Syne'),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (value) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Search rooms, subjects...',
+                        hintStyle: TextStyle(
+                          color: AppColors.textMuted,
+                          fontFamily: 'Syne',
+                        ),
+                        prefixIcon: Icon(Icons.search, color: AppColors.textMuted),
+                        filled: true,
+                        fillColor: AppColors.glassBackground,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: AppColors.glassBorderLight),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: AppColors.glassBorderLight),
+                        ),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 40,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: ['All', 'Pomodoro', 'Deep Work', 'Flexible']
+                            .map((mode) {
+                          final selected = _selectedFocusMode == mode;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: FilterChip(
+                              label: Text(mode),
+                              selected: selected,
+                              backgroundColor: AppColors.glassBackground,
+                              selectedColor: AppColors.purple.withValues(alpha: 0.24),
+                              labelStyle: TextStyle(
+                                color: selected ? AppColors.purple : AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              side: BorderSide(
+                                color: selected
+                                    ? AppColors.purple.withValues(alpha: 0.5)
+                                    : AppColors.glassBorderLight,
+                              ),
+                              onSelected: (value) {
+                                setState(() {
+                                  _selectedFocusMode = mode;
+                                });
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_getFilteredRooms(recentRooms).isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 40),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.meeting_room_outlined,
+                                  color: Color(0xFF7D749C), size: 42),
+                              const SizedBox(height: 10),
+                              Text(
+                                'No rooms available',
+                                style: AppTypography.headline3.copyWith(color: Colors.white),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Create or join a study room',
+                                style: AppTypography.body2.copyWith(
+                                    color: const Color(0xFF8E88A8)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      ..._getFilteredRooms(recentRooms)
+                          .map((room) => _buildRoomCard(room)),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
       bottomNavigationBar: UnifiedBottomNavBar(
         selectedIndex: _selectedNavIndex,
@@ -315,8 +340,8 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
   }
 
   Widget _buildRoomCard(StudyRoom room) {
-    final modeColor = _getColorForFocusMode(room.focusMode);
-    
+    final modeColor = _getColorForFocusMode(room.focusmode);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
@@ -346,7 +371,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        room.name,
+                        room.roomname,
                         style: const TextStyle(
                           color: Colors.white,
                           fontFamily: 'Syne',
@@ -356,7 +381,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Hosted by ${room.host}',
+                        'Hosted by ${room.ownername}',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontFamily: 'Syne',
@@ -369,13 +394,15 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: modeColor.withValues(alpha: 0.15),
+                    color: room.isactive
+                        ? AppColors.success.withValues(alpha: 0.15)
+                        : AppColors.amber.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    room.focusMode,
+                    room.isactive ? 'Live' : 'Open',
                     style: TextStyle(
-                      color: modeColor,
+                      color: room.isactive ? AppColors.success : AppColors.amber,
                       fontFamily: 'Syne',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -385,26 +412,31 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
               ],
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: room.tags
-                  .map((tag) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      tag,
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontFamily: 'Syne',
-                        fontSize: 12,
-                      ),
-                    ),
-                  ))
-                  .toList(),
+            Row(
+              children: [
+                Icon(Icons.tag, color: AppColors.textMuted, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  room.subject,
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontFamily: 'Syne',
+                    fontSize: 12,
+                  ),
+                ),
+                const Spacer(),
+                Icon(Icons.code, color: AppColors.textMuted, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  room.roomcode,
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontFamily: 'Syne',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Row(
@@ -432,7 +464,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        participant,
+                        participant.username.substring(0, 2).toUpperCase(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -444,7 +476,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  '${room.participants.length}/${room.maxParticipants} joined',
+                  '${room.participants.length}/${room.maxparticipants} joined',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontFamily: 'Syne',
@@ -452,23 +484,15 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                   ),
                 ),
                 const Spacer(),
-                Icon(Icons.timer, color: AppColors.textMuted, size: 15),
-                const SizedBox(width: 5),
-                Text(
-                  '${room.elapsed.inMinutes}:${(room.elapsed.inSeconds % 60).toString().padLeft(2, '0')} elapsed',
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontFamily: 'Syne',
-                    fontSize: 12,
-                  ),
-                ),
+                if (!room.ispublic)
+                  Icon(Icons.lock, color: AppColors.textMuted, size: 14),
               ],
             ),
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => _joinRoom(room),
+                onPressed: () => _handleJoinRoom(room),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: modeColor.withValues(alpha: 0.2),
                   padding: const EdgeInsets.symmetric(vertical: 13),
@@ -503,7 +527,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF1C1A26),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
           title: Row(
@@ -605,34 +629,32 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  children: ['Pomodoro', 'Deep Work', 'Flexible']
-                      .map((mode) {
-                        final modeColor = _getColorForFocusMode(mode);
-                        return ChoiceChip(
-                          label: Text(
-                            mode,
-                            style: TextStyle(
-                              fontFamily: 'Syne',
-                              fontWeight: FontWeight.w600,
-                              color: selectedMode == mode ? modeColor : AppColors.textSecondary,
-                            ),
-                          ),
-                          selected: selectedMode == mode,
-                          backgroundColor: Colors.white.withValues(alpha: 0.04),
-                          selectedColor: modeColor.withValues(alpha: 0.2),
-                          side: BorderSide(
-                            color: selectedMode == mode
-                                ? modeColor.withValues(alpha: 0.5)
-                                : Colors.white.withValues(alpha: 0.08),
-                          ),
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() => selectedMode = mode);
-                            }
-                          },
-                        );
-                      })
-                      .toList(),
+                  children: ['Pomodoro', 'Deep Work', 'Flexible'].map((mode) {
+                    final modeColor = _getColorForFocusMode(mode);
+                    return ChoiceChip(
+                      label: Text(
+                        mode,
+                        style: TextStyle(
+                          fontFamily: 'Syne',
+                          fontWeight: FontWeight.w600,
+                          color: selectedMode == mode ? modeColor : AppColors.textSecondary,
+                        ),
+                      ),
+                      selected: selectedMode == mode,
+                      backgroundColor: Colors.white.withValues(alpha: 0.04),
+                      selectedColor: modeColor.withValues(alpha: 0.2),
+                      side: BorderSide(
+                        color: selectedMode == mode
+                            ? modeColor.withValues(alpha: 0.5)
+                            : Colors.white.withValues(alpha: 0.08),
+                      ),
+                      onSelected: (selected) {
+                        if (selected) {
+                          setDialogState(() => selectedMode = mode);
+                        }
+                      },
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 18),
                 Container(
@@ -644,14 +666,14 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.public, color: AppColors.success, size: 20),
+                      Icon(isPublic ? Icons.public : Icons.lock, color: isPublic ? AppColors.success : AppColors.amber, size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Public Room',
+                              isPublic ? 'Public Room' : 'Private Room',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontFamily: 'Syne',
@@ -661,7 +683,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Anyone can join',
+                              isPublic ? 'Anyone can join' : 'Only with room code',
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontFamily: 'Syne',
@@ -674,7 +696,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                       Switch(
                         value: isPublic,
                         onChanged: (value) {
-                          setState(() => isPublic = value);
+                          setDialogState(() => isPublic = value);
                         },
                         activeColor: AppColors.success,
                       ),
@@ -692,21 +714,13 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                 child: ElevatedButton(
                   onPressed: () {
                     if (roomName.isNotEmpty && subject.isNotEmpty) {
-                      final newRoom = StudyRoom(
-                        id: DateTime.now().toString(),
-                        name: roomName,
-                        host: 'You',
-                        subject: subject,
-                        focusMode: selectedMode,
-                        participants: ['You'],
-                        tags: ['#StudyGroup'],
-                        elapsed: Duration.zero,
-                      );
-                      setState(() {
-                        _rooms.insert(0, newRoom);
-                        _activeRoom = newRoom;
-                      });
                       Navigator.pop(context);
+                      _handleCreateRoom(
+                        roomname: roomName,
+                        subject: subject,
+                        focusmode: selectedMode,
+                        ispublic: isPublic,
+                      );
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -735,8 +749,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
     );
   }
 
-  Widget _buildActiveRoomView() {
-    final room = _activeRoom!;
+  Widget _buildActiveRoomView(StudyRoom room) {
     return Scaffold(
       backgroundColor: const Color(0xFF13111A),
       body: SafeArea(
@@ -754,7 +767,17 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: _leaveRoom,
+                      onPressed: () async {
+                        try {
+                          await ref
+                              .read(studyRoomNotifierProvider.notifier)
+                              .leaveRoom(room.roomid);
+                        } catch (e) {
+                          ref
+                              .read(studyRoomNotifierProvider.notifier)
+                              .clearActiveRoom();
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -763,7 +786,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          room.name,
+                          room.roomname,
                           style: const TextStyle(
                             color: Colors.white,
                             fontFamily: 'Syne',
@@ -786,25 +809,31 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.18),
+                      color: room.isactive
+                          ? AppColors.success.withValues(alpha: 0.18)
+                          : AppColors.amber.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: room.isactive
+                            ? AppColors.success.withValues(alpha: 0.3)
+                            : AppColors.amber.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Container(
                           width: 6,
                           height: 6,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.success,
+                            color: room.isactive ? AppColors.success : AppColors.amber,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Live',
+                          room.isactive ? 'Live' : 'Waiting',
                           style: TextStyle(
-                            color: AppColors.success,
+                            color: room.isactive ? AppColors.success : AppColors.amber,
                             fontFamily: 'Syne',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -834,7 +863,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                       child: Column(
                         children: [
                           Text(
-                            'SHARED SESSION TIMER',
+                            'SESSION CODE',
                             style: TextStyle(
                               color: AppColors.textMuted,
                               fontFamily: 'Syne',
@@ -845,18 +874,18 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            '35:15',
+                            room.roomcode,
                             style: TextStyle(
                               color: AppColors.amber,
                               fontFamily: 'Syne',
-                              fontSize: 72,
+                              fontSize: 36,
                               fontWeight: FontWeight.w900,
                               height: 0.9,
                             ),
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            room.focusMode,
+                            room.focusmode,
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontFamily: 'Syne',
@@ -898,7 +927,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                         ];
                         final index = room.participants.indexOf(participant);
                         final participantColor = colors[index % colors.length];
-                        
+
                         return Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -927,7 +956,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                                     ),
                                     alignment: Alignment.center,
                                     child: Text(
-                                      participant.toUpperCase(),
+                                      participant.username.substring(0, 2).toUpperCase(),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 18,
@@ -936,40 +965,30 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
                                       ),
                                     ),
                                   ),
-                                  if (participant == 'You')
+                                  if (participant.isowner)
                                     Container(
-                                      width: 14,
-                                      height: 14,
+                                      width: 20,
+                                      height: 20,
                                       decoration: const BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: AppColors.success,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Color(0xFF13111A),
-                                            blurRadius: 2,
-                                          ),
-                                        ],
+                                        color: AppColors.amber,
+                                      ),
+                                      child: const Icon(
+                                        Icons.star,
+                                        size: 12,
+                                        color: Colors.white,
                                       ),
                                     ),
                                 ],
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                participant,
+                                participant.username,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontFamily: 'Syne',
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                participant == 'You' ? '35:15' : '${28 + index}m',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontFamily: 'Syne',
-                                  fontSize: 13,
                                 ),
                               ),
                             ],
@@ -993,9 +1012,40 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildControlButton(Icons.share_outlined, 'Share'),
-                  _buildControlButton(Icons.exit_to_app, 'Exit',
-                      color: const Color(0xFFF5576C)),
+                  _buildControlButton(
+                    Icons.play_arrow,
+                    'Start Session',
+                    color: AppColors.success,
+                    onTap: () async {
+                      await ref
+                          .read(studyRoomNotifierProvider.notifier)
+                          .startSession(room.roomid);
+                    },
+                  ),
+                  _buildControlButton(
+                    Icons.stop,
+                    'End Session',
+                    color: AppColors.amber,
+                    onTap: () async {
+                      await ref
+                          .read(studyRoomNotifierProvider.notifier)
+                          .endSession(room.roomid);
+                    },
+                  ),
+                  _buildControlButton(
+                    Icons.exit_to_app,
+                    'Leave Room',
+                    color: const Color(0xFFF5576C),
+                    onTap: () async {
+                      try {
+                        await ref
+                            .read(studyRoomNotifierProvider.notifier)
+                            .leaveRoom(room.roomid);
+                      } catch (e) {
+                        ref.read(studyRoomNotifierProvider.notifier).clearActiveRoom();
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
@@ -1006,10 +1056,14 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
     );
   }
 
-  Widget _buildControlButton(IconData icon, String label,
-      {Color? color}) {
+  Widget _buildControlButton(
+    IconData icon,
+    String label, {
+    Color? color,
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
-      onTap: label == 'Exit' ? _leaveRoom : () {},
+      onTap: onTap ?? () {},
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1018,8 +1072,7 @@ class _StudyRoomsPageState extends State<StudyRoomsPage> {
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: (color ?? AppColors.textSecondary)
-                  .withValues(alpha: 0.12),
+              color: (color ?? AppColors.textSecondary).withValues(alpha: 0.12),
             ),
             child: Icon(icon, color: color ?? AppColors.textSecondary),
           ),
