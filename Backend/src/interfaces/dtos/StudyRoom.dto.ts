@@ -1,8 +1,8 @@
 
 export interface CreateRoomDTO {
     roomname: string;
-    sessionduration: number;
-    ownerid: string;    
+    ownerid: string; 
+    ispublic?: boolean;   
    
 }
 
@@ -25,4 +25,5 @@ export interface StartGroupSessionDTO {
 export interface EndGroupSessionDTO {
     roomid: string;
     userid: string;
+    duration?: number;
 }

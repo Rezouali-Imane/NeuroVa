@@ -30,7 +30,7 @@ app.use('/api/tasklists', authMiddleware, taskListRoutes);
 app.use('/api/notes', authMiddleware, noteRoutes);
 app.use('/api/ai', authMiddleware, aiRoutes);
 app.use('/api/focus-sessions', authMiddleware, focusSessionRoutes);
-app.use('/api/studyroom', authMiddleware, studyRoomRoutes);
+app.use('/api/studyrooms', authMiddleware, studyRoomRoutes);
 app.use('/api/discipline', authMiddleware, digitalDisciplineRoutes);
 app.use('/api/content-moderation', authMiddleware, contentModerationRoutes);
 app.use('/api/notifications', authMiddleware, notificationRoutes);

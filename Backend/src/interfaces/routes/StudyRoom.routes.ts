@@ -4,6 +4,9 @@ import { authMiddleware } from "../../infrastructure/middleware/authMiddleware.j
 
 const router = Router();
 
+// get all active rooms
+router.get("/", authMiddleware, StudyRoomController.getAll);
+
 // Create the room session
 router.post("/", authMiddleware, StudyRoomController.create);
 

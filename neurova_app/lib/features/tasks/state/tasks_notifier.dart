@@ -29,7 +29,7 @@ class TasksState {
 }
 
 final tasksServiceProvider = Provider((ref) {
-  final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000')); // if you are using an emulator, use 'http://10.0.2.2:3000'
+  final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000')); //  emulator, use 'http://10.0.2.2:3000'
   final localStorage = ref.watch(localStorageServiceProvider);
   return TasksService(dio, localStorage);
 });

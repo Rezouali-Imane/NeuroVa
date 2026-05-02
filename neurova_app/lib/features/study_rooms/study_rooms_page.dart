@@ -1,9 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/theme/app_theme.dart' show AppColors, AppTypography;
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
 import './models/studyroom_module.dart';
+import 'package:flutter/scheduler.dart';
 import './state/studyroom_notifier.dart';
+import '../../shared/services/Socket_service.dart';
+import '../auth/state/auth_notifier.dart' show localStorageServiceProvider;
 
 class StudyRoomsPage extends ConsumerStatefulWidget {
   const StudyRoomsPage({super.key});
@@ -12,27 +17,95 @@ class StudyRoomsPage extends ConsumerStatefulWidget {
   ConsumerState<StudyRoomsPage> createState() => _StudyRoomsPageState();
 }
 
-class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
+class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
+    with SingleTickerProviderStateMixin {
   int _selectedNavIndex = 2;
   final TextEditingController _searchController = TextEditingController();
   String _selectedFocusMode = 'All';
+  String? _currentUserId;
+  Timer? _refreshTimer;
+  bool _isRefreshing = false;
+
+  late final Ticker _ticker;
+  Duration _elapsed = Duration.zero;
+  DateTime? _sessionStart;
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
+    _loadCurrentUserId();
+    _ticker = createTicker((_) {
+      if (_sessionStart != null) {
+        setState(() {
+          _elapsed = DateTime.now().difference(_sessionStart!);
+        });
+      }
     });
+    Future.microtask(() async {
+      await ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
+      // If we came back to an already-active room, restart the timer
+      final activeRoom = ref.read(studyRoomNotifierProvider).activeRoom;
+      if (activeRoom != null && activeRoom.isactive && !_ticker.isActive) {
+        _startTimer();
+      }
+    });
+    _startAutoRefresh();
+  }
+
+  Future<void> _loadCurrentUserId() async {
+    final localStorage = ref.read(localStorageServiceProvider);
+    _currentUserId = await localStorage.readUserId();
+    setState(() {});
+  }
+
+  void _startAutoRefresh() {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      if (mounted && ref.read(studyRoomNotifierProvider).activeRoom == null && !_isRefreshing) {
+        _isRefreshing = true;
+        await ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
+        _isRefreshing = false;
+      }
+    });
+  }
+
+  void _stopAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
   }
 
   @override
   void dispose() {
+    _toastEntry?.remove();
+    _toastEntry = null;
     _searchController.dispose();
+    _ticker.dispose();
+    _stopAutoRefresh();
+    ref.read(socketServiceProvider).dispose();
     super.dispose();
+  }
+
+  void _startTimer() {
+    _sessionStart = DateTime.now();
+    _elapsed = Duration.zero;
+    if (!_ticker.isActive) _ticker.start();
+  }
+
+  void _stopTimer() {
+    _ticker.stop();
+    _sessionStart = null;
+    _elapsed = Duration.zero;
+  }
+
+  String _formatElapsed(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return h > 0 ? '$h:$m:$s' : '$m:$s';
   }
 
   List<StudyRoom> _getFilteredRooms(List<StudyRoom> rooms) {
     return rooms.where((room) {
+      if (room.isactive) return false;
       final matchesSearch = _searchController.text.isEmpty ||
           room.roomname
               .toLowerCase()
@@ -46,24 +119,142 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
     }).toList();
   }
 
-  Future<void> _handleJoinRoom(StudyRoom room) async {
-    try {
-      await ref.read(studyRoomNotifierProvider.notifier).joinRoom(room.roomcode);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Joined ${room.roomname}!'),
-          backgroundColor: AppColors.success,
+  // Private room code dialog
+  Future<String?> _showCodeDialog() async {
+    TextEditingController controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1A26),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: const Text(
+          'Enter Room Code',
+          style: TextStyle(
+            fontFamily: 'Syne',
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
         ),
-      );
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          style: const TextStyle(color: Colors.white, fontFamily: 'Syne'),
+          decoration: InputDecoration(
+            hintText: 'e.g. A1B2C3',
+            hintStyle: TextStyle(color: AppColors.textMuted),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.04),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textSecondary,
+              textStyle: const TextStyle(fontFamily: 'Syne'),
+            ),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim().toUpperCase()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.purple,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Text('Join'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  OverlayEntry? _toastEntry;
+
+  void _showToast({
+    required IconData icon,
+    required Color iconColor,
+    required Color borderColor,
+    required String message,
+    Duration duration = const Duration(seconds: 2),
+  }) {
+    _toastEntry?.remove();
+    _toastEntry = null;
+
+    final entry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 20,
+        right: 20,
+        child: _ThemedToast(
+          icon: icon,
+          iconColor: iconColor,
+          borderColor: borderColor,
+          message: message,
+        ),
+      ),
+    );
+
+    _toastEntry = entry;
+    Overlay.of(context).insert(entry);
+
+    Future.delayed(duration, () {
+      entry.remove();
+      if (_toastEntry == entry) _toastEntry = null;
+    });
+  }
+
+  void _showJoinSuccessMessage(String roomName) {
+    _showToast(
+      icon: Icons.check_circle_outline_rounded,
+      iconColor: AppColors.success,
+      borderColor: AppColors.success,
+      message: 'Joined $roomName!',
+    );
+  }
+
+  void _showErrorMessage(String message) {
+    _showToast(
+      icon: Icons.error_outline_rounded,
+      iconColor: AppColors.error,
+      borderColor: AppColors.error,
+      message: message,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  Future<void> _handleJoinRoom(StudyRoom room) async {
+    // Private room: ask for code
+    if (!room.ispublic) {
+      final enteredCode = await _showCodeDialog();
+      if (enteredCode == null || enteredCode.trim().isEmpty) return;
+      if (enteredCode.trim().toUpperCase() != room.roomcode) {
+        _showErrorMessage('Invalid room code.');
+        return;
+      }
+    }
+
+    try {
+      await ref.read(studyRoomNotifierProvider.notifier).joinRoomFromCard(room);
+      if (!mounted) return;
+      _showJoinSuccessMessage(room.roomname);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to join: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      String errorMessage = e.toString().replaceFirst('Exception: ', '');
+      if (errorMessage.contains('Unique constraint failed') ||
+          errorMessage.contains('already joined') ||
+          errorMessage.contains('userid') && errorMessage.contains('roomid')) {
+        _showErrorMessage(
+          'You cannot join this room because you are either already a member or the session has already started.',
+        );
+      } else {
+        _showErrorMessage(errorMessage);
+      }
     }
   }
 
@@ -81,20 +272,133 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
             ispublic: ispublic,
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Room created successfully!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      _showJoinSuccessMessage(roomname);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to create room: $e'),
-          backgroundColor: AppColors.error,
+      _showErrorMessage(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  void _showRoomClosureDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _AnimatedDialog(
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF1C1A26),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: AppColors.amber, size: 28),
+              const SizedBox(width: 12),
+              const Text(
+                'Room Closed',
+                style: TextStyle(
+                  fontFamily: 'Syne',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontFamily: 'Syne',
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.purple,
+                textStyle: const TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w700),
+              ),
+              child: const Text('OK'),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
+
+  Future<void> _confirmLeave(StudyRoom room) async {
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1A26),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: Row(
+          children: [
+            Icon(Icons.exit_to_app, color: AppColors.amber, size: 28),
+            const SizedBox(width: 12),
+            const Text(
+              'Leave Room',
+              style: TextStyle(
+                fontFamily: 'Syne',
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'If you leave this room, you cannot rejoin. Are you sure you want to leave?',
+          style: TextStyle(
+            fontFamily: 'Syne',
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textSecondary,
+              textStyle: const TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w600),
+            ),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            child: const Text(
+              'Leave',
+              style: TextStyle(
+                fontFamily: 'Syne',
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLeave == true) {
+      try {
+        // Prevent auto-refresh during manual operation
+        _stopAutoRefresh();
+        await ref.read(studyRoomNotifierProvider.notifier).leaveRoom(room.roomid);
+        // Refresh once after leaving
+        if (mounted) {
+          await ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
+          _startAutoRefresh();
+        }
+      } catch (e) {
+        if (mounted) {
+          _startAutoRefresh();
+          ref.read(studyRoomNotifierProvider.notifier).clearActiveRoom();
+        }
+      }
     }
   }
 
@@ -104,8 +408,30 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
     final activeRoom = studyRoomState.activeRoom;
     final recentRooms = studyRoomState.recentRooms;
 
+    final waitingRooms = recentRooms.where((r) => !r.isactive).toList();
+
+    final closureMessage = studyRoomState.closureMessage;
+    if (closureMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showRoomClosureDialog(closureMessage);
+        ref.read(studyRoomNotifierProvider.notifier).clearClosureMessage();
+        // Refresh list after closing (to remove room)
+        if (mounted) {
+          ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
+        }
+      });
+    }
+
+    ref.listen<StudyRoomState>(studyRoomNotifierProvider, (prev, next) {
+      final wasActive = prev?.activeRoom?.isactive ?? false;
+      final isNowActive = next.activeRoom?.isactive ?? false;
+      if (!wasActive && isNowActive) _startTimer();
+      if (wasActive && !isNowActive) _stopTimer();
+      if (prev?.activeRoom != null && next.activeRoom == null) _stopTimer();
+    });
+
     if (activeRoom != null) {
-      return _buildActiveRoomView(activeRoom);
+      return _buildActiveRoomView(activeRoom, studyRoomState);
     }
 
     return Scaffold(
@@ -155,7 +481,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '${recentRooms.fold(0, (sum, room) => sum + room.participants.length)} students studying now',
+                    '${waitingRooms.fold(0, (sum, room) => sum + room.participants.length)} students studying now',
                     style: AppTypography.body2.copyWith(
                       color: AppColors.textSecondary,
                       fontSize: 15,
@@ -183,7 +509,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          '${recentRooms.length} rooms available',
+                          '${waitingRooms.length} rooms available',
                           style: AppTypography.body2.copyWith(
                             color: AppColors.success,
                             fontWeight: FontWeight.w700,
@@ -229,10 +555,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                       onChanged: (value) => setState(() {}),
                       decoration: InputDecoration(
                         hintText: 'Search rooms, subjects...',
-                        hintStyle: TextStyle(
-                          color: AppColors.textMuted,
-                          fontFamily: 'Syne',
-                        ),
+                        hintStyle: TextStyle(color: AppColors.textMuted, fontFamily: 'Syne'),
                         prefixIcon: Icon(Icons.search, color: AppColors.textMuted),
                         filled: true,
                         fillColor: AppColors.glassBackground,
@@ -253,8 +576,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                       height: 40,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
-                        children: ['All', 'Pomodoro', 'Deep Work', 'Flexible']
-                            .map((mode) {
+                        children: ['All', 'Pomodoro', 'Deep Work', 'Flexible'].map((mode) {
                           final selected = _selectedFocusMode == mode;
                           return Padding(
                             padding: const EdgeInsets.only(right: 10),
@@ -273,9 +595,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                                     : AppColors.glassBorderLight,
                               ),
                               onSelected: (value) {
-                                setState(() {
-                                  _selectedFocusMode = mode;
-                                });
+                                setState(() => _selectedFocusMode = mode);
                               },
                             ),
                           );
@@ -283,7 +603,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    if (_getFilteredRooms(recentRooms).isEmpty)
+                    if (_getFilteredRooms(waitingRooms).isEmpty)
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.only(top: 40),
@@ -299,16 +619,14 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                               const SizedBox(height: 4),
                               Text(
                                 'Create or join a study room',
-                                style: AppTypography.body2.copyWith(
-                                    color: const Color(0xFF8E88A8)),
+                                style: AppTypography.body2.copyWith(color: const Color(0xFF8E88A8)),
                               ),
                             ],
                           ),
                         ),
                       )
                     else
-                      ..._getFilteredRooms(recentRooms)
-                          .map((room) => _buildRoomCard(room)),
+                      ..._getFilteredRooms(waitingRooms).map((room) => _buildRoomCard(room)),
                   ],
                 ),
               ),
@@ -317,11 +635,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
       ),
       bottomNavigationBar: UnifiedBottomNavBar(
         selectedIndex: _selectedNavIndex,
-        onNavItemTapped: (index) {
-          setState(() {
-            _selectedNavIndex = index;
-          });
-        },
+        onNavItemTapped: (index) => setState(() => _selectedNavIndex = index),
       ),
     );
   }
@@ -418,11 +732,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                 const SizedBox(width: 6),
                 Text(
                   room.subject,
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontFamily: 'Syne',
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppColors.textMuted, fontFamily: 'Syne', fontSize: 12),
                 ),
                 const Spacer(),
                 Icon(Icons.code, color: AppColors.textMuted, size: 14),
@@ -444,12 +754,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                 Wrap(
                   spacing: -10,
                   children: room.participants.take(4).map((participant) {
-                    final colors = [
-                      Colors.purple,
-                      Colors.orange,
-                      Colors.pink,
-                      Colors.cyan
-                    ];
+                    final colors = [Colors.purple, Colors.orange, Colors.pink, Colors.cyan];
                     final index = room.participants.indexOf(participant);
                     return Container(
                       width: 36,
@@ -457,10 +762,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: colors[index % colors.length].withValues(alpha: 0.7),
-                        border: Border.all(
-                          color: const Color(0xFF13111A),
-                          width: 2.5,
-                        ),
+                        border: Border.all(color: const Color(0xFF13111A), width: 2.5),
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -477,34 +779,36 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                 const SizedBox(width: 10),
                 Text(
                   '${room.participants.length}/${room.maxparticipants} joined',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontFamily: 'Syne',
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Syne', fontSize: 12),
                 ),
                 const Spacer(),
-                if (!room.ispublic)
-                  Icon(Icons.lock, color: AppColors.textMuted, size: 14),
+                if (!room.ispublic) Icon(Icons.lock, color: AppColors.textMuted, size: 14),
               ],
             ),
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => _handleJoinRoom(room),
+                onPressed: room.isactive ? null : () => _handleJoinRoom(room),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: modeColor.withValues(alpha: 0.2),
+                  backgroundColor: room.isactive
+                      ? Colors.white.withValues(alpha: 0.04)
+                      : modeColor.withValues(alpha: 0.2),
+                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.04),
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: modeColor.withValues(alpha: 0.4)),
+                    side: BorderSide(
+                      color: room.isactive
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : modeColor.withValues(alpha: 0.4),
+                    ),
                   ),
                 ),
                 child: Text(
-                  'Join Room',
+                  room.isactive ? 'Session in progress' : 'Join Room',
                   style: TextStyle(
-                    color: modeColor,
+                    color: room.isactive ? AppColors.textMuted : modeColor,
                     fontFamily: 'Syne',
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
@@ -556,76 +860,21 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'ROOM NAME',
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontFamily: 'Syne',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                _label('ROOM NAME'),
                 const SizedBox(height: 8),
-                TextField(
-                  onChanged: (value) => roomName = value,
-                  decoration: InputDecoration(
-                    hintText: 'e.g. Algorithms Study Group',
-                    hintStyle: TextStyle(color: AppColors.textMuted),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                    ),
-                  ),
-                  style: const TextStyle(color: Colors.white, fontFamily: 'Syne'),
+                _dialogTextField(
+                  hint: 'e.g. Algorithms Study Group',
+                  onChanged: (v) => roomName = v,
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'SUBJECT',
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontFamily: 'Syne',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                _label('SUBJECT'),
                 const SizedBox(height: 8),
-                TextField(
-                  onChanged: (value) => subject = value,
-                  decoration: InputDecoration(
-                    hintText: 'e.g. Computer Science',
-                    hintStyle: TextStyle(color: AppColors.textMuted),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.04),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                    ),
-                  ),
-                  style: const TextStyle(color: Colors.white, fontFamily: 'Syne'),
+                _dialogTextField(
+                  hint: 'e.g. Computer Science',
+                  onChanged: (v) => subject = v,
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'FOCUS MODE',
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontFamily: 'Syne',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                _label('FOCUS MODE'),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -649,9 +898,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                             : Colors.white.withValues(alpha: 0.08),
                       ),
                       onSelected: (selected) {
-                        if (selected) {
-                          setDialogState(() => selectedMode = mode);
-                        }
+                        if (selected) setDialogState(() => selectedMode = mode);
                       },
                     );
                   }).toList(),
@@ -666,7 +913,11 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                   ),
                   child: Row(
                     children: [
-                      Icon(isPublic ? Icons.public : Icons.lock, color: isPublic ? AppColors.success : AppColors.amber, size: 20),
+                      Icon(
+                        isPublic ? Icons.public : Icons.lock,
+                        color: isPublic ? AppColors.success : AppColors.amber,
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -674,7 +925,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                           children: [
                             Text(
                               isPublic ? 'Public Room' : 'Private Room',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontFamily: 'Syne',
                                 fontSize: 14,
@@ -695,9 +946,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                       ),
                       Switch(
                         value: isPublic,
-                        onChanged: (value) {
-                          setDialogState(() => isPublic = value);
-                        },
+                        onChanged: (value) => setDialogState(() => isPublic = value),
                         activeColor: AppColors.success,
                       ),
                     ],
@@ -726,9 +975,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.purple,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   child: const Text(
                     '🚀 Create & Join Room',
@@ -749,7 +996,19 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
     );
   }
 
-  Widget _buildActiveRoomView(StudyRoom room) {
+  Widget _buildActiveRoomView(StudyRoom room, StudyRoomState state) {
+    final modeColor = _getColorForFocusMode(room.focusmode);
+
+    bool isOwner = false;
+    if (_currentUserId != null) {
+      for (final p in room.participants) {
+        if (p.isowner) {
+          isOwner = p.userid == _currentUserId;
+          break;
+        }
+      }
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF13111A),
       body: SafeArea(
@@ -769,13 +1028,20 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () async {
                         try {
+                          // Stop refresh temporarily
+                          _stopAutoRefresh();
                           await ref
                               .read(studyRoomNotifierProvider.notifier)
                               .leaveRoom(room.roomid);
+                          if (mounted) {
+                            await ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
+                            _startAutoRefresh();
+                          }
                         } catch (e) {
-                          ref
-                              .read(studyRoomNotifierProvider.notifier)
-                              .clearActiveRoom();
+                          if (mounted) {
+                            _startAutoRefresh();
+                            ref.read(studyRoomNotifierProvider.notifier).clearActiveRoom();
+                          }
                         }
                       },
                     ),
@@ -820,6 +1086,7 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                       ),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
                           width: 6,
@@ -852,49 +1119,107 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                   children: [
                     const SizedBox(height: 16),
                     Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                       ),
-                      child: Column(
-                        children: [
-                          Text(
-                            'SESSION CODE',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontFamily: 'Syne',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
+                      child: room.isactive
+                          ? Column(
+                              children: [
+                                Text(
+                                  'SESSION TIMER',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontFamily: 'Syne',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                Text(
+                                  _formatElapsed(_elapsed),
+                                  style: TextStyle(
+                                    color: AppColors.amber,
+                                    fontFamily: 'Syne',
+                                    fontSize: 72,
+                                    fontWeight: FontWeight.w900,
+                                    height: 0.9,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  room.focusmode,
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontFamily: 'Syne',
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                Icon(Icons.hourglass_top_rounded, color: AppColors.amber, size: 40),
+                                const SizedBox(height: 14),
+                                const Text(
+                                  'Waiting for host to start',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'Syne',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                GestureDetector(
+                                  onTap: () {
+                                    Clipboard.setData(ClipboardData(text: room.roomcode));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Room code copied!')),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: modeColor.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: modeColor.withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.copy, size: 14, color: modeColor),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          room.roomcode,
+                                          style: TextStyle(
+                                            color: modeColor,
+                                            fontFamily: 'Syne',
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 6,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap to copy & share with friends',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontFamily: 'Syne',
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 18),
-                          Text(
-                            room.roomcode,
-                            style: TextStyle(
-                              color: AppColors.amber,
-                              fontFamily: 'Syne',
-                              fontSize: 36,
-                              fontWeight: FontWeight.w900,
-                              height: 0.9,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            room.focusmode,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontFamily: 'Syne',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                     const SizedBox(height: 28),
                     Align(
@@ -911,91 +1236,89 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.0,
-                      children: room.participants.map((participant) {
-                        final colors = [
-                          Colors.purple,
-                          Colors.orange,
-                          Colors.pink,
-                          Colors.cyan
-                        ];
-                        final index = room.participants.indexOf(participant);
-                        final participantColor = colors[index % colors.length];
+                    if (room.participants.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          'No participants yet',
+                          style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Syne'),
+                        ),
+                      )
+                    else
+                      GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 1.0,
+                        children: room.participants.map((participant) {
+                          final colors = [Colors.purple, Colors.orange, Colors.pink, Colors.cyan];
+                          final index = room.participants.indexOf(participant);
+                          final participantColor = colors[index % colors.length];
 
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: participantColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: participantColor.withValues(alpha: 0.24),
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: participantColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: participantColor.withValues(alpha: 0.24)),
                             ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Stack(
-                                alignment: Alignment.bottomRight,
-                                children: [
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: participantColor.withValues(alpha: 0.7),
-                                      border: Border.all(
-                                        color: participantColor.withValues(alpha: 0.3),
-                                        width: 2,
-                                      ),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      participant.username.substring(0, 2).toUpperCase(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w800,
-                                        fontFamily: 'Syne',
-                                      ),
-                                    ),
-                                  ),
-                                  if (participant.isowner)
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Stack(
+                                  alignment: Alignment.bottomRight,
+                                  children: [
                                     Container(
-                                      width: 20,
-                                      height: 20,
-                                      decoration: const BoxDecoration(
+                                      width: 56,
+                                      height: 56,
+                                      decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: AppColors.amber,
+                                        color: participantColor.withValues(alpha: 0.7),
+                                        border: Border.all(
+                                          color: participantColor.withValues(alpha: 0.3),
+                                          width: 2,
+                                        ),
                                       ),
-                                      child: const Icon(
-                                        Icons.star,
-                                        size: 12,
-                                        color: Colors.white,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        participant.username.substring(0, 2).toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          fontFamily: 'Syne',
+                                        ),
                                       ),
                                     ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                participant.username,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'Syne',
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
+                                    if (participant.isowner)
+                                      Container(
+                                        width: 20,
+                                        height: 20,
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppColors.amber,
+                                        ),
+                                        child: const Icon(Icons.star, size: 12, color: Colors.white),
+                                      ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  participant.username,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'Syne',
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     const SizedBox(height: 28),
                   ],
                 ),
@@ -1012,39 +1335,54 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  if (isOwner) ...[
+                    if (!room.isactive)
+                      _buildControlButton(
+                        Icons.play_arrow,
+                        'Start',
+                        color: AppColors.success,
+                        onTap: state.isLoading
+                            ? null
+                            : () async {
+                                await ref
+                                    .read(studyRoomNotifierProvider.notifier)
+                                    .startSession(room.roomid);
+                              },
+                      )
+                    else
+                      _buildControlButton(
+                        Icons.stop,
+                        'End',
+                        color: AppColors.amber,
+                        onTap: state.isLoading
+                            ? null
+                            : () async {
+                                final elapsedMinutes = _elapsed.inMinutes;
+                                await ref
+                                    .read(studyRoomNotifierProvider.notifier)
+                                    .endSession(room.roomid, duration: elapsedMinutes);
+                                // No need to refresh manually - socket will trigger closure
+                              },
+                      ),
+                  ],
                   _buildControlButton(
-                    Icons.play_arrow,
-                    'Start Session',
-                    color: AppColors.success,
-                    onTap: () async {
-                      await ref
-                          .read(studyRoomNotifierProvider.notifier)
-                          .startSession(room.roomid);
-                    },
-                  ),
-                  _buildControlButton(
-                    Icons.stop,
-                    'End Session',
-                    color: AppColors.amber,
-                    onTap: () async {
-                      await ref
-                          .read(studyRoomNotifierProvider.notifier)
-                          .endSession(room.roomid);
+                    Icons.share_outlined,
+                    'Share',
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: room.roomcode));
+                      _showToast(
+                        icon: Icons.copy_rounded,
+                        iconColor: AppColors.purple,
+                        borderColor: AppColors.purple,
+                        message: 'Room code copied!',
+                      );
                     },
                   ),
                   _buildControlButton(
                     Icons.exit_to_app,
-                    'Leave Room',
+                    'Leave',
                     color: const Color(0xFFF5576C),
-                    onTap: () async {
-                      try {
-                        await ref
-                            .read(studyRoomNotifierProvider.notifier)
-                            .leaveRoom(room.roomid);
-                      } catch (e) {
-                        ref.read(studyRoomNotifierProvider.notifier).clearActiveRoom();
-                      }
-                    },
+                    onTap: state.isLoading ? null : () => _confirmLeave(room),
                   ),
                 ],
               ),
@@ -1062,8 +1400,12 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
     Color? color,
     VoidCallback? onTap,
   }) {
+    final effectiveColor = onTap == null
+        ? (color ?? AppColors.textSecondary).withValues(alpha: 0.35)
+        : (color ?? AppColors.textSecondary);
+
     return GestureDetector(
-      onTap: onTap ?? () {},
+      onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1072,15 +1414,15 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: (color ?? AppColors.textSecondary).withValues(alpha: 0.12),
+              color: effectiveColor.withValues(alpha: 0.12),
             ),
-            child: Icon(icon, color: color ?? AppColors.textSecondary),
+            child: Icon(icon, color: effectiveColor),
           ),
           const SizedBox(height: 8),
           Text(
             label,
             style: TextStyle(
-              color: color ?? AppColors.textSecondary,
+              color: effectiveColor,
               fontFamily: 'Syne',
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -1088,6 +1430,169 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _label(String text) => Text(
+        text,
+        style: TextStyle(
+          color: AppColors.textMuted,
+          fontFamily: 'Syne',
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
+      );
+
+  Widget _dialogTextField({
+    required String hint,
+    required ValueChanged<String> onChanged,
+  }) =>
+      TextField(
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: AppColors.textMuted),
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.04),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+        ),
+        style: const TextStyle(color: Colors.white, fontFamily: 'Syne'),
+      );
+}
+
+class _ThemedToast extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color borderColor;
+  final String message;
+
+  const _ThemedToast({
+    required this.icon,
+    required this.iconColor,
+    required this.borderColor,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1A2E),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor.withValues(alpha: 0.4)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: borderColor.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: iconColor.withValues(alpha: 0.12),
+              ),
+              child: Icon(icon, color: iconColor, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Syne',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedDialog extends StatelessWidget {
+  final Widget child;
+  const _AnimatedDialog({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeInScaleTransition(child: child);
+  }
+}
+
+class FadeInScaleTransition extends StatefulWidget {
+  final Widget child;
+  const FadeInScaleTransition({super.key, required this.child});
+
+  @override
+  State<FadeInScaleTransition> createState() => _FadeInScaleTransitionState();
+}
+
+class _FadeInScaleTransitionState extends State<FadeInScaleTransition>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fade;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _scale = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return FadeTransition(
+          opacity: _fade,
+          child: ScaleTransition(
+            scale: _scale,
+            child: widget.child,
+          ),
+        );
+      },
     );
   }
 }

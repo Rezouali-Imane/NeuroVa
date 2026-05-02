@@ -87,7 +87,6 @@ class StudyRoomService {
           'focusmode': focusmode,
           'maxparticipants': maxparticipants,
           'ispublic': ispublic,
-          'sessionduration': 60,
         },
         options: _requestOptions(headers),
       );
@@ -172,11 +171,12 @@ class StudyRoomService {
     }
   }
 
-  Future<Map<String, dynamic>> endSession(String roomid) async {
+  Future<Map<String, dynamic>> endSession(String roomid, {int? duration}) async {
     try {
       final headers = await _getHeaders();
       final response = await _dio.post<dynamic>(
         '/api/studyrooms/$roomid/end',
+        data: duration != null ? {'duration': duration} : null,
         options: _requestOptions(headers),
       );
 

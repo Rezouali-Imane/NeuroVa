@@ -47,6 +47,38 @@ class LocalStorageService {
     await prefs.remove('userId');
   }
 
+  // Username storage
+  Future<void> saveUsername(String username) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('username', username);
+  }
+
+  Future<String?> readUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('username');
+  }
+
+  Future<void> clearUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('username');
+  }
+
+  // Active study room persistence
+  Future<void> saveActiveRoomId(String roomId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('activeRoomId', roomId);
+  }
+
+  Future<String?> readActiveRoomId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('activeRoomId');
+  }
+
+  Future<void> clearActiveRoomId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('activeRoomId');
+  }
+
   Future<void> saveAIVoicePersona(String persona) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(AppConstants.aiVoicePersonaKey, persona);

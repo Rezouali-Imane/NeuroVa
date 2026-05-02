@@ -9,12 +9,7 @@ export const CreateSession = async (data: CreateFocusSessionDTO) => {
   if (!data.starttime) {
     throw new Error("Start time is required");
   }
-  if (!data.endtime) {
-    throw new Error("End time is required");
-  }
-  if (data.endtime <= data.starttime) {
-    throw new Error("End time must be after start time");
-  }
+
 
   if (data.allowbreakminutes !== undefined && data.allowbreakminutes < 0) {
     throw new Error("Break minutes cannot be negative");
@@ -25,7 +20,6 @@ export const CreateSession = async (data: CreateFocusSessionDTO) => {
     scheduleid: data.scheduleid ?? null,
     roomid: data.roomid ?? null,
     starttime: data.starttime,
-    endtime: data.endtime,
     allowbreakminutes: data.allowbreakminutes ?? 0,
     focusscore: 0,
     status: SessionStatus.SCHEDULED,

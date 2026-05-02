@@ -203,7 +203,9 @@ model studyroom {
   roomname        String
   sessionduration Int
   isactive        Boolean           @default(false)
+  ispublic         Boolean   @default(true) 
   createdat       DateTime          @default(now()) @db.Timestamptz(6)
+  endedat          DateTime?
   focussession    focussession[]
   studyroommember studyroommember[]
 }
@@ -212,6 +214,7 @@ model studyroommember {
   memberid  String    @id @default(cuid())
   userid    String
   roomid    String
+  isactive  Boolean  @default(true) 
   isowner   Boolean   @default(false)
   joinedat  DateTime  @default(now()) @db.Timestamptz(6)
   leftat    DateTime? @db.Timestamptz(6)

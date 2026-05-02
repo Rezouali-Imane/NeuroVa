@@ -40,20 +40,46 @@ class StudyRoom {
       maxparticipants: json['maxparticipants'] as int? ?? 10,
       ispublic: json['ispublic'] as bool? ?? true,
       isactive: json['isactive'] as bool? ?? false,
-      participants: json['participants'] != null
-          ? (json['participants'] as List<dynamic>)
+      participants: json['studyroommember'] != null
+          ? (json['studyroommember'] as List<dynamic>)
               .map((p) => Participant.fromJson(p as Map<String, dynamic>))
               .toList()
           : [],
-      createdat: json['createdat'] != null
-          ? DateTime.parse(json['createdat'] as String)
-          : DateTime.now(),
-      startedat: json['startedat'] != null
-          ? DateTime.parse(json['startedat'] as String)
-          : null,
-      endedat: json['endedat'] != null
-          ? DateTime.parse(json['endedat'] as String)
-          : null,
+      createdat: json['createdat'] != null ? DateTime.parse(json['createdat']) : DateTime.now(),
+      startedat: json['startedat'] != null ? DateTime.parse(json['startedat']) : null,
+      endedat: json['endedat'] != null ? DateTime.parse(json['endedat']) : null,
+    );
+  }
+
+  StudyRoom copyWith({
+    String? roomid,
+    String? roomcode,
+    String? ownername,
+    String? roomname,
+    String? subject,
+    String? focusmode,
+    int? maxparticipants,
+    bool? ispublic,
+    bool? isactive,
+    List<Participant>? participants,
+    DateTime? createdat,
+    DateTime? startedat,
+    DateTime? endedat,
+  }) {
+    return StudyRoom(
+      roomid: roomid ?? this.roomid,
+      roomcode: roomcode ?? this.roomcode,
+      ownername: ownername ?? this.ownername,
+      roomname: roomname ?? this.roomname,
+      subject: subject ?? this.subject,
+      focusmode: focusmode ?? this.focusmode,
+      maxparticipants: maxparticipants ?? this.maxparticipants,
+      ispublic: ispublic ?? this.ispublic,
+      isactive: isactive ?? this.isactive,
+      participants: participants ?? this.participants,
+      createdat: createdat ?? this.createdat,
+      startedat: startedat ?? this.startedat,
+      endedat: endedat ?? this.endedat,
     );
   }
 }
@@ -72,13 +98,15 @@ class Participant {
   });
 
   factory Participant.fromJson(Map<String, dynamic> json) {
+    final userData = json['users'] as Map<String, dynamic>?;
+
     return Participant(
       userid: json['userid']?.toString() ?? '',
-      username: json['username']?.toString() ?? '',
+      username: userData != null 
+          ? userData['username']?.toString() ?? 'Unknown' 
+          : (json['username']?.toString() ?? 'Unknown'),
       isowner: json['isowner'] as bool? ?? false,
-      joinedat: json['joinedat'] != null
-          ? DateTime.parse(json['joinedat'] as String)
-          : DateTime.now(),
+      joinedat: json['joinedat'] != null ? DateTime.parse(json['joinedat']) : DateTime.now(),
     );
   }
 }
