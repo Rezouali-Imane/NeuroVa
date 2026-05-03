@@ -5,6 +5,7 @@ import '../services/studyroom_service.dart';
 import '../models/studyroom_module.dart';
 import '../../auth/state/auth_notifier.dart' show localStorageServiceProvider;
 import '../../../shared/services/Socket_service.dart';
+import '../../../core/constants/app_constants.dart';
 
 class StudyRoomState {
   final StudyRoom? activeRoom;
@@ -41,7 +42,7 @@ class StudyRoomState {
 }
 
 final studyRoomServiceProvider = Provider((ref) {
-  final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'));
+  final dio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl));
   final localStorage = ref.watch(localStorageServiceProvider);
   return StudyRoomService(dio, localStorage);
 });

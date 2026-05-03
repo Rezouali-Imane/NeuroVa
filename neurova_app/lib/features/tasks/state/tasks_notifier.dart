@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../services/tasks_service.dart';
 import '../models/task_model.dart';
 import '../../auth/state/auth_notifier.dart' show localStorageServiceProvider;
+import '../../../core/constants/app_constants.dart';
 
 class TasksState {
   final List<Task> tasks;
@@ -29,7 +30,7 @@ class TasksState {
 }
 
 final tasksServiceProvider = Provider((ref) {
-  final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000')); //  emulator, use 'http://10.0.2.2:3000'
+  final dio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl));
   final localStorage = ref.watch(localStorageServiceProvider);
   return TasksService(dio, localStorage);
 });

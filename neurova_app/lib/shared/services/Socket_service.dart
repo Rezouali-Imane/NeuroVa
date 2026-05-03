@@ -3,6 +3,7 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'local_storage_service.dart';
 import '../../features/auth/state/auth_notifier.dart' show localStorageServiceProvider;
+import '../../core/constants/app_constants.dart';
 
 final socketServiceProvider = Provider((ref) {
   final localStorage = ref.watch(localStorageServiceProvider);
@@ -23,8 +24,9 @@ class SocketService {
     }
 
     final token = await _getToken();
+    final baseUrl = AppConstants.apiBaseUrl.replaceFirst('http://', '').replaceFirst('https://', '');
     _studyRoomSocket = IO.io(
-      'http://localhost:3000/studyroom',
+      '${AppConstants.apiBaseUrl}/studyroom',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .setAuth({'token': token ?? ''})

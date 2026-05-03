@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../services/note_service.dart';
 import '../models/note_module.dart';
 import '../../auth/state/auth_notifier.dart' show localStorageServiceProvider;
+import '../../../core/constants/app_constants.dart';
 
 class NotesState {
   final List<Note> notes;
@@ -29,7 +30,7 @@ class NotesState {
 }
 
 final notesServiceProvider = Provider((ref) {
-  final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000')); // if you are using an emulator, use 'http://10.0.2.2:3000'
+  final dio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl));
   final localStorage = ref.watch(localStorageServiceProvider);
   return NotesService(dio, localStorage);
 });
