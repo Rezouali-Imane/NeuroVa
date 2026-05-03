@@ -1,25 +1,6 @@
-import prisma from '../../infrastructure/database/prisma.client.js';
+import { ensureModerationContext } from '../../infrastructure/content-moderation/moderation.utils.js';
 
 export const GetPolicy = async (userid: string) => {
-  const settings = await prisma.digitaldisciplinesettings.upsert({
-    where: { userid },
-    update: {},
-    create: {
-      userid,
-      filterlevel: 'NORMAL',
-      dailyfreeminutes: 0,
-      customblockingenabled: false,
-      faithmodeenabled: false,
-    },
-  });
-
-  return prisma.contentmoderationpolicy.upsert({
-    where: { settingsid: settings.settingsid },
-    update: {},
-    create: {
-      settingsid: settings.settingsid,
-      sensitivecontentblockingenabled: false,
-      sensitivitylevel: 'NORMAL',
-    },
-  });
+  const { policy } = await ensureModerationContext(userid);
+  return policy;
 };

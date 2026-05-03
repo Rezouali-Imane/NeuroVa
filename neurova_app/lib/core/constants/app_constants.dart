@@ -22,4 +22,6 @@ class AppConstants {
   }
   static const String onboardingSeenKey = 'onboarding_seen';
   static const String authTokenKey = 'auth_token';
+  static const String aiVoicePersonaKey = 'ai_voice_persona';
+  static const String aiVoiceSpeedPresetKey = 'ai_voice_speed_preset';
 }

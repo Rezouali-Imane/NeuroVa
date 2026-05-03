@@ -16,11 +16,11 @@ class UnifiedBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final navContainer = Container(
-      height: 75,
+      height: 72,
       decoration: BoxDecoration(
-        color: const Color(0xF40E0B16),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: const Color(0xF20B0914),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         boxShadow: const [
           BoxShadow(color: Color(0x7F000000), blurRadius: 20, offset: Offset(0, 4)),
           BoxShadow(color: Color(0xBF000000), blurRadius: 60, offset: Offset(0, 20)),
@@ -42,7 +42,7 @@ class UnifiedBottomNavBar extends StatelessWidget {
       return Positioned(
         left: 16,
         right: 16,
-        bottom: 14,
+        bottom: 12,
         child: navContainer,
       );
     }
@@ -61,12 +61,12 @@ class UnifiedBottomNavBar extends StatelessWidget {
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 2),
-        height: 58,
+        height: 56,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: isSelected ? const Color(0x14B284BE) : Colors.transparent,
+          color: isSelected ? const Color(0x18C8B8E8) : Colors.transparent,
           border: Border.all(
-            color: isSelected ? const Color(0x24B284BE) : Colors.transparent,
+            color: isSelected ? const Color(0x2AC8B8E8) : Colors.transparent,
           ),
         ),
         child: Column(
@@ -75,8 +75,8 @@ class UnifiedBottomNavBar extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 20,
-              color: isSelected ? const Color(0xFFB284BE) : Colors.white.withOpacity(0.50),
+              size: 19,
+              color: isSelected ? const Color(0xFFC8B8E8) : Colors.white.withValues(alpha: 0.48),
             ),
             const SizedBox(height: 2),
             FittedBox(
@@ -85,10 +85,10 @@ class UnifiedBottomNavBar extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontFamily: 'Syne',
-                  fontSize: 8,
+                  fontSize: 7.5,
                   height: 1,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? const Color(0xFFB284BE) : Colors.white.withOpacity(0.50),
+                  color: isSelected ? const Color(0xFFC8B8E8) : Colors.white.withValues(alpha: 0.48),
                   letterSpacing: 0.20,
                 ),
               ),

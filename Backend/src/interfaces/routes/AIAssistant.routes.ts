@@ -1,11 +1,20 @@
 import { Router } from 'express';
-import { AIAssistantController, upload } from '../controllers/AIAssistantController.js';
+import {
+	AIAssistantController,
+	imageUpload,
+	upload,
+	voiceUpload,
+} from '../controllers/AIAssistantController.js';
 
 const router = Router();
 
 router.post('/message', AIAssistantController.sendMessage);
+router.post('/message/image', imageUpload.single('image'), AIAssistantController.sendImageMessage);
+router.post('/message/voice', voiceUpload.single('audio'), AIAssistantController.sendVoiceMessage);
 router.get('/history/:userid', AIAssistantController.getChatHistory);
 router.delete('/history/:userid', AIAssistantController.clearChatHistory);
+
+router.get('/insights/:userid', AIAssistantController.getInsights);
 
 router.post('/study-plan/:userid', AIAssistantController.generateStudyPlan);
 router.post('/weakness/:userid', AIAssistantController.analyzeWeakness);

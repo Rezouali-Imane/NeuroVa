@@ -8,27 +8,16 @@ export const JoinStudyRoom = async (data: JoinRoomDTO) => {
     throw new Error("Room not found. Check the room code and try again.");
   }
 
-  if(room.isactive){
+  if (room.isactive) {
     throw new Error("Session already started. You cannot join at this time.");
   }
 
-  const alreadyMember = await StudyRoomRepository.isActiveMember(
-    room.roomid,
-    data.userid
-  );
-
-  if(alreadyMember){
-    throw new Error("You are already in this room.");
-  }
-
-  const member = await StudyRoomRepository.join(data, room.roomid);
+  // No duplicate check – the repository will handle reactivation
+  const updatedRoom = await StudyRoomRepository.join(data, room.roomid);
 
   return {
     success: true,
     message: "Joined the Study Room successfully.",
-    roomid: room.roomid,
-    roomname: room.roomname,
-    roomcode: data.roomcode,
-    username: member.users.username,
+    data: updatedRoom,
   };
 };

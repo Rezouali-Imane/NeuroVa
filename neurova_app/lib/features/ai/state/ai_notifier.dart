@@ -64,6 +64,23 @@ class AINotifier extends StateNotifier<AIState> {
 
   AINotifier(this._aiService, this._userId) : super(const AIState());
 
+  Future<void> connectVoiceCall() async {
+    try {
+      await _aiService.connectVoiceCallChannel();
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), hasError: true);
+      rethrow;
+    }
+  }
+
+  Future<void> disconnectVoiceCall() async {
+    await _aiService.disconnectVoiceCallChannel();
+  }
+
+  void replaceMessages(List<AIMessage> messages) {
+    state = state.copyWith(messages: messages, error: '', hasError: false);
+  }
+
   // Send message to AI
   Future<void> sendMessage(String content, {bool directChat = false}) async {
     try {
@@ -87,6 +104,114 @@ class AINotifier extends StateNotifier<AIState> {
       );
 
       // Add AI message to chat
+      state = state.copyWith(
+        messages: [...state.messages, response],
+        isSending: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        hasError: true,
+        isSending: false,
+      );
+    }
+  }
+
+  Future<void> sendImageMessage(
+    String imagePath, {
+    String prompt = '',
+    bool directChat = true,
+  }) async {
+    try {
+      state = state.copyWith(isSending: true, error: '', hasError: false);
+
+      final userMessage = AIMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: prompt.isEmpty ? '[Image]' : '[Image] $prompt',
+        role: 'USER',
+        timestamp: DateTime.now(),
+      );
+
+      state = state.copyWith(messages: [...state.messages, userMessage]);
+
+      final response = await _aiService.sendImageMessage(
+        userId: _userId,
+        imagePath: imagePath,
+        prompt: prompt,
+        directChat: directChat,
+      );
+
+      state = state.copyWith(
+        messages: [...state.messages, response],
+        isSending: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        hasError: true,
+        isSending: false,
+      );
+    }
+  }
+
+  Future<void> sendVoiceMessage(
+    String audioPath, {
+    String promptPrefix = '',
+    bool directChat = true,
+  }) async {
+    try {
+      state = state.copyWith(isSending: true, error: '', hasError: false);
+
+      final userMessage = AIMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: '[Voice message]',
+        role: 'USER',
+        timestamp: DateTime.now(),
+      );
+
+      state = state.copyWith(messages: [...state.messages, userMessage]);
+
+      final response = await _aiService.sendVoiceMessage(
+        userId: _userId,
+        audioPath: audioPath,
+        promptPrefix: promptPrefix,
+        directChat: directChat,
+      );
+
+      state = state.copyWith(
+        messages: [...state.messages, response],
+        isSending: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: e.toString(),
+        hasError: true,
+        isSending: false,
+      );
+    }
+  }
+
+  Future<void> sendRealtimeVoiceTurn(
+    String transcript, {
+    bool directChat = true,
+  }) async {
+    try {
+      state = state.copyWith(isSending: true, error: '', hasError: false);
+
+      final userMessage = AIMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: transcript,
+        role: 'USER',
+        timestamp: DateTime.now(),
+      );
+
+      state = state.copyWith(messages: [...state.messages, userMessage]);
+
+      final response = await _aiService.sendRealtimeVoiceTurn(
+        transcript: transcript,
+        directChat: directChat,
+      );
+
       state = state.copyWith(
         messages: [...state.messages, response],
         isSending: false,

@@ -49,7 +49,9 @@ dependencies:
   chat_bubbles: ^1.9.0
   flutter_chat_bubble: ^2.0.2
   url_launcher: ^6.3.2
-  flutter_markdown: ^0.7.7+1
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.2.2
+  socket_io_client: ^3.1.2
 
 dev_dependencies:
   flutter_test:

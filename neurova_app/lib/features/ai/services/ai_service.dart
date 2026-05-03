@@ -1,16 +1,189 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:neurova_app/shared/services/local_storage_service.dart';
 import '../models/ai_models.dart';
 
 class AIService {
   final Dio _dio;
   final LocalStorageService _localStorageService;
+  io.Socket? _voiceCallSocket;
+  bool _keepVoiceCallConnected = false;
 
   static const Duration _standardConnectTimeout = Duration(seconds: 12);
   static const Duration _standardReceiveTimeout = Duration(seconds: 20);
   static const Duration _longReceiveTimeout = Duration(seconds: 95);
 
   AIService(this._dio, this._localStorageService);
+
+  Future<void> _waitForVoiceSocketConnected(io.Socket socket) async {
+    if (socket.connected) return;
+
+    final completer = Completer<void>();
+
+    void onConnected(_) {
+      if (!completer.isCompleted) completer.complete();
+    }
+
+    void onConnectError(dynamic error) {
+      if (!completer.isCompleted) {
+        completer.completeError(Exception('Voice call connection failed: $error'));
+      }
+    }
+
+    socket.on('connect', onConnected);
+    socket.on('connect_error', onConnectError);
+
+    try {
+      await completer.future.timeout(const Duration(seconds: 8));
+    } finally {
+      socket.off('connect', onConnected);
+      socket.off('connect_error', onConnectError);
+    }
+  }
+
+  Future<void> connectVoiceCallChannel() async {
+    _keepVoiceCallConnected = true;
+
+    final existing = _voiceCallSocket;
+    if (existing != null) {
+      if (!existing.connected) {
+        existing.connect();
+        await _waitForVoiceSocketConnected(existing);
+      }
+      return;
+    }
+
+    final token = await _getAuthToken();
+    if (token == null || token.trim().isEmpty) {
+      throw Exception('Authentication token missing for voice call');
+    }
+
+    final baseUri = Uri.parse(_dio.options.baseUrl);
+    final scheme = baseUri.scheme == 'https' ? 'https' : 'http';
+    final host = baseUri.host;
+    final port = baseUri.hasPort ? ':${baseUri.port}' : '';
+    final namespaceUrl = '$scheme://$host$port/aicall';
+
+    _voiceCallSocket = io.io(
+      namespaceUrl,
+      <String, dynamic>{
+        'transports': ['websocket'],
+        'autoConnect': true,
+        'reconnection': true,
+        'reconnectionAttempts': 999999,
+        'reconnectionDelay': 500,
+        'reconnectionDelayMax': 4000,
+        'auth': {'token': token},
+      },
+    );
+
+    final socket = _voiceCallSocket!;
+    socket.onDisconnect((_) {
+      if (_keepVoiceCallConnected) {
+        socket.connect();
+      }
+    });
+
+    await _waitForVoiceSocketConnected(socket);
+  }
+
+  Future<void> disconnectVoiceCallChannel() async {
+    _keepVoiceCallConnected = false;
+    _voiceCallSocket?.disconnect();
+    _voiceCallSocket?.dispose();
+    _voiceCallSocket = null;
+  }
+
+  Future<AIMessage> sendRealtimeVoiceTurn({
+    required String transcript,
+    bool directChat = true,
+    bool faithMode = false,
+  }) async {
+    final content = transcript.trim();
+    if (content.isEmpty) {
+      throw Exception('Voice transcript is empty');
+    }
+
+    if (_voiceCallSocket?.connected != true) {
+      await connectVoiceCallChannel();
+    }
+
+    final socket = _voiceCallSocket;
+    if (socket == null) {
+      throw Exception('Voice call channel is unavailable');
+    }
+
+    final requestId = DateTime.now().microsecondsSinceEpoch.toString();
+    final completer = Completer<AIMessage>();
+
+    void onAssistantReply(dynamic raw) {
+      final map = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      if (map['requestId']?.toString() != requestId) return;
+
+      if (!completer.isCompleted) {
+        completer.complete(
+          AIMessage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            content: (map['reply'] ?? '').toString(),
+            role: 'ASSISTANT',
+            timestamp: DateTime.now(),
+            metadata: map,
+          ),
+        );
+      }
+    }
+
+    void onModerationBlock(dynamic raw) {
+      final map = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      if (map['requestId']?.toString() != requestId) return;
+
+      if (!completer.isCompleted) {
+        completer.completeError(
+          Exception('Blocked by moderation: ${(map['reason'] ?? 'unsafe content').toString()}'),
+        );
+      }
+    }
+
+    void onVoiceError(dynamic raw) {
+      final map = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      if (map['requestId']?.toString() != requestId) return;
+
+      if (!completer.isCompleted) {
+        completer.completeError(Exception((map['message'] ?? 'Voice turn failed').toString()));
+      }
+    }
+
+    socket.on('assistant_reply', onAssistantReply);
+    socket.on('moderation_block', onModerationBlock);
+    socket.on('voice_turn_error', onVoiceError);
+
+    void emitVoiceTurn() {
+      socket.emit('voice_turn', {
+        'requestId': requestId,
+        'content': content,
+        'directchat': directChat,
+        'faithmode': faithMode,
+      });
+    }
+
+    emitVoiceTurn();
+
+    try {
+      return await completer.future.timeout(const Duration(seconds: 90));
+    } on TimeoutException {
+      if (!socket.connected) {
+        await connectVoiceCallChannel();
+        emitVoiceTurn();
+        return await completer.future.timeout(const Duration(seconds: 45));
+      }
+      rethrow;
+    } finally {
+      socket.off('assistant_reply', onAssistantReply);
+      socket.off('moderation_block', onModerationBlock);
+      socket.off('voice_turn_error', onVoiceError);
+    }
+  }
 
   Future<String?> _getAuthToken() async {
     return await _localStorageService.readAuthToken();
@@ -106,6 +279,102 @@ class AIService {
         type: DioExceptionType.badResponse,
         response: response,
       );
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<AIMessage> sendImageMessage({
+    required String userId,
+    required String imagePath,
+    String prompt = '',
+    bool directChat = true,
+    bool faithMode = false,
+  }) async {
+    try {
+      final token = await _getAuthToken();
+      final headers = {
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final formData = FormData.fromMap({
+        'userid': userId,
+        'prompt': prompt,
+        'directchat': directChat.toString(),
+        'faithmode': faithMode.toString(),
+        'image': await MultipartFile.fromFile(imagePath),
+      });
+
+      final response = await _dio.post<dynamic>(
+        '/api/ai/message/image',
+        data: formData,
+        options: _requestOptions(headers, longRunning: true),
+      );
+
+      if (response.statusCode == 200) {
+        final payload = response.data as Map<String, dynamic>;
+        final data = (payload['data'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+        final replyText = (data['reply'] ?? '').toString().trim();
+
+        return AIMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          content: replyText.isNotEmpty ? replyText : 'No response generated.',
+          role: 'ASSISTANT',
+          timestamp: DateTime.now(),
+          metadata: data['metadata'] is Map<String, dynamic>
+              ? data['metadata'] as Map<String, dynamic>
+              : null,
+        );
+      }
+
+      throw Exception('Failed to send image message');
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<AIMessage> sendVoiceMessage({
+    required String userId,
+    required String audioPath,
+    String promptPrefix = '',
+    bool directChat = true,
+    bool faithMode = false,
+  }) async {
+    try {
+      final token = await _getAuthToken();
+      final headers = {
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final formData = FormData.fromMap({
+        'userid': userId,
+        'promptPrefix': promptPrefix,
+        'directchat': directChat.toString(),
+        'faithmode': faithMode.toString(),
+        'audio': await MultipartFile.fromFile(audioPath),
+      });
+
+      final response = await _dio.post<dynamic>(
+        '/api/ai/message/voice',
+        data: formData,
+        options: _requestOptions(headers, longRunning: true),
+      );
+
+      if (response.statusCode == 200) {
+        final payload = response.data as Map<String, dynamic>;
+        final data = (payload['data'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+        final replyText = (data['reply'] ?? '').toString().trim();
+
+        return AIMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          content: replyText.isNotEmpty ? replyText : 'No response generated.',
+          role: 'ASSISTANT',
+          timestamp: DateTime.now(),
+          metadata: data,
+        );
+      }
+
+      throw Exception('Failed to send voice message');
     } catch (e) {
       throw _handleError(e);
     }
@@ -337,6 +606,27 @@ class AIService {
         return response.data['data'];
       }
       throw Exception('Failed to schedule focus session');
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // Get AI insights for dashboard
+  Future<List<AIInsight>> getInsights(String userId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await _dio.get<dynamic>(
+        '/api/ai/insights/$userId',
+        options: _requestOptions(headers),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data['data'] as List<dynamic>;
+        return data
+            .map((item) => AIInsight.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      throw Exception('Failed to fetch AI insights');
     } catch (e) {
       throw _handleError(e);
     }

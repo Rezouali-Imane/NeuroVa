@@ -8,6 +8,7 @@ import '../../shared/widgets/entry_reveal.dart';
 import '../auth/state/auth_notifier.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/app_theme.dart' as core_theme;
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -21,6 +22,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  core_theme.NeuropaColors get _nc => Theme.of(context).extension<core_theme.NeuropaColors>()!;
 
   bool _obscurePassword = true;
   bool _isSubmitting = false;
@@ -115,7 +118,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
   @override
   Widget build(BuildContext context) {
-    final hintColor = Colors.white.withValues(alpha: 0.4);
+    final hintColor = _nc.textMuted;
     final errorMessage = ref.watch(authNotifierProvider).errorMessage;
 
     return Scaffold(
@@ -137,11 +140,11 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
                       _buildStaggered(
                         index: 1,
-                        child: const Text(
+                        child: Text(
                           'Welcome\nBack',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Color(0xFFFFFFF0),
+                            color: _nc.textPrimary,
                             fontSize: 45,
                             fontFamily: 'Syne',
                             fontWeight: FontWeight.w900,
@@ -155,11 +158,11 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
                       _buildStaggered(
                         index: 2,
-                        child: const Text(
+                        child: Text(
                           'Continue your learning journey',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Color(0xFFFFFFF0),
+                            color: _nc.textPrimary,
                             fontSize: 16,
                             fontFamily: 'Syne',
                           ),
@@ -288,7 +291,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             child: Text(
                               'Forgot password?',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.60),
+                                color: _nc.textSecondary,
                                 fontSize: 14,
                                 fontFamily: 'Inter',
                                 fontWeight: FontWeight.w400,
@@ -306,10 +309,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.12),
+                            color: const Color(0xFFFF8A8A).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.red.withValues(alpha: 0.30),
+                              color: const Color(0xFFFF8A8A).withValues(alpha: 0.30),
                             ),
                           ),
                           child: Text(
@@ -345,12 +348,12 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             ),
                             onPressed: _isSubmitting ? null : _submit,
                             child: _isSubmitting
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 24,
                                     height: 24,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      color: Colors.black54,
+                                      color: _nc.textMuted,
                                     ),
                                   )
                                 : Row(
@@ -388,14 +391,14 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             Expanded(
                               child: Container(
                                 height: 1,
-                                color: Colors.white.withValues(alpha: 0.10),
+                                color: _nc.textMuted.withValues(alpha: 0.2),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Text(
                               'or continue with',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.40),
+                                color: _nc.textMuted,
                                 fontSize: 14,
                               ),
                             ),
@@ -403,7 +406,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             Expanded(
                               child: Container(
                                 height: 1,
-                                color: Colors.white.withValues(alpha: 0.10),
+                                color: _nc.textMuted.withValues(alpha: 0.2),
                               ),
                             ),
                           ],
@@ -445,14 +448,14 @@ class _LoginPageState extends ConsumerState<LoginPage>
                               TextSpan(
                                 text: 'Don’t have an account? ',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                  color: _nc.textSecondary,
                                   fontSize: 14,
                                 ),
                               ),
                               TextSpan(
                                 text: 'Sign Up',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: _nc.textPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 recognizer: TapGestureRecognizer()
@@ -536,8 +539,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
                   key: ValueKey<bool>(isObscured),
                   width: 20,
                   height: 20,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white70,
+                  colorFilter: ColorFilter.mode(
+                    _nc.textSecondary,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -552,7 +555,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                     width: 2.2,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.40),
+                      color: _nc.textMuted,
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -570,9 +573,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
       width: 166.92,
       height: 51.988,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: _nc.surface.withValues(alpha: 0.05),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.10),
+          color: _nc.textMuted.withValues(alpha: 0.1),
           width: 0.75,
         ),
         borderRadius: BorderRadius.circular(24),
@@ -583,9 +586,12 @@ class _LoginPageState extends ConsumerState<LoginPage>
           icon,
           width: 20,
           height: 20,
-          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(
+            _nc.textPrimary,
+            BlendMode.srcIn,
+          ),
         ),
-        label: Text(text, style: const TextStyle(color: Colors.white)),
+        label: Text(text, style: TextStyle(color: _nc.textPrimary)),
       ),
     );
   }
@@ -596,6 +602,7 @@ class _BrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nc = Theme.of(context).extension<core_theme.NeuropaColors>()!;
     return Center(
       child: SizedBox(
         width: 147,
@@ -609,13 +616,13 @@ class _BrandHeader extends StatelessWidget {
                 'lib/features/onboarding/assets/logo.svg',
                 width: 51,
                 height: 39,
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
+                colorFilter: ColorFilter.mode(
+                  nc.textPrimary,
                   BlendMode.srcIn,
                 ),
               ),
             ),
-            const Positioned(
+            Positioned(
               left: 32,
               top: 24,
               child: SizedBox(
@@ -624,7 +631,7 @@ class _BrandHeader extends StatelessWidget {
                 child: Text(
                   'NEUROVA',
                   style: TextStyle(
-                    color: Color(0xFFFFFFF0),
+                    color: nc.textPrimary,
                     fontSize: 20,
                     fontFamily: 'Syne',
                     fontWeight: FontWeight.w700,
