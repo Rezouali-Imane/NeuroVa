@@ -103,10 +103,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final token = await _authService.login(email: email, password: password);
       final isverified = _extractIsVerifiedFromToken(token);
       final userId = _extractUserIdFromToken(token);
-      
+      final username = _extractUsernameFromToken(token);
+
       // Save userId for later use
       if (userId != null) {
         await _localStorageService.saveUserId(userId);
+      }
+
+      if (username != null) {
+        await _localStorageService.saveUsername(username);
       }
       
       state = state.copyWith(
@@ -115,6 +120,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isverified: isverified,
         clearError: true,
       );
+      await _fetchAndSaveProfile();
     } on DioException catch (error) {
       state = state.copyWith(
         isLoading: false,
@@ -157,12 +163,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
           ? _extractIsVerifiedFromToken(token)
           : false;
 
+      if (token != null) {
+        final userId = _extractUserIdFromToken(token);
+        final username = _extractUsernameFromToken(token);
+        if (userId != null) await _localStorageService.saveUserId(userId);
+        if (username != null) await _localStorageService.saveUsername(username);
+      }
+
       state = state.copyWith(
         isLoading: false,
         token: token,
         isverified: isverified,
         clearError: true,
       );
+      await _fetchAndSaveProfile();
       return message;
     } on DioException catch (error) {
       final msg = _readDioError(error);
@@ -266,6 +280,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final String token = authData['accessToken'];
       final bool isNew = authData['isNewUser'] ?? false;
       final isverified = _extractIsVerifiedFromToken(token);
+      final userId = _extractUserIdFromToken(token);
+      final username = _extractUsernameFromToken(token);
+
+      if (userId != null) await _localStorageService.saveUserId(userId);
+      if (username != null) await _localStorageService.saveUsername(username);
 
       state = state.copyWith(
         isLoading: false,
@@ -273,7 +292,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isverified: isverified,
         clearError: true,
       );
-
+      await _fetchAndSaveProfile();
       return isNew;
     } catch (error) {
       state = state.copyWith(
@@ -363,6 +382,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> _fetchAndSaveProfile() async {
+    try {
+      final user = await _authService.getMe();
+      final username = user['username'] as String?;
+      final name = user['name'] as String?;
+      final userid = user['userid'] as String?;
+      if (username != null) await _localStorageService.saveUsername(username);
+      if (name != null) await _localStorageService.saveName(name);
+      if (userid != null) await _localStorageService.saveUserId(userid);
+    } catch (_) {
+
+    }
+  }
+
   String _readDioError(DioException error) {
     if (error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.connectionTimeout) {
@@ -418,6 +451,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final json = jsonDecode(decodedString) as Map<String, dynamic>;
 
       return json['sub'] as String? ?? json['userid'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _extractUsernameFromToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      final payload = parts[1];
+      final paddedPayload = payload.padRight(
+        payload.length + (4 - payload.length % 4) % 4, '=',
+      );
+      final decodedBytes = base64Url.decode(paddedPayload);
+      final decodedString = utf8.decode(decodedBytes);
+      final json = jsonDecode(decodedString) as Map<String, dynamic>;
+      return json['username'] as String?;
     } catch (_) {
       return null;
     }

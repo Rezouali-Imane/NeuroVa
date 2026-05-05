@@ -4,6 +4,8 @@ import '../services/tasks_service.dart';
 import '../models/task_model.dart';
 import '../../auth/state/auth_notifier.dart' show localStorageServiceProvider;
 import '../../../core/constants/app_constants.dart';
+import '../services/google_calendar_service.dart';
+import 'package:flutter/foundation.dart';
 
 class TasksState {
   final List<Task> tasks;
@@ -35,11 +37,19 @@ final tasksServiceProvider = Provider((ref) {
   return TasksService(dio, localStorage);
 });
 
+final googleCalendarServiceProvider = Provider((ref) {
+  final dio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl));
+  final localStorage = ref.watch(localStorageServiceProvider);
+  return GoogleCalendarService(dio, localStorage);
+});
+
 class TasksNotifier extends StateNotifier<TasksState> {
   final TasksService _tasksService;
+  final GoogleCalendarService _calendarService;
   final Ref _ref;
 
-  TasksNotifier(this._tasksService, this._ref) : super(TasksState());
+  TasksNotifier(this._tasksService, this._calendarService, this._ref)
+      : super(TasksState());
 
   Future<void> fetchTasks() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -62,6 +72,7 @@ class TasksNotifier extends StateNotifier<TasksState> {
     int priority = 1,
     String status = 'PENDING',
     String category = 'OTHER',
+    bool syncWithGoogle = false,
   }) async {
     try {
       final task = await _tasksService.createTask(
@@ -75,6 +86,43 @@ class TasksNotifier extends StateNotifier<TasksState> {
         category: category,
       );
       state = state.copyWith(tasks: [...state.tasks, task]);
+
+      if (syncWithGoogle) {
+        await syncTaskToGoogle(task.taskid);
+      }
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> syncTaskToGoogle(String taskId) async {
+    try {
+      await _calendarService.syncTaskToGoogle(taskId);
+    } catch (e) {
+      assert(() { debugPrint('Google sync failed: $e'); return true; }());
+    }
+  }
+
+  Future<void> connectGoogleCalendar() async {
+    try {
+      await _calendarService.connectGoogleCalendar();
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> fullGoogleSync(String listId) async {
+    try {
+      await _calendarService.fullSync(listId);
+      await fetchTasks();
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> disconnectGoogleCalendar() async {
+    try {
+      await _calendarService.disconnectGoogleCalendar();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -106,7 +154,9 @@ class TasksNotifier extends StateNotifier<TasksState> {
   }
 }
 
-final tasksNotifierProvider = StateNotifierProvider<TasksNotifier, TasksState>((ref) {
+final tasksNotifierProvider =
+StateNotifierProvider<TasksNotifier, TasksState>((ref) {
   final tasksService = ref.watch(tasksServiceProvider);
-  return TasksNotifier(tasksService, ref);
+  final calendarService = ref.watch(googleCalendarServiceProvider);
+  return TasksNotifier(tasksService, calendarService, ref);
 });

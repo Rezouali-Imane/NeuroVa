@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/widgets/profile_view_shell.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
 import '../../shared/theme/app_theme.dart';
-import './stats/Focus_Session_Notifier.dart';
+import './stats/focus_session_notifier.dart';
 import './Models/focus_session_module.dart';
 
 class FocusPage extends ConsumerStatefulWidget {

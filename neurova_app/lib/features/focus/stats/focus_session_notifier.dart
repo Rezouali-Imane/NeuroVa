@@ -1,6 +1,8 @@
 import 'dart:async';
+import '../../../core/constants/app_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:neurova_app/core/constants/app_constants.dart';
 import '../services/foucs_session_services.dart';
 import '../Models/focus_session_module.dart';
 import '../../../shared/services/local_storage_service.dart';
@@ -8,7 +10,7 @@ import '../../auth/state/auth_notifier.dart';
 
 // --- Provider setup ----------------------------------------------------------
 final focusSessionServiceProvider = Provider((ref) {
-  final dio = Dio(BaseOptions(baseUrl: 'http://localhost:3000'));
+  final dio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl));
   final localStorage = ref.watch(localStorageServiceProvider);
   return FocusSessionService(dio, localStorage);
 });
@@ -148,5 +150,88 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+}
+
+// State for session history
+class SessionHistoryState {
+  final List<FocusSession> sessions;
+  final bool isLoading;
+
+  SessionHistoryState({this.sessions = const [], this.isLoading = false});
+
+  SessionHistoryState copyWith({List<FocusSession>? sessions, bool? isLoading}) {
+    return SessionHistoryState(
+      sessions: sessions ?? this.sessions,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+
+  // total minutes focused today
+  int get todayMinutes {
+    final today = DateTime.now();
+    return sessions
+        .where((s) =>
+    s.status == 'COMPLETED' &&
+        s.starttime.year == today.year &&
+        s.starttime.month == today.month &&
+        s.starttime.day == today.day)
+        .fold(0, (sum, s) => sum + (s.duration ?? 0));
+  }
+
+  // total minutes this week
+  int get weekMinutes {
+    final now = DateTime.now();
+    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    return sessions
+        .where((s) =>
+    s.status == 'COMPLETED' &&
+        s.starttime.isAfter(weekStart))
+        .fold(0, (sum, s) => sum + (s.duration ?? 0));
+  }
+
+  // best day this week
+  String get bestDay {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final Map<int, int> minutesByDay = {};
+    for (final s in sessions) {
+      if (s.status == 'COMPLETED') {
+        final day = s.starttime.weekday; // 1=Mon, 7=Sun
+        minutesByDay[day] = (minutesByDay[day] ?? 0) + (s.duration ?? 0);
+      }
+    }
+    if (minutesByDay.isEmpty) return '-';
+    final best = minutesByDay.entries.reduce((a, b) => a.value > b.value ? a : b);
+    return days[best.key - 1];
+  }
+
+  // daily average this week
+  int get weekDailyAvgMinutes {
+    final days = weekMinutes > 0 ? 7 : 1;
+    return weekMinutes ~/ days;
+  }
+}
+
+final sessionHistoryProvider = StateNotifierProvider<SessionHistoryNotifier, SessionHistoryState>((ref) {
+  final service = ref.watch(focusSessionServiceProvider);
+  final localStorage = ref.watch(localStorageServiceProvider);
+  return SessionHistoryNotifier(service, localStorage);
+});
+
+class SessionHistoryNotifier extends StateNotifier<SessionHistoryState> {
+  final FocusSessionService _service;
+  final LocalStorageService _localStorage;
+
+  SessionHistoryNotifier(this._service, this._localStorage) : super(SessionHistoryState());
+
+  Future<void> fetchSessions() async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final userId = await _localStorage.readUserId() ?? '';
+      final sessions = await _service.getUserSessions(userId);
+      state = state.copyWith(sessions: sessions, isLoading: false);
+    } catch (_) {
+      state = state.copyWith(isLoading: false);
+    }
   }
 }

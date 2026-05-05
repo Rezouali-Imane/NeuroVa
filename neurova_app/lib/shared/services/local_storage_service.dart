@@ -63,6 +63,22 @@ class LocalStorageService {
     await prefs.remove('username');
   }
 
+  // Name storage
+  Future<void> saveName(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('name', name);
+  }
+
+  Future<String?> readName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('name');
+  }
+
+  Future<void> clearName() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('name');
+  }
+
   // Active study room persistence
   Future<void> saveActiveRoomId(String roomId) async {
     final prefs = await SharedPreferences.getInstance();
@@ -98,4 +114,6 @@ class LocalStorageService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(AppConstants.aiVoiceSpeedPresetKey);
   }
+
+
 }

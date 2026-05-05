@@ -6,6 +6,10 @@ import '../auth/state/auth_notifier.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/theme/app_theme.dart' show AppTypography;
+import '../gamification/state/gamification_notifier.dart';
+import '../tasks/state/tasks_notifier.dart';
+import '../focus/stats/focus_session_notifier.dart';
+import '../notes/state/note_notifier.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key, this.isVerified = false});
@@ -34,6 +38,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   void initState() {
     super.initState();
     _loadProfileFromBackend();
+    Future.microtask(() {
+      ref.read(gamificationNotifierProvider.notifier).fetchAll('global');
+      ref.read(sessionHistoryProvider.notifier).fetchSessions();
+      ref.read(notesNotifierProvider.notifier).fetchNotes();
+    });
   }
 
   Future<void> _loadProfileFromBackend() async {
@@ -161,11 +170,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildProfileCard() {
+    final gamif = ref.watch(gamificationNotifierProvider);
+    final streak = gamif.streak;
+    final totalXp = gamif.totalXp;
+    final level = (totalXp / 500).floor() + 1;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
-          colors: [_nc.lilacSurface.withOpacity(0.35), _nc.lilacSurface.withOpacity(0.25), _nc.amethystSurface.withOpacity(0.2)],
+          colors: [_nc.lilacSurface.withValues(alpha: 0.35), _nc.lilacSurface.withValues(alpha: 0.25), _nc.amethystSurface.withValues(alpha: 0.2)],
         ),
       ),
       child: Padding(
@@ -179,9 +192,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   height: 72,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: _nc.textPrimary.withOpacity(0.15),
+                    color: _nc.textPrimary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: _nc.textPrimary.withOpacity(0.25), width: 1.4),
+                    border: Border.all(color: _nc.textPrimary.withValues(alpha: 0.25), width: 1.4),
                   ),
                   child: Text(
                     _initialsFromName(_displayName),
@@ -214,12 +227,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Wrap(
+                      Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          _Pill(text: '✨ Level 5 · Pro'),
-                          _Pill(text: '🔥 7-day streak', opacity: 0.18),
+                          _Pill(text: '✨ Level $level · Pro'),
+                          _Pill(text: '🔥 $streak-day streak', opacity: 0.18),
                         ],
                       ),
                     ],
@@ -233,7 +246,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                color: _nc.surfaceElevated.withOpacity(0.6),
+                color: _nc.surfaceElevated.withValues(alpha: 0.6),
               ),
               child: Column(
                 children: [
@@ -241,7 +254,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     children: [
                       Expanded(
                         child: Text(
-                          '⚡ Level 5 → Level 6',
+                          '⚡ Level $level → Level ${level + 1}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.caption.copyWith(
@@ -254,7 +267,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          '140/300 XP',
+                                          '${totalXp % 500}/500 XP',
                           style: AppTypography.caption.copyWith(
                             color: _nc.caramelSurface,
                             fontWeight: FontWeight.w700,
@@ -267,9 +280,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(999),
                     child: LinearProgressIndicator(
-                      value: 140 / 300,
+                      value: (totalXp % 500) / 500,
                       minHeight: 10,
-                      backgroundColor: _nc.textPrimary.withOpacity(0.15),
+                      backgroundColor: _nc.textPrimary.withValues(alpha: 0.15),
                       valueColor: AlwaysStoppedAnimation<Color>(_nc.lilacSurface),
                     ),
                   ),
@@ -316,11 +329,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             borderRadius: BorderRadius.circular(13),
             gradient: selected
                 ? LinearGradient(
-                    colors: [_nc.lilacSurface.withOpacity(0.15), _nc.amethystSurface.withOpacity(0.08)],
+                    colors: [_nc.lilacSurface.withValues(alpha: 0.15), _nc.amethystSurface.withValues(alpha: 0.08)],
                   )
                 : null,
             border: Border.all(
-              color: selected ? _nc.lilacSurface.withOpacity(0.3) : Colors.transparent,
+              color: selected ? _nc.lilacSurface.withValues(alpha: 0.3) : Colors.transparent,
             ),
           ),
           child: Text(
@@ -338,11 +351,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildTabBody() {
+    final gamif = ref.watch(gamificationNotifierProvider);
+    final streak = gamif.streak;
+    final totalXp = gamif.totalXp;
+    final level = (totalXp / 500).floor() + 1;
     switch (_selectedTab) {
       case _ProfileTab.stats:
         return Column(
           children: [
-            _buildStatsGrid(),
+            _buildStatsGrid(streak: streak, totalXp: totalXp, level: level),
             const SizedBox(height: 20),
             _buildSectionLabel('PREFERENCES'),
             const SizedBox(height: 8),
@@ -376,15 +393,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
-  Widget _buildStatsGrid() {
+  Widget _buildStatsGrid({required int streak, required int totalXp, required int level}) {
+    final tasksState = ref.watch(tasksNotifierProvider);
+    final sessionState = ref.watch(sessionHistoryProvider);
+    final noteState = ref.watch(notesNotifierProvider);
+
     return Column(
-      children: const [
+      children: [
         Row(
           children: [
             Expanded(
               child: _StatTile(
                 icon: Icons.timer_outlined,
-                value: '124h',
+                value: '${sessionState.weekMinutes ~/ 60}h',
                 label: 'Focus Hrs',
                 valueColor: Color(0xFFB284BE),
                 gradientA: Color(0x28B284BE),
@@ -396,7 +417,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             Expanded(
               child: _StatTile(
                 icon: Icons.track_changes,
-                value: '312',
+                value: '${tasksState.tasks.length}',
                 label: 'Tasks',
                 valueColor: Color(0xFFF8B878),
                 gradientA: Color(0x24F8B878),
@@ -412,7 +433,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             Expanded(
               child: _StatTile(
                 icon: Icons.menu_book_outlined,
-                value: '48',
+                value: '${noteState.notes.length}',
                 label: 'Notes',
                 valueColor: Color(0xFFA2ADD0),
                 gradientA: Color(0x24A2ADD0),
@@ -424,7 +445,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             Expanded(
               child: _StatTile(
                 icon: Icons.flash_on_outlined,
-                value: '1340',
+                value: '$totalXp',
                 label: 'XP',
                 valueColor: Color(0xFFF8B878),
                 gradientA: Color(0x21F8B878),
@@ -617,7 +638,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       text,
       style: TextStyle(
         fontFamily: 'Syne',
-        color: Colors.white.withOpacity(0.35),
+        color: Colors.white.withValues(alpha: 0.35),
         fontSize: 10,
         fontWeight: FontWeight.w700,
         letterSpacing: 1,
@@ -716,7 +737,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   subtitle,
                   style: TextStyle(
                     fontFamily: 'Syne',
-                    color: Colors.white.withOpacity(0.32),
+                    color: Colors.white.withValues(alpha: 0.32),
                     fontSize: 11,
                   ),
                 ),
@@ -773,7 +794,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   item.subtitle,
                   style: TextStyle(
                     fontFamily: 'Syne',
-                    color: Colors.white.withOpacity(0.32),
+                    color: Colors.white.withValues(alpha: 0.32),
                     fontSize: 11,
                   ),
                 ),
@@ -791,7 +812,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Icon(icon, color: Colors.white54, size: 16),
@@ -874,7 +895,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             children: [
               const Text('Sign Out', style: TextStyle(color: Colors.white, fontFamily: 'Syne', fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              Text('Are you sure you want to sign out?', style: TextStyle(color: Colors.white.withOpacity(0.7), fontFamily: 'Syne', fontSize: 13)),
+              Text('Are you sure you want to sign out?', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontFamily: 'Syne', fontSize: 13)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -1003,7 +1024,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     '$rank',
                     style: TextStyle(
                       fontFamily: 'Syne',
-                      color: Colors.white.withOpacity(0.42),
+                      color: Colors.white.withValues(alpha: 0.42),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1014,9 +1035,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: accent.withOpacity(0.20),
+                    color: accent.withValues(alpha: 0.20),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: accent.withOpacity(0.35)),
+                    border: Border.all(color: accent.withValues(alpha: 0.35)),
                   ),
                   child: Text(
                     initials,
@@ -1055,7 +1076,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           margin: const EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: accent.withOpacity(0.20),
+                            color: accent.withValues(alpha: 0.20),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
@@ -1076,7 +1097,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Syne',
-                      color: Colors.white.withOpacity(0.32),
+                      color: Colors.white.withValues(alpha: 0.32),
                       fontSize: 11,
                     ),
                   ),
@@ -1092,7 +1113,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   xp,
                   style: TextStyle(
                     fontFamily: 'Syne',
-                    color: highlighted ? accent : Colors.white.withOpacity(0.70),
+                    color: highlighted ? accent : Colors.white.withValues(alpha: 0.70),
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1101,7 +1122,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   'XP',
                   style: TextStyle(
                     fontFamily: 'Syne',
-                    color: Colors.white.withOpacity(0.28),
+                    color: Colors.white.withValues(alpha: 0.28),
                     fontSize: 10,
                   ),
                 ),
@@ -1136,7 +1157,7 @@ class _Pill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(opacity),
+        color: Colors.white.withValues(alpha: opacity),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -1188,7 +1209,7 @@ class _StatTile extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: valueColor.withOpacity(0.20),
+              color: valueColor.withValues(alpha: 0.20),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: valueColor, size: 16),
@@ -1209,7 +1230,7 @@ class _StatTile extends StatelessWidget {
             label,
             style: TextStyle(
               fontFamily: 'Syne',
-              color: Colors.white.withOpacity(0.40),
+              color: Colors.white.withValues(alpha: 0.40),
               fontSize: 11,
             ),
           ),
@@ -1246,7 +1267,7 @@ class _BadgeTile extends StatelessWidget {
             : const LinearGradient(
                 colors: [Color(0x21B284BE), Color(0x10A2ADD0)],
               ),
-        color: locked ? Colors.white.withOpacity(0.02) : null,
+        color: locked ? Colors.white.withValues(alpha: 0.02) : null,
         border: Border.all(color: locked ? const Color(0xFF2A2440) : const Color(0x30B284BE)),
       ),
       child: Column(
@@ -1258,7 +1279,7 @@ class _BadgeTile extends StatelessWidget {
             title,
             style: TextStyle(
               fontFamily: 'Syne',
-              color: locked ? Colors.white.withOpacity(0.30) : Colors.white,
+              color: locked ? Colors.white.withValues(alpha: 0.30) : Colors.white,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),
@@ -1268,7 +1289,7 @@ class _BadgeTile extends StatelessWidget {
             subtitle,
             style: TextStyle(
               fontFamily: 'Syne',
-              color: Colors.white.withOpacity(0.38),
+              color: Colors.white.withValues(alpha: 0.38),
               fontSize: 10,
               height: 1.4,
             ),
@@ -1277,14 +1298,14 @@ class _BadgeTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: locked ? Colors.white.withOpacity(0.06) : const Color(0x1FF8B878),
+              color: locked ? Colors.white.withValues(alpha: 0.06) : const Color(0x1FF8B878),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
               xp,
               style: TextStyle(
                 fontFamily: 'Syne',
-                color: locked ? Colors.white.withOpacity(0.25) : const Color(0xFFF8B878),
+                color: locked ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFF8B878),
                 fontWeight: FontWeight.w700,
                 fontSize: 10,
               ),
@@ -1324,9 +1345,9 @@ class _PodiumEntry extends StatelessWidget {
           height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: accent.withOpacity(0.20),
+            color: accent.withValues(alpha: 0.20),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: accent.withOpacity(0.35), width: 1.3),
+            border: Border.all(color: accent.withValues(alpha: 0.35), width: 1.3),
           ),
           child: Text(
             initials,
@@ -1342,7 +1363,7 @@ class _PodiumEntry extends StatelessWidget {
           name,
           style: TextStyle(
             fontFamily: 'Syne',
-            color: Colors.white.withOpacity(0.70),
+            color: Colors.white.withValues(alpha: 0.70),
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
@@ -1357,9 +1378,9 @@ class _PodiumEntry extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [accent.withOpacity(0.30), accent.withOpacity(0.10)],
+              colors: [accent.withValues(alpha: 0.30), accent.withValues(alpha: 0.10)],
             ),
-            border: Border.all(color: accent.withOpacity(0.22)),
+            border: Border.all(color: accent.withValues(alpha: 0.22)),
           ),
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),

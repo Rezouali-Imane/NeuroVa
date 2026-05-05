@@ -151,4 +151,19 @@ class AuthService {
     print(' FAILED to extract token. Data: $data');
     throw const FormatException('AccessToken missing in backend response.');
   }
+
+  Future<Map<String, dynamic>> getMe() async {
+    final token = await _localStorageService.readAuthToken();
+    final response = await _dio.get<dynamic>(
+      '/api/auth/me',
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+    final body = response.data as Map<String, dynamic>;
+    return (body['user'] ?? body['data']) as Map<String, dynamic>;
+  }
 }

@@ -164,6 +164,7 @@ export const GamificationRepository = {
     return await prisma.dailychallenge.findMany({
       where: { userid },
       orderBy: { assignedat: "desc" },
+      include: { dailychallengetemplate: true },
     });
   },
 
