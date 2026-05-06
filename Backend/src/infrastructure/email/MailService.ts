@@ -1,14 +1,14 @@
-import { Resend } from 'resend';
+import { BrevoClient } from '@getbrevo/brevo';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY! });
 
 export const MailService = {
   async sendVerificationCode(email: string, verificationLink: string) {
-    await resend.emails.send({
-      from: 'Neurova <onboarding@resend.dev>',
-      to: email,
+    await brevo.transactionalEmails.sendTransacEmail({
+      sender: { name: 'Neurova', email: 'yassde2006@gmail.com' },
+      to: [{ email }],
       subject: 'Verify your Neurova account',
-      html: `
+      htmlContent: `
         <!DOCTYPE html>
         <html>
           <head>
@@ -38,21 +38,6 @@ export const MailService = {
                 padding: 40px 30px; 
                 text-align: center;
               }
-              .code-box { 
-                background: #f8f9fa; 
-                border: 2px dashed #667eea; 
-                border-radius: 8px; 
-                padding: 20px; 
-                margin: 30px 0;
-                display: inline-block;
-              }
-              .code { 
-                font-size: 32px; 
-                font-weight: bold; 
-                letter-spacing: 4px; 
-                color: #667eea;
-                font-family: 'Courier New', monospace;
-              }
               .footer { 
                 background: #f8f9fa; 
                 padding: 20px; 
@@ -60,22 +45,9 @@ export const MailService = {
                 color: #6c757d; 
                 font-size: 14px;
               }
-              h1 { 
-                color: white; 
-                margin: 0; 
-                font-size: 24px; 
-                font-weight: 600;
-              }
-              p { 
-                color: #495057; 
-                line-height: 1.6; 
-                margin: 10px 0;
-              }
-              .expiry { 
-                color: #6c757d; 
-                font-size: 14px; 
-                margin-top: 20px;
-              }
+              h1 { color: white; margin: 0; font-size: 24px; font-weight: 600; }
+              p { color: #495057; line-height: 1.6; margin: 10px 0; }
+              .expiry { color: #6c757d; font-size: 14px; margin-top: 20px; }
             </style>
           </head>
           <body>
@@ -103,11 +75,11 @@ export const MailService = {
   },
 
   async sendResetPasswordCode(email: string, code: string) {
-    await resend.emails.send({
-      from: 'Neurova Security <security@resend.dev>',
-      to: email,
+    await brevo.transactionalEmails.sendTransacEmail({
+      sender: { name: 'Neurova Security', email: 'yassde2006@gmail.com' },
+      to: [{ email }],
       subject: 'Reset your password',
-      html: `
+      htmlContent: `
         <!DOCTYPE html>
         <html>
           <head>
@@ -167,22 +139,9 @@ export const MailService = {
                 color: #6c757d; 
                 font-size: 14px;
               }
-              h1 { 
-                color: white; 
-                margin: 0; 
-                font-size: 24px; 
-                font-weight: 600;
-              }
-              p { 
-                color: #495057; 
-                line-height: 1.6; 
-                margin: 10px 0;
-              }
-              .expiry { 
-                color: #6c757d; 
-                font-size: 14px; 
-                margin-top: 20px;
-              }
+              h1 { color: white; margin: 0; font-size: 24px; font-weight: 600; }
+              p { color: #495057; line-height: 1.6; margin: 10px 0; }
+              .expiry { color: #6c757d; font-size: 14px; margin-top: 20px; }
             </style>
           </head>
           <body>
@@ -216,66 +175,66 @@ export const MailService = {
   },
 
   async sendNotification(email: string, title: string, message: string) {
-    await resend.emails.send({
-      from: 'Neurova <onboarding@resend.dev>',
-      to: email,
+    await brevo.transactionalEmails.sendTransacEmail({
+      sender: { name: 'Neurova', email: 'yassde2006@gmail.com' },
+      to: [{ email }],
       subject: title,
-      html: `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            body { 
-              margin: 0; 
-              padding: 0; 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              background-color: #f5f5f5;
-            }
-            .container { 
-              max-width: 600px; 
-              margin: 40px auto; 
-              background: white; 
-              border-radius: 12px; 
-              overflow: hidden;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
-            .header { 
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-              padding: 40px 20px; 
-              text-align: center;
-            }
-            .content { 
-              padding: 40px 30px; 
-              text-align: center;
-            }
-            .footer { 
-              background: #f8f9fa; 
-              padding: 20px; 
-              text-align: center; 
-              color: #6c757d; 
-              font-size: 14px;
-            }
-            h1 { color: white; margin: 0; font-size: 24px; font-weight: 600; }
-            p { color: #495057; line-height: 1.6; margin: 10px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>${title}</h1>
+      htmlContent: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body { 
+                margin: 0; 
+                padding: 0; 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                background-color: #f5f5f5;
+              }
+              .container { 
+                max-width: 600px; 
+                margin: 40px auto; 
+                background: white; 
+                border-radius: 12px; 
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+              }
+              .header { 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                padding: 40px 20px; 
+                text-align: center;
+              }
+              .content { 
+                padding: 40px 30px; 
+                text-align: center;
+              }
+              .footer { 
+                background: #f8f9fa; 
+                padding: 20px; 
+                text-align: center; 
+                color: #6c757d; 
+                font-size: 14px;
+              }
+              h1 { color: white; margin: 0; font-size: 24px; font-weight: 600; }
+              p { color: #495057; line-height: 1.6; margin: 10px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>${title}</h1>
+              </div>
+              <div class="content">
+                <p style="font-size: 16px;">${message}</p>
+              </div>
+              <div class="footer">
+                <p>© 2026 Neurova. All rights reserved.</p>
+              </div>
             </div>
-            <div class="content">
-              <p style="font-size: 16px;">${message}</p>
-            </div>
-            <div class="footer">
-              <p>© 2026 Neurova. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
+          </body>
+        </html>
+      `,
     });
-  }
+  },
 };

@@ -1,5 +1,5 @@
 import prisma from '../../infrastructure/database/prisma.client.js';
-import { sendEmail, emailTemplates } from '../../infrastructure/resend.client.js';
+import { sendEmail, emailTemplates } from '../../infrastructure/Brevo.client.js';
 
 
 export const SendTaskReminders = async (userid?: string) => {

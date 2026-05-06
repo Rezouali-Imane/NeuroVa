@@ -1,18 +1,18 @@
-import { Resend } from 'resend';
+import { BrevoClient } from '@getbrevo/brevo';
 import 'dotenv/config';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY! });
 
 export const sendEmail = async (
   to: string,
   subject: string,
-  html: string
+  htmlContent: string
 ): Promise<void> => {
-  await resend.emails.send({
-    from: 'Neurova <onboarding@resend.dev>',
-    to,
+  await brevo.transactionalEmails.sendTransacEmail({
+    sender: { name: 'Neurova', email: 'yassde2006@gmail.com' },
+    to: [{ email: to }],
     subject,
-    html,
+    htmlContent,
   });
 };
 
