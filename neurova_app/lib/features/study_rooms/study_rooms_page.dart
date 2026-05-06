@@ -60,7 +60,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
 
   void _startAutoRefresh() {
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-      if (mounted && ref.read(studyRoomNotifierProvider).activeRoom == null && !_isRefreshing) {
+      if (mounted &&
+          ref.read(studyRoomNotifierProvider).activeRoom == null &&
+          !_isRefreshing) {
         _isRefreshing = true;
         await ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
         _isRefreshing = false;
@@ -106,13 +108,14 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
   List<StudyRoom> _getFilteredRooms(List<StudyRoom> rooms) {
     return rooms.where((room) {
       if (room.isactive) return false;
-      final matchesSearch = _searchController.text.isEmpty ||
-          room.roomname
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase()) ||
-          room.subject
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase());
+      final matchesSearch =
+          _searchController.text.isEmpty ||
+          room.roomname.toLowerCase().contains(
+            _searchController.text.toLowerCase(),
+          ) ||
+          room.subject.toLowerCase().contains(
+            _searchController.text.toLowerCase(),
+          );
       final matchesMode =
           _selectedFocusMode == 'All' || room.focusmode == _selectedFocusMode;
       return matchesSearch && matchesMode;
@@ -148,7 +151,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
             fillColor: Colors.white.withValues(alpha: 0.04),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+              borderSide: BorderSide(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
             ),
           ),
         ),
@@ -162,10 +167,13 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim().toUpperCase()),
+            onPressed: () =>
+                Navigator.pop(context, controller.text.trim().toUpperCase()),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.purple,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
             child: const Text('Join'),
           ),
@@ -265,7 +273,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
     required bool ispublic,
   }) async {
     try {
-      await ref.read(studyRoomNotifierProvider.notifier).createRoom(
+      await ref
+          .read(studyRoomNotifierProvider.notifier)
+          .createRoom(
             roomname: roomname,
             subject: subject,
             focusmode: focusmode,
@@ -286,10 +296,16 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
       builder: (context) => _AnimatedDialog(
         child: AlertDialog(
           backgroundColor: const Color(0xFF1C1A26),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           title: Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: AppColors.amber, size: 28),
+              Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.amber,
+                size: 28,
+              ),
               const SizedBox(width: 12),
               const Text(
                 'Room Closed',
@@ -315,7 +331,10 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
               onPressed: () => Navigator.pop(context),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.purple,
-                textStyle: const TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w700),
+                textStyle: const TextStyle(
+                  fontFamily: 'Syne',
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               child: const Text('OK'),
             ),
@@ -359,7 +378,10 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
             onPressed: () => Navigator.pop(context, false),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.textSecondary,
-              textStyle: const TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w600),
+              textStyle: const TextStyle(
+                fontFamily: 'Syne',
+                fontWeight: FontWeight.w600,
+              ),
             ),
             child: const Text('Cancel'),
           ),
@@ -367,7 +389,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
             child: const Text(
@@ -387,7 +411,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
       try {
         // Prevent auto-refresh during manual operation
         _stopAutoRefresh();
-        await ref.read(studyRoomNotifierProvider.notifier).leaveRoom(room.roomid);
+        await ref
+            .read(studyRoomNotifierProvider.notifier)
+            .leaveRoom(room.roomid);
         // Refresh once after leaving
         if (mounted) {
           await ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
@@ -473,7 +499,11 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                           ],
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.add, color: Colors.white, size: 28),
+                          icon: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                           onPressed: () => _showCreateRoomDialog(),
                         ),
                       ),
@@ -489,7 +519,10 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                   ),
                   const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
@@ -542,7 +575,10 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                 ),
                 child: Text(
                   studyRoomState.error!,
-                  style: const TextStyle(color: Color(0xFFF5576C), fontFamily: 'Syne'),
+                  style: const TextStyle(
+                    color: Color(0xFFF5576C),
+                    fontFamily: 'Syne',
+                  ),
                 ),
               )
             else
@@ -555,18 +591,30 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                       onChanged: (value) => setState(() {}),
                       decoration: InputDecoration(
                         hintText: 'Search rooms, subjects...',
-                        hintStyle: TextStyle(color: AppColors.textMuted, fontFamily: 'Syne'),
-                        prefixIcon: Icon(Icons.search, color: AppColors.textMuted),
+                        hintStyle: TextStyle(
+                          color: AppColors.textMuted,
+                          fontFamily: 'Syne',
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: AppColors.textMuted,
+                        ),
                         filled: true,
                         fillColor: AppColors.glassBackground,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: AppColors.glassBorderLight),
+                          borderSide: BorderSide(
+                            color: AppColors.glassBorderLight,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: AppColors.glassBorderLight),
+                          borderSide: BorderSide(
+                            color: AppColors.glassBorderLight,
+                          ),
                         ),
                       ),
                       style: const TextStyle(color: Colors.white),
@@ -576,30 +624,38 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                       height: 40,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
-                        children: ['All', 'Pomodoro', 'Deep Work', 'Flexible'].map((mode) {
-                          final selected = _selectedFocusMode == mode;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 10),
-                            child: FilterChip(
-                              label: Text(mode),
-                              selected: selected,
-                              backgroundColor: AppColors.glassBackground,
-                              selectedColor: AppColors.purple.withValues(alpha: 0.24),
-                              labelStyle: TextStyle(
-                                color: selected ? AppColors.purple : AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              side: BorderSide(
-                                color: selected
-                                    ? AppColors.purple.withValues(alpha: 0.5)
-                                    : AppColors.glassBorderLight,
-                              ),
-                              onSelected: (value) {
-                                setState(() => _selectedFocusMode = mode);
-                              },
-                            ),
-                          );
-                        }).toList(),
+                        children: ['All', 'Pomodoro', 'Deep Work', 'Flexible']
+                            .map((mode) {
+                              final selected = _selectedFocusMode == mode;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: FilterChip(
+                                  label: Text(mode),
+                                  selected: selected,
+                                  backgroundColor: AppColors.glassBackground,
+                                  selectedColor: AppColors.purple.withValues(
+                                    alpha: 0.24,
+                                  ),
+                                  labelStyle: TextStyle(
+                                    color: selected
+                                        ? AppColors.purple
+                                        : AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  side: BorderSide(
+                                    color: selected
+                                        ? AppColors.purple.withValues(
+                                            alpha: 0.5,
+                                          )
+                                        : AppColors.glassBorderLight,
+                                  ),
+                                  onSelected: (value) {
+                                    setState(() => _selectedFocusMode = mode);
+                                  },
+                                ),
+                              );
+                            })
+                            .toList(),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -609,24 +665,33 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                           padding: const EdgeInsets.only(top: 40),
                           child: Column(
                             children: [
-                              const Icon(Icons.meeting_room_outlined,
-                                  color: Color(0xFF7D749C), size: 42),
+                              const Icon(
+                                Icons.meeting_room_outlined,
+                                color: Color(0xFF7D749C),
+                                size: 42,
+                              ),
                               const SizedBox(height: 10),
                               Text(
                                 'No rooms available',
-                                style: AppTypography.headline3.copyWith(color: Colors.white),
+                                style: AppTypography.headline3.copyWith(
+                                  color: Colors.white,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Create or join a study room',
-                                style: AppTypography.body2.copyWith(color: const Color(0xFF8E88A8)),
+                                style: AppTypography.body2.copyWith(
+                                  color: const Color(0xFF8E88A8),
+                                ),
                               ),
                             ],
                           ),
                         ),
                       )
                     else
-                      ..._getFilteredRooms(waitingRooms).map((room) => _buildRoomCard(room)),
+                      ..._getFilteredRooms(
+                        waitingRooms,
+                      ).map((room) => _buildRoomCard(room)),
                   ],
                 ),
               ),
@@ -706,7 +771,10 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: room.isactive
                         ? AppColors.success.withValues(alpha: 0.15)
@@ -716,7 +784,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                   child: Text(
                     room.isactive ? 'Live' : 'Open',
                     style: TextStyle(
-                      color: room.isactive ? AppColors.success : AppColors.amber,
+                      color: room.isactive
+                          ? AppColors.success
+                          : AppColors.amber,
                       fontFamily: 'Syne',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -732,13 +802,18 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                 const SizedBox(width: 6),
                 Text(
                   room.subject,
-                  style: TextStyle(color: AppColors.textMuted, fontFamily: 'Syne', fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontFamily: 'Syne',
+                    fontSize: 12,
+                  ),
                 ),
                 const Spacer(),
+               
                 Icon(Icons.code, color: AppColors.textMuted, size: 14),
                 const SizedBox(width: 6),
                 Text(
-                  room.roomcode,
+                  room.ispublic ? room.roomcode : '****',
                   style: TextStyle(
                     color: AppColors.textMuted,
                     fontFamily: 'Syne',
@@ -754,15 +829,25 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                 Wrap(
                   spacing: -10,
                   children: room.participants.take(4).map((participant) {
-                    final colors = [Colors.purple, Colors.orange, Colors.pink, Colors.cyan];
+                    final colors = [
+                      Colors.purple,
+                      Colors.orange,
+                      Colors.pink,
+                      Colors.cyan,
+                    ];
                     final index = room.participants.indexOf(participant);
                     return Container(
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: colors[index % colors.length].withValues(alpha: 0.7),
-                        border: Border.all(color: const Color(0xFF13111A), width: 2.5),
+                        color: colors[index % colors.length].withValues(
+                          alpha: 0.7,
+                        ),
+                        border: Border.all(
+                          color: const Color(0xFF13111A),
+                          width: 2.5,
+                        ),
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -779,10 +864,15 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                 const SizedBox(width: 10),
                 Text(
                   '${room.participants.length}/${room.maxparticipants} joined',
-                  style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Syne', fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontFamily: 'Syne',
+                    fontSize: 12,
+                  ),
                 ),
                 const Spacer(),
-                if (!room.ispublic) Icon(Icons.lock, color: AppColors.textMuted, size: 14),
+                if (!room.ispublic)
+                  Icon(Icons.lock, color: AppColors.textMuted, size: 14),
               ],
             ),
             const SizedBox(height: 14),
@@ -833,7 +923,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF1C1A26),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
           title: Row(
             children: [
               IconButton(
@@ -886,7 +978,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                         style: TextStyle(
                           fontFamily: 'Syne',
                           fontWeight: FontWeight.w600,
-                          color: selectedMode == mode ? modeColor : AppColors.textSecondary,
+                          color: selectedMode == mode
+                              ? modeColor
+                              : AppColors.textSecondary,
                         ),
                       ),
                       selected: selectedMode == mode,
@@ -909,7 +1003,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -934,7 +1030,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              isPublic ? 'Anyone can join' : 'Only with room code',
+                              isPublic
+                                  ? 'Anyone can join'
+                                  : 'Only with room code',
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontFamily: 'Syne',
@@ -946,7 +1044,8 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                       ),
                       Switch(
                         value: isPublic,
-                        onChanged: (value) => setDialogState(() => isPublic = value),
+                        onChanged: (value) =>
+                            setDialogState(() => isPublic = value),
                         activeColor: AppColors.success,
                       ),
                     ],
@@ -959,7 +1058,10 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
             SizedBox(
               width: double.infinity,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: ElevatedButton(
                   onPressed: () {
                     if (roomName.isNotEmpty && subject.isNotEmpty) {
@@ -975,7 +1077,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.purple,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   child: const Text(
                     '🚀 Create & Join Room',
@@ -1034,13 +1138,17 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                               .read(studyRoomNotifierProvider.notifier)
                               .leaveRoom(room.roomid);
                           if (mounted) {
-                            await ref.read(studyRoomNotifierProvider.notifier).fetchRooms();
+                            await ref
+                                .read(studyRoomNotifierProvider.notifier)
+                                .fetchRooms();
                             _startAutoRefresh();
                           }
                         } catch (e) {
                           if (mounted) {
                             _startAutoRefresh();
-                            ref.read(studyRoomNotifierProvider.notifier).clearActiveRoom();
+                            ref
+                                .read(studyRoomNotifierProvider.notifier)
+                                .clearActiveRoom();
                           }
                         }
                       },
@@ -1073,7 +1181,10 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
                       color: room.isactive
                           ? AppColors.success.withValues(alpha: 0.18)
@@ -1093,14 +1204,18 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                           height: 6,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: room.isactive ? AppColors.success : AppColors.amber,
+                            color: room.isactive
+                                ? AppColors.success
+                                : AppColors.amber,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           room.isactive ? 'Live' : 'Waiting',
                           style: TextStyle(
-                            color: room.isactive ? AppColors.success : AppColors.amber,
+                            color: room.isactive
+                                ? AppColors.success
+                                : AppColors.amber,
                             fontFamily: 'Syne',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -1124,7 +1239,9 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
                       ),
                       child: room.isactive
                           ? Column(
@@ -1164,7 +1281,11 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                             )
                           : Column(
                               children: [
-                                Icon(Icons.hourglass_top_rounded, color: AppColors.amber, size: 40),
+                                Icon(
+                                  Icons.hourglass_top_rounded,
+                                  color: AppColors.amber,
+                                  size: 40,
+                                ),
                                 const SizedBox(height: 14),
                                 const Text(
                                   'Waiting for host to start',
@@ -1178,22 +1299,35 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                                 const SizedBox(height: 16),
                                 GestureDetector(
                                   onTap: () {
-                                    Clipboard.setData(ClipboardData(text: room.roomcode));
+                                    Clipboard.setData(
+                                      ClipboardData(text: room.roomcode),
+                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Room code copied!')),
+                                      const SnackBar(
+                                        content: Text('Room code copied!'),
+                                      ),
                                     );
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 10,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: modeColor.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: modeColor.withValues(alpha: 0.3)),
+                                      border: Border.all(
+                                        color: modeColor.withValues(alpha: 0.3),
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.copy, size: 14, color: modeColor),
+                                        Icon(
+                                          Icons.copy,
+                                          size: 14,
+                                          color: modeColor,
+                                        ),
                                         const SizedBox(width: 8),
                                         Text(
                                           room.roomcode,
@@ -1241,7 +1375,10 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Text(
                           'No participants yet',
-                          style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Syne'),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontFamily: 'Syne',
+                          ),
                         ),
                       )
                     else
@@ -1253,16 +1390,24 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                         mainAxisSpacing: 12,
                         childAspectRatio: 1.0,
                         children: room.participants.map((participant) {
-                          final colors = [Colors.purple, Colors.orange, Colors.pink, Colors.cyan];
+                          final colors = [
+                            Colors.purple,
+                            Colors.orange,
+                            Colors.pink,
+                            Colors.cyan,
+                          ];
                           final index = room.participants.indexOf(participant);
-                          final participantColor = colors[index % colors.length];
+                          final participantColor =
+                              colors[index % colors.length];
 
                           return Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: participantColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: participantColor.withValues(alpha: 0.24)),
+                              border: Border.all(
+                                color: participantColor.withValues(alpha: 0.24),
+                              ),
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -1275,15 +1420,21 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                                       height: 56,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: participantColor.withValues(alpha: 0.7),
+                                        color: participantColor.withValues(
+                                          alpha: 0.7,
+                                        ),
                                         border: Border.all(
-                                          color: participantColor.withValues(alpha: 0.3),
+                                          color: participantColor.withValues(
+                                            alpha: 0.3,
+                                          ),
                                           width: 2,
                                         ),
                                       ),
                                       alignment: Alignment.center,
                                       child: Text(
-                                        participant.username.substring(0, 2).toUpperCase(),
+                                        participant.username
+                                            .substring(0, 2)
+                                            .toUpperCase(),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 18,
@@ -1300,7 +1451,11 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                                           shape: BoxShape.circle,
                                           color: AppColors.amber,
                                         ),
-                                        child: const Icon(Icons.star, size: 12, color: Colors.white),
+                                        child: const Icon(
+                                          Icons.star,
+                                          size: 12,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                   ],
                                 ),
@@ -1360,7 +1515,10 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
                                 final elapsedMinutes = _elapsed.inMinutes;
                                 await ref
                                     .read(studyRoomNotifierProvider.notifier)
-                                    .endSession(room.roomid, duration: elapsedMinutes);
+                                    .endSession(
+                                      room.roomid,
+                                      duration: elapsedMinutes,
+                                    );
                                 // No need to refresh manually - socket will trigger closure
                               },
                       ),
@@ -1434,38 +1592,37 @@ class _StudyRoomsPageState extends ConsumerState<StudyRoomsPage>
   }
 
   Widget _label(String text) => Text(
-        text,
-        style: TextStyle(
-          color: AppColors.textMuted,
-          fontFamily: 'Syne',
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
-        ),
-      );
+    text,
+    style: TextStyle(
+      color: AppColors.textMuted,
+      fontFamily: 'Syne',
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.5,
+    ),
+  );
 
   Widget _dialogTextField({
     required String hint,
     required ValueChanged<String> onChanged,
-  }) =>
-      TextField(
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textMuted),
-          filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.04),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-        ),
-        style: const TextStyle(color: Colors.white, fontFamily: 'Syne'),
-      );
+  }) => TextField(
+    onChanged: onChanged,
+    decoration: InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: AppColors.textMuted),
+      filled: true,
+      fillColor: Colors.white.withValues(alpha: 0.04),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+    ),
+    style: const TextStyle(color: Colors.white, fontFamily: 'Syne'),
+  );
 }
 
 class _ThemedToast extends StatelessWidget {
@@ -1565,12 +1722,14 @@ class _FadeInScaleTransitionState extends State<FadeInScaleTransition>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _scale = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    _fade = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _scale = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
   }
 
@@ -1587,10 +1746,7 @@ class _FadeInScaleTransitionState extends State<FadeInScaleTransition>
       builder: (context, _) {
         return FadeTransition(
           opacity: _fade,
-          child: ScaleTransition(
-            scale: _scale,
-            child: widget.child,
-          ),
+          child: ScaleTransition(scale: _scale, child: widget.child),
         );
       },
     );
