@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:neurova_app/features/auth/state/auth_notifier.dart';
+import 'package:neurova_app/features/gamification/state/gamification_notifier.dart';
 import 'package:neurova_app/shared/theme/app_theme.dart';
 import 'package:neurova_app/shared/widgets/profile_view_shell.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
@@ -53,7 +54,7 @@ class _RingPainter extends CustomPainter {
     canvas.drawCircle(center, radius, bgPaint);
 
     final progressPaint = Paint()
-      ..shader = LinearGradient(colors: [color.withOpacity(1.0), color.withOpacity(0.8)]).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..shader = LinearGradient(colors: [color.withValues(alpha: 1.0), color.withValues(alpha: 0.8)]).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -106,6 +107,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     super.initState();
     Future.microtask(() {
       ref.read(tasksNotifierProvider.notifier).fetchTasks();
+      ref.read(gamificationNotifierProvider.notifier).fetchAll('global');
     });
   }
 
@@ -120,6 +122,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   @override
   Widget build(BuildContext context) {
     final tasksState = ref.watch(tasksNotifierProvider);
+    final totalXp = ref.watch(gamificationNotifierProvider).totalXp;
 
     List<Task> filteredTasks = tasksState.tasks;
     if (selectedTab == 1) {
@@ -183,7 +186,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                 children: [
-                  _buildHeader(allTasks),
+                  _buildHeader(allTasks, totalXp),
                   const SizedBox(height: 16),
                   if (_activeView == 'tasks') ...[
                     _buildProgressCard(progressPercentInt, todoCount, inProgressCount, doneCount),
@@ -242,7 +245,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     );
   }
 
-  Widget _buildHeader(List<Task> allTasks) {
+  Widget _buildHeader(List<Task> allTasks, int totalXp) {
     final int doneCount = allTasks.where((t) => t.status == 'COMPLETED').length;
     final int totalCount = allTasks.length;
 
@@ -254,7 +257,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           children: [
             Expanded(
               child: Text(
-                '$doneCount of $totalCount done · ⚡ 1250 XP',
+                '$doneCount of $totalCount done · ⚡ $totalXp XP',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.48),
                   fontFamily: 'Syne',

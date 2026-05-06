@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/widgets/profile_view_shell.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
-import '../../shared/theme/app_theme.dart';
+import '../auth/state/auth_notifier.dart' show localStorageServiceProvider;
+import '../gamification/state/gamification_notifier.dart';
 import './stats/focus_session_notifier.dart';
 import './Models/focus_session_module.dart';
 
@@ -33,14 +34,15 @@ class _FocusPageState extends ConsumerState<FocusPage> {
     final hasActiveSession = activeState.session != null;
     final isRunning = activeState.isRunning;
     final remainingSeconds = activeState.remainingSeconds;
+    final totalXp = ref.watch(gamificationNotifierProvider).totalXp;
+    final initialSeconds = _getInitialSeconds();
 
     // Show timer display value
     String displayTime;
     if (hasActiveSession) {
       displayTime = _formatTime(remainingSeconds);
     } else {
-      // Idle – show initial duration for the selected mode
-      displayTime = _formatTime(_getInitialSeconds());
+      displayTime = _formatTime(initialSeconds);
     }
 
     return Scaffold(
@@ -78,9 +80,9 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: const Color(0x55F8B878)),
                         ),
-                        child: const Text(
-                          '⚡ 1250 XP',
-                          style: TextStyle(color: Color(0xFFF3C57D), fontFamily: 'Syne', fontWeight: FontWeight.w800, fontSize: 16),
+                        child: Text(
+                          '⚡ $totalXp XP',
+                          style: const TextStyle(color: Color(0xFFF3C57D), fontFamily: 'Syne', fontWeight: FontWeight.w800, fontSize: 16),
                         ),
                       ),
                     ],
@@ -150,7 +152,9 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                             height: 282,
                             child: CustomPaint(
                               painter: _RingPainter(
-                                progress: hasActiveSession ? (1 - remainingSeconds / (_getInitialSeconds())).clamp(0.0, 1.0) : 0.0,
+                                progress: hasActiveSession && initialSeconds > 0
+                                    ? (1 - remainingSeconds / initialSeconds).clamp(0.0, 1.0)
+                                    : 0.0,
                                 color: _accent(),
                                 backgroundColor: const Color(0xFF2A2545),
                                 strokeWidth: 11,
@@ -196,7 +200,7 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                                                 height: 10,
                                                 decoration: BoxDecoration(
                                                   shape: BoxShape.circle,
-                                                  color: (hasActiveSession && false) ? _accent() : Colors.white24,
+                                                  color: hasActiveSession ? _accent() : Colors.white24,
                                                 ),
                                               ),
                                             ))
@@ -223,8 +227,7 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                             await ref.read(activeFocusProvider.notifier).reset();
                           } else {
                             // Start new session with current settings
-                            final settings = _buildTimerSettings();
-                            await ref.read(activeFocusProvider.notifier).startNewSession(settings);
+                            await _startSessionForSelectedMode();
                           }
                         },
                       ),
@@ -232,9 +235,7 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                       GestureDetector(
                         onTap: () async {
                           if (!hasActiveSession) {
-                            // Start new session
-                            final settings = _buildTimerSettings();
-                            await ref.read(activeFocusProvider.notifier).startNewSession(settings);
+                            await _startSessionForSelectedMode();
                           } else {
                             // Pause/Resume
                             if (isRunning) {
@@ -251,11 +252,11 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
-                              colors: [_accent().withOpacity(0.95), _accent().withOpacity(0.72)],
+                              colors: [_accent().withValues(alpha: 0.95), _accent().withValues(alpha: 0.72)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            boxShadow: [BoxShadow(color: _accent().withOpacity(0.42), blurRadius: 28, offset: const Offset(0, 10))],
+                            boxShadow: [BoxShadow(color: _accent().withValues(alpha: 0.42), blurRadius: 28, offset: const Offset(0, 10))],
                           ),
                           child: Icon(
                             !hasActiveSession ? Icons.play_arrow : (isRunning ? Icons.pause : Icons.play_arrow),
@@ -373,7 +374,7 @@ class _FocusPageState extends ConsumerState<FocusPage> {
     switch (_mode) {
       case 'Pomodoro':
         return TimerSettings(
-          type: 'Pomodoro',
+          type: 'POMODORO',
           durationminutes: _focusMinutes,
           breakminutes: _shortBreakMinutes,
           longbreakminutes: _longBreakMinutes,
@@ -383,14 +384,14 @@ class _FocusPageState extends ConsumerState<FocusPage> {
         );
       case 'Countdown':
         return TimerSettings(
-          type: 'Countdown',
+          type: 'COUNTDOWN',
           durationminutes: _countdownMinutes,
           remainingseconds: (_countdownMinutes * 60) + _countdownSeconds,
           isrunning: true,
         );
       case 'Stopwatch':
         return TimerSettings(
-          type: 'Stopwatch',
+          type: 'STOPWATCH',
           durationminutes: 0,
           remainingseconds: 0,
           isrunning: true,
@@ -398,6 +399,22 @@ class _FocusPageState extends ConsumerState<FocusPage> {
       default:
         throw Exception('Unknown mode');
     }
+  }
+
+  Future<void> _startSessionForSelectedMode() async {
+    final localStorage = ref.read(localStorageServiceProvider);
+    final userId = await localStorage.readUserId();
+    if (!mounted) return;
+
+    if (userId == null || userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in again to start a focus session')),
+      );
+      return;
+    }
+
+    final settings = _buildTimerSettings();
+    await ref.read(activeFocusProvider.notifier).startNewSession(settings);
   }
 
   // Open appropriate customiser based on current mode
@@ -457,10 +474,10 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: value == minutes ? color.withOpacity(0.2) : const Color(0xFF1A1630),
+                              color: value == minutes ? color.withValues(alpha: 0.2) : const Color(0xFF1A1630),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: value == minutes ? color.withOpacity(0.7) : const Color(0xFF2A2550),
+                                color: value == minutes ? color.withValues(alpha: 0.7) : const Color(0xFF2A2550),
                               ),
                             ),
                             child: Text(
@@ -876,7 +893,7 @@ class _RingPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     final foregroundPaint = Paint()
       ..shader = SweepGradient(
-        colors: [color.withOpacity(0.2), color, color.withOpacity(0.9)],
+        colors: [color.withValues(alpha: 0.2), color, color.withValues(alpha: 0.9)],
       ).createShader(rect)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth

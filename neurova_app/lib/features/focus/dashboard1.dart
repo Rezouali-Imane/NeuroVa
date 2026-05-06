@@ -882,7 +882,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
             final label = '${task.createdat.hour.toString().padLeft(2, '0')}:${task.createdat.minute.toString().padLeft(2, '0')}';
 
             // map status to visuals
-            final status = task.status ?? 'PENDING';
+            final status = task.status;
             late final List<Color> colors;
             late final Color textColor;
             late final Color tagColor;
@@ -907,7 +907,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
               children: [
                 _buildTaskItem(
                   label: label,
-                  title: task.title ?? '',
+                  title: task.title,
                   status: status,
                   colors: colors,
                   textColor: textColor,
@@ -1208,9 +1208,9 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppBorderRadius.xxlarge),
-        border: Border.all(color: _nc.lemonSurface.withOpacity(0.2)),
+        border: Border.all(color: _nc.lemonSurface.withValues(alpha: 0.2)),
         gradient: LinearGradient(
-          colors: [_nc.lemonSurface.withOpacity(0.15), _nc.background],
+          colors: [_nc.lemonSurface.withValues(alpha: 0.15), _nc.background],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1220,7 +1220,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _nc.lemonSurface.withOpacity(0.2),
+              color: _nc.lemonSurface.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(AppBorderRadius.large),
             ),
             child: Icon(Icons.star, color: _nc.lemonSurface, size: 24),
@@ -1321,7 +1321,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: _nc.lemonSurface.withOpacity(0.16),
+                    color: _nc.lemonSurface.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(AppBorderRadius.medium),
                   ),
                   alignment: Alignment.center,
@@ -1346,9 +1346,9 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: _nc.lemonSurface.withOpacity(0.16),
+                color: _nc.lemonSurface.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AppBorderRadius.medium),
-                border: Border.all(color: _nc.lemonSurface.withOpacity(0.3)),
+                border: Border.all(color: _nc.lemonSurface.withValues(alpha: 0.3)),
               ),
               child: Text(
                 '+$xp XP',
@@ -1382,10 +1382,10 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
             return Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isCompleted ? color.withOpacity(0.12) : _nc.surface,
+                color: isCompleted ? color.withValues(alpha: 0.12) : _nc.surface,
                 borderRadius: BorderRadius.circular(AppBorderRadius.large),
                 border: Border.all(
-                  color: isCompleted ? color.withOpacity(0.25) : _nc.surfaceElevated.withOpacity(0.3),
+                  color: isCompleted ? color.withValues(alpha: 0.25) : _nc.surfaceElevated.withValues(alpha: 0.3),
                 ),
               ),
               child: Column(
@@ -1397,7 +1397,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                         width: 26,
                         height: 26,
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
+                          color: color.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         alignment: Alignment.center,
@@ -1429,7 +1429,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                     children: [
                       Text(
                         '$progress/$target',
-                        style: AppTypography.caption.copyWith(color: _nc.textSecondary.withOpacity(0.7)),
+                        style: AppTypography.caption.copyWith(color: _nc.textSecondary.withValues(alpha: 0.7)),
                       ),
                       Text(
                         '+${challenge['xp']} XP',
@@ -1443,7 +1443,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                     child: LinearProgressIndicator(
                       value: ratio.clamp(0.0, 1.0),
                       minHeight: 4,
-                      backgroundColor: _nc.surfaceElevated.withOpacity(0.4),
+                      backgroundColor: _nc.surfaceElevated.withValues(alpha: 0.4),
                       valueColor: AlwaysStoppedAnimation<Color>(color),
                     ),
                   ),
@@ -1674,6 +1674,21 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
   }
 
   Widget _buildDrawerSnapshotCard() {
+    final gamif = ref.watch(gamificationNotifierProvider);
+    final sessionState = ref.watch(sessionHistoryProvider);
+    final tasksState = ref.watch(tasksNotifierProvider);
+    final today = DateTime.now();
+    final todayTasks = tasksState.tasks.where((t) =>
+        t.createdat.year == today.year &&
+        t.createdat.month == today.month &&
+        t.createdat.day == today.day
+    ).toList();
+    final doneTasks = todayTasks.where((t) => t.status == 'COMPLETED').length;
+    final totalTasks = todayTasks.length;
+    final totalXp = gamif.totalXp;
+    final todayH = sessionState.todayMinutes ~/ 60;
+    final todayM = sessionState.todayMinutes % 60;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(color: _nc.surface, borderRadius: BorderRadius.circular(AppBorderRadius.large), border: Border.all(color: _nc.surfaceElevated.withValues(alpha: 0.3))),
@@ -1685,10 +1700,20 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _DrawerStat(label: 'Focused', value: '3h 20m', color: _nc.lilacSurface),
-              _DrawerStat(label: 'Tasks', value: '1/3', color: _nc.amethystSurface),
-              _DrawerStat(label: 'Streak', value: '${ref.watch(gamificationNotifierProvider).streak} days', color: _nc.lemonSurface),
+              _DrawerStat(label: 'Focused', value: '${todayH}h ${todayM}m', color: _nc.lilacSurface),
+              _DrawerStat(label: 'Tasks', value: '$doneTasks/$totalTasks', color: _nc.amethystSurface),
+              _DrawerStat(label: 'Streak', value: '${gamif.streak} days', color: _nc.lemonSurface),
             ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: ((totalXp % 500) / 500).clamp(0.0, 1.0),
+              minHeight: 4,
+              backgroundColor: _nc.surfaceElevated.withValues(alpha: 0.4),
+              valueColor: AlwaysStoppedAnimation<Color>(_nc.amethystSurface),
+            ),
           ),
         ],
       ),

@@ -600,8 +600,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         const SizedBox(height: 8),
         _leaderboardRow(
           rank: 3,
-          initials: 'AJ',
-          name: 'Alex J.',
+          initials: _initialsFromName(_displayName),
+          name: _displayName,
           streak: '7 day streak',
           xp: '1,340',
           accent: const Color(0xFFB284BE),
@@ -950,8 +950,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
-          children: const [
-            Expanded(
+          children: [
+            const Expanded(
               child: _PodiumEntry(
                 medal: '🥈',
                 initials: 'JL',
@@ -961,8 +961,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 accent: Color(0xFFA2ADD0),
               ),
             ),
-            SizedBox(width: 12),
-            Expanded(
+            const SizedBox(width: 12),
+            const Expanded(
               child: _PodiumEntry(
                 medal: '🥇',
                 initials: 'PM',
@@ -972,12 +972,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 accent: Color(0xFFF8B878),
               ),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Expanded(
               child: _PodiumEntry(
                 medal: '🥉',
-                initials: 'AJ',
-                name: 'Alex',
+                initials: _initialsFromName(_displayName),
+                name: _displayName,
                 xp: '1340',
                 height: 54,
                 accent: Color(0xFFB284BE),
