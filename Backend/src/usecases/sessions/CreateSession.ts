@@ -20,6 +20,7 @@ export const CreateSession = async (data: CreateFocusSessionDTO) => {
     scheduleid: data.scheduleid ?? null,
     roomid: data.roomid ?? null,
     starttime: data.starttime,
+    ...(data.endtime ? { endtime: data.endtime } : {}),
     allowbreakminutes: data.allowbreakminutes ?? 0,
     focusscore: 0,
     status: SessionStatus.SCHEDULED,
