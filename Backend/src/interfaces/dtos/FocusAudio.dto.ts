@@ -1,7 +1,7 @@
 export interface CreateFocusAudioDTO {
   sessionid: string; 
   volumelevel?: number; 
-  mixambientsounds?: boolean;  
+  mixmultiplesounds?: boolean;  
   sounds?: CreateAmbientSoundDTO[]; 
 }
 
@@ -14,7 +14,7 @@ export interface CreateAmbientSoundDTO {
 
 export interface UpdateFocusAudioSettingsDTO {
   volumelevel?: number;
-  mixambientsounds?: boolean;
+  mixmultiplesounds?: boolean;
 }
 
 export interface DeleteAmbientSoundDTO {

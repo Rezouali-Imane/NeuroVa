@@ -66,11 +66,11 @@ Map<String, dynamic> toJson() => {
 };
 
   factory TimerSettings.fromJson(Map<String, dynamic> json) => TimerSettings(
-    type: json['type'] ?? 'Pomodoro',
+    type: (json['timertype'] ?? json['type'] ?? 'POMODORO').toString(),
     durationminutes: json['durationminutes'] ?? 25,
     breakminutes: json['breakminutes'],
     longbreakminutes: json['longbreakminutes'],
-    pomodorocycles: json['pomodorocycles'],
+    pomodorocycles: json['pomodoroscycle'] ?? json['pomodorocycles'],
     remainingseconds: json['remainingseconds'] ?? 0,
     isrunning: json['isrunning'] ?? false,
   );

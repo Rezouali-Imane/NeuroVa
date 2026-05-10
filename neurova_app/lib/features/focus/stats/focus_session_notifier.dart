@@ -83,7 +83,7 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
       final timerMap = result['timer'] as Map<String, dynamic>;
       final timer = TimerSettings.fromJson(timerMap);
       _currentTimerId = timerMap['timerid'].toString();
-      _initialDuration = timer.durationminutes * 60;
+      _initialDuration = timer.remainingseconds > 0 ? timer.remainingseconds : timer.durationminutes * 60;
       state = ActiveFocusState(
         session: session,
         timer: timer,
@@ -93,6 +93,11 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
       );
       _startTicker();
     } catch (e) {
+      if (e is DioException && e.response != null) {
+        print('🔴 Backend error: ${e.response?.data}');
+      } else {
+        print('🔴 startNewSession error: $e');
+      }
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

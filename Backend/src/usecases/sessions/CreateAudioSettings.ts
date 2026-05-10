@@ -12,7 +12,7 @@ export const CreateFocusAudio = async (
   const audioData: CreateFocusAudioDTO = {
     sessionid: sessionid,
     volumelevel: customData?.volumelevel ?? 1.0,
-    mixambientsounds: customData?.mixambientsounds ?? false,
+    mixmultiplesounds: customData?.mixmultiplesounds ?? false,
     sounds: customData?.sounds ?? [],
   };
 

@@ -27,9 +27,11 @@ export const FocusSessionController = {
   async create(req: Request, res: Response) {
     try {
       const session = await CreateSession(req.body);
-      await CreateTimer(session.sessionid, req.body.timerSettings);
+      const timerInput = req.body.timerSettings ?? {};
+      if (timerInput.timertype) timerInput.type = timerInput.timertype;
+      const timer = await CreateTimer(session.sessionid, timerInput);
       await CreateFocusAudio(session.sessionid);
-      res.status(201).json({ success: true, data: session });
+      res.status(201).json({ success: true, data: { ...session, timer } });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });
     }

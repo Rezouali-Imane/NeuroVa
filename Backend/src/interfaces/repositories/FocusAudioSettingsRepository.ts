@@ -12,7 +12,7 @@ export const FocusAudioRepository = {
     const createData = {
         sessionid: data.sessionid,
         volumelevel: data.volumelevel ?? 1.0,
-        mixambientsounds: data.mixambientsounds ?? false,
+        mixmultiplesounds: data.mixmultiplesounds ?? false,
         ...(data.sounds && data.sounds.length > 0
             ? {
                 ambientsound: {
@@ -98,7 +98,7 @@ export const FocusAudioRepository = {
     async updateSettings(settingsid: string, data: UpdateFocusAudioSettingsDTO) {
         const updateData = {
             ...(data.volumelevel !== undefined ? { volumelevel: data.volumelevel } : {}),
-            ...(data.mixambientsounds !== undefined ? { mixambientsounds: data.mixambientsounds } : {})
+            ...(data.mixmultiplesounds !== undefined ? { mixmultiplesounds: data.mixmultiplesounds } : {})
         };
 
         return await prisma.focusaudiosettings.update({

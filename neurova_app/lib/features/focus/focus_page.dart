@@ -405,16 +405,21 @@ class _FocusPageState extends ConsumerState<FocusPage> {
     final localStorage = ref.read(localStorageServiceProvider);
     final userId = await localStorage.readUserId();
     if (!mounted) return;
-
     if (userId == null || userId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please sign in again to start a focus session')),
       );
       return;
     }
-
     final settings = _buildTimerSettings();
     await ref.read(activeFocusProvider.notifier).startNewSession(settings);
+    if (!mounted) return;
+    final error = ref.read(activeFocusProvider).error;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $error'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   // Open appropriate customiser based on current mode
