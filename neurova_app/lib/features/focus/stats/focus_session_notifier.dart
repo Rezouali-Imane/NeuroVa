@@ -52,11 +52,12 @@ class ActiveFocusState {
   }
 }
 
-final activeFocusProvider = StateNotifierProvider<ActiveFocusNotifier, ActiveFocusState>((ref) {
-  final service = ref.watch(focusSessionServiceProvider);
-  final localStorage = ref.watch(localStorageServiceProvider);
-  return ActiveFocusNotifier(service, localStorage, ref);
-});
+final activeFocusProvider =
+    StateNotifierProvider<ActiveFocusNotifier, ActiveFocusState>((ref) {
+      final service = ref.watch(focusSessionServiceProvider);
+      final localStorage = ref.watch(localStorageServiceProvider);
+      return ActiveFocusNotifier(service, localStorage, ref);
+    });
 
 class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
   final FocusSessionService _service;
@@ -67,7 +68,7 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
   int _initialDuration = 0;
 
   ActiveFocusNotifier(this._service, this._localStorage, this._ref)
-      : super(ActiveFocusState(remainingSeconds: 0, isRunning: false));
+    : super(ActiveFocusState(remainingSeconds: 0, isRunning: false));
 
   Future<String?> _getUserId() async => await _localStorage.readUserId();
 
@@ -78,12 +79,17 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
 
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final result = await _service.createSession(userId: userId, timerSettings: settings);
+      final result = await _service.createSession(
+        userId: userId,
+        timerSettings: settings,
+      );
       final session = FocusSession.fromJson(result);
       final timerMap = result['timer'] as Map<String, dynamic>;
       final timer = TimerSettings.fromJson(timerMap);
       _currentTimerId = timerMap['timerid'].toString();
-      _initialDuration = timer.remainingseconds > 0 ? timer.remainingseconds : timer.durationminutes * 60;
+      _initialDuration = timer.remainingseconds > 0
+          ? timer.remainingseconds
+          : timer.durationminutes * 60;
       state = ActiveFocusState(
         session: session,
         timer: timer,
@@ -94,9 +100,9 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
       _startTicker();
     } catch (e) {
       if (e is DioException && e.response != null) {
-        print('🔴 Backend error: ${e.response?.data}');
+        print(' Backend error: ${e.response?.data}');
       } else {
-        print('🔴 startNewSession error: $e');
+        print(' startNewSession error: $e');
       }
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -121,9 +127,17 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
   Future<void> _completeSession() async {
     if (state.session == null) return;
     await _service.endSession(state.session!.sessionid);
-    // After completion, reset local state
+
     state = ActiveFocusState(remainingSeconds: 0, isRunning: false);
     _timer?.cancel();
+    _currentTimerId = null;
+  }
+
+  Future<void> endSession() async {
+    if (state.session == null) return;
+    _timer?.cancel();
+    await _service.endSession(state.session!.sessionid);
+    state = ActiveFocusState(remainingSeconds: 0, isRunning: false);
     _currentTimerId = null;
   }
 
@@ -165,7 +179,10 @@ class SessionHistoryState {
 
   SessionHistoryState({this.sessions = const [], this.isLoading = false});
 
-  SessionHistoryState copyWith({List<FocusSession>? sessions, bool? isLoading}) {
+  SessionHistoryState copyWith({
+    List<FocusSession>? sessions,
+    bool? isLoading,
+  }) {
     return SessionHistoryState(
       sessions: sessions ?? this.sessions,
       isLoading: isLoading ?? this.isLoading,
@@ -176,11 +193,13 @@ class SessionHistoryState {
   int get todayMinutes {
     final today = DateTime.now();
     return sessions
-        .where((s) =>
-    s.status == 'COMPLETED' &&
-        s.starttime.year == today.year &&
-        s.starttime.month == today.month &&
-        s.starttime.day == today.day)
+        .where(
+          (s) =>
+              s.status == 'COMPLETED' &&
+              s.starttime.year == today.year &&
+              s.starttime.month == today.month &&
+              s.starttime.day == today.day,
+        )
         .fold(0, (sum, s) => sum + (s.duration ?? 0));
   }
 
@@ -189,9 +208,7 @@ class SessionHistoryState {
     final now = DateTime.now();
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
     return sessions
-        .where((s) =>
-    s.status == 'COMPLETED' &&
-        s.starttime.isAfter(weekStart))
+        .where((s) => s.status == 'COMPLETED' && s.starttime.isAfter(weekStart))
         .fold(0, (sum, s) => sum + (s.duration ?? 0));
   }
 
@@ -206,7 +223,9 @@ class SessionHistoryState {
       }
     }
     if (minutesByDay.isEmpty) return '-';
-    final best = minutesByDay.entries.reduce((a, b) => a.value > b.value ? a : b);
+    final best = minutesByDay.entries.reduce(
+      (a, b) => a.value > b.value ? a : b,
+    );
     return days[best.key - 1];
   }
 
@@ -217,17 +236,19 @@ class SessionHistoryState {
   }
 }
 
-final sessionHistoryProvider = StateNotifierProvider<SessionHistoryNotifier, SessionHistoryState>((ref) {
-  final service = ref.watch(focusSessionServiceProvider);
-  final localStorage = ref.watch(localStorageServiceProvider);
-  return SessionHistoryNotifier(service, localStorage);
-});
+final sessionHistoryProvider =
+    StateNotifierProvider<SessionHistoryNotifier, SessionHistoryState>((ref) {
+      final service = ref.watch(focusSessionServiceProvider);
+      final localStorage = ref.watch(localStorageServiceProvider);
+      return SessionHistoryNotifier(service, localStorage);
+    });
 
 class SessionHistoryNotifier extends StateNotifier<SessionHistoryState> {
   final FocusSessionService _service;
   final LocalStorageService _localStorage;
 
-  SessionHistoryNotifier(this._service, this._localStorage) : super(SessionHistoryState());
+  SessionHistoryNotifier(this._service, this._localStorage)
+    : super(SessionHistoryState());
 
   Future<void> fetchSessions() async {
     state = state.copyWith(isLoading: true);

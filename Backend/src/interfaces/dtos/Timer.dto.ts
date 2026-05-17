@@ -1,14 +1,16 @@
 import { TimerType } from "../../entities/timer.js";
 
 export interface CreateTimerDTO {
-    sessionid: string;
-    type: TimerType;
-    durationminutes: number;
-    breakminutes: number;
-    longbreakminutes: number;
-    pomodoroscycle: number;
-    isrunning: boolean;
-    remainingseconds: number;
+  sessionid: string;
+  type: TimerType;
+  durationminutes: number;
+  breakminutes?: number | null;
+  longbreakminutes?: number | null;
+  pomodorocycles?: number | null; 
+  isrunning: boolean;
+  remainingseconds: number;
+  starttime?: Date | null;
+  endtime?: Date | null;
 }
 
 export interface UpdateTimerDTO {

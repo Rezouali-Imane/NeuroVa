@@ -1,5 +1,6 @@
 import { StudyRoomRepository } from "../../interfaces/repositories/StudyRoomRepository.js";
 import type { EndGroupSessionDTO } from "../../interfaces/dtos/StudyRoom.dto.js";
+import { CalculateFocusScore } from "../Gamification/CalculateFocusScore.js";
 
 export const EndGroupSession = async (data: EndGroupSessionDTO) => {
   const room = await StudyRoomRepository.findById(data.roomid);
@@ -8,6 +9,21 @@ export const EndGroupSession = async (data: EndGroupSessionDTO) => {
 
   const owner = room.studyroommember.find(m => m.userid === data.userid && m.isowner);
   if (!owner) throw new Error("Only the room owner can end the session.");
+
+  const activeSessions = room.focussession?.filter(s => s.status === "ACTIVE") || [];
+  for (const session of activeSessions) {
+    if (session.starttime) {
+      const now = new Date();
+      const durationMinutes = (now.getTime() - session.starttime.getTime()) / (1000 * 60);
+      const focusMinutes = Math.max(0, durationMinutes - (session.allowbreakminutes || 0));
+      await CalculateFocusScore({
+        sessionid: session.sessionid,
+        focusminutes: focusMinutes,
+        breakminutes: session.allowbreakminutes || 0,
+        taskscompleted: 0,
+      });
+    }
+  }
 
   await StudyRoomRepository.completeAllFocusSessions(data.roomid);
   await StudyRoomRepository.closeRoom(data.roomid);

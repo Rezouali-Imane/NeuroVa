@@ -10,18 +10,34 @@ export const CreateTimer = async (
     throw new Error("Session ID is required to initialize the timer.");
   }
 
-  const timerSettings: CreateTimerDTO = {
+  const type = customData?.type ?? TimerType.POMODORO;
+  const durationminutes = customData?.durationminutes ?? 25;
+  const remainingseconds =
+    customData?.remainingseconds ?? durationminutes * 60;
+
+  const baseSettings = {
     sessionid,
-    type: customData?.type ?? TimerType.POMODORO,
-    durationminutes: customData?.durationminutes ?? 25,
-    breakminutes: customData?.breakminutes ?? 5,
-    longbreakminutes: customData?.longbreakminutes ?? 15,
-    pomodoroscycle: customData?.pomodoroscycle ?? 4,
-    isrunning: customData?.isrunning ?? false,
-    remainingseconds:
-      customData?.remainingseconds ??
-      (customData?.durationminutes ? customData.durationminutes * 60 : 25 * 60),
+    type,
+    durationminutes,
+    remainingseconds,
+    isrunning: false,
+    starttime: null,
+    endtime: null,
   };
 
-  return await TimerRepository.create(timerSettings);
+  if (type === TimerType.POMODORO) {
+    return await TimerRepository.create({
+      ...baseSettings,
+      breakminutes: customData?.breakminutes ?? 5,
+      longbreakminutes: customData?.longbreakminutes ?? 15,
+      pomodorocycles: customData?.pomodorocycles ?? 4,  
+    });
+  }
+
+  return await TimerRepository.create({
+    ...baseSettings,
+    breakminutes: null,
+    longbreakminutes: null,
+    pomodorocycles: null,   
+  });
 };

@@ -14,19 +14,60 @@ class FocusPage extends ConsumerStatefulWidget {
   ConsumerState<FocusPage> createState() => _FocusPageState();
 }
 
-class _FocusPageState extends ConsumerState<FocusPage> {
+class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProviderStateMixin {
   int _selectedNavIndex = 2;
   String _mode = 'Pomodoro';
   bool _ambientOn = true;
+  bool _isStarting = false;
 
-  // Pomodoro settings
   int _focusMinutes = 25;
   int _shortBreakMinutes = 5;
   int _longBreakMinutes = 15;
 
-  // Countdown settings
   int _countdownMinutes = 30;
   int _countdownSeconds = 0;
+
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
+    );
+    _fadeAnimation = Tween<double>(begin: 1.0, end: 0.7).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _animateTimerStart() {
+    _animationController.forward(from: 0.0);
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _animationController.reverse();
+    });
+  }
+
+  void _cycleMode() {
+    if (_mode == 'Pomodoro') {
+      setState(() => _mode = 'Countdown');
+    } else if (_mode == 'Countdown') {
+      setState(() => _mode = 'Stopwatch');
+    } else {
+      setState(() => _mode = 'Pomodoro');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +78,6 @@ class _FocusPageState extends ConsumerState<FocusPage> {
     final totalXp = ref.watch(gamificationNotifierProvider).totalXp;
     final initialSeconds = _getInitialSeconds();
 
-    // Show timer display value
     String displayTime;
     if (hasActiveSession) {
       displayTime = _formatTime(remainingSeconds);
@@ -54,7 +94,6 @@ class _FocusPageState extends ConsumerState<FocusPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
-                  // Header (stats placeholder – can be extended later)
                   Row(
                     children: [
                       Expanded(
@@ -88,7 +127,6 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Mode selector
                   Row(
                     children: ['Pomodoro', 'Countdown', 'Stopwatch']
                         .map((mode) => Expanded(
@@ -97,9 +135,8 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                                 child: GestureDetector(
                                   onTap: () {
                                     if (hasActiveSession) {
-                                      // Optionally show a message that you cannot switch mode mid-session
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Please finish or reset current session first')),
+                                        const SnackBar(content: Text('Please finish current session first')),
                                       );
                                       return;
                                     }
@@ -131,7 +168,6 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                         .toList(),
                   ),
                   const SizedBox(height: 22),
-                  // Timer ring (tappable for customisation)
                   GestureDetector(
                     onTap: () {
                       if (hasActiveSession) {
@@ -161,61 +197,71 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                               ),
                             ),
                           ),
-                          SizedBox(
-                            width: 220,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    displayTime,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: _accent(),
-                                      fontFamily: 'Syne',
-                                      fontSize: _mode == 'Stopwatch' ? 52 : 64,
-                                      fontWeight: FontWeight.w800,
-                                      height: 0.95,
-                                      letterSpacing: 0.5,
+                          AnimatedBuilder(
+                            animation: _animationController,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _scaleAnimation.value,
+                                child: Opacity(
+                                  opacity: _fadeAnimation.value,
+                                  child: SizedBox(
+                                    width: 220,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            displayTime,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: _accent(),
+                                              fontFamily: 'Syne',
+                                              fontSize: _mode == 'Stopwatch' ? 52 : 64,
+                                              fontWeight: FontWeight.w800,
+                                              height: 0.95,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          _mode == 'Pomodoro' ? (hasActiveSession ? 'Focus' : 'Focus') : _mode,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(color: Color(0x82FFFFFF), fontFamily: 'Syne', fontWeight: FontWeight.w600, fontSize: 14),
+                                        ),
+                                        if (_mode == 'Pomodoro') ...[
+                                          const SizedBox(height: 10),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: ['Focus', 'Short Break', 'Long Break']
+                                                .map((phase) => Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                                      child: Container(
+                                                        width: 10,
+                                                        height: 10,
+                                                        decoration: BoxDecoration(
+                                                          shape: BoxShape.circle,
+                                                          color: hasActiveSession ? _accent() : Colors.white24,
+                                                        ),
+                                                      ),
+                                                    ))
+                                                .toList(),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  _mode == 'Pomodoro' ? (hasActiveSession ? 'Focus' : 'Focus') : _mode,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Color(0x82FFFFFF), fontFamily: 'Syne', fontWeight: FontWeight.w600, fontSize: 14),
-                                ),
-                                if (_mode == 'Pomodoro') ...[
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: ['Focus', 'Short Break', 'Long Break']
-                                        .map((phase) => Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                                              child: Container(
-                                                width: 10,
-                                                height: 10,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: hasActiveSession ? _accent() : Colors.white24,
-                                                ),
-                                              ),
-                                            ))
-                                        .toList(),
-                                  ),
-                                ],
-                              ],
-                            ),
+                              );
+                            },
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  // Control buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -223,11 +269,13 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                         icon: const Icon(Icons.replay, color: Colors.white70),
                         onTap: () async {
                           if (hasActiveSession) {
-                            // Reset current session
                             await ref.read(activeFocusProvider.notifier).reset();
                           } else {
-                            // Start new session with current settings
+                            if (_isStarting) return;
+                            setState(() => _isStarting = true);
                             await _startSessionForSelectedMode();
+                            setState(() => _isStarting = false);
+                            _animateTimerStart();
                           }
                         },
                       ),
@@ -235,9 +283,12 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                       GestureDetector(
                         onTap: () async {
                           if (!hasActiveSession) {
+                            if (_isStarting) return;
+                            setState(() => _isStarting = true);
                             await _startSessionForSelectedMode();
+                            setState(() => _isStarting = false);
+                            _animateTimerStart();
                           } else {
-                            // Pause/Resume
                             if (isRunning) {
                               ref.read(activeFocusProvider.notifier).pause();
                             } else {
@@ -266,19 +317,28 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                         ),
                       ),
                       const SizedBox(width: 22),
-                      _controlIconButton(
-                        icon: const Icon(Icons.skip_next, color: Colors.white70),
-                        onTap: () async {
-                          if (hasActiveSession) {
-                            // End session early
-                            await ref.read(activeFocusProvider.notifier).reset(); // or call endSession directly
-                          }
-                        },
-                      ),
+                      if (!hasActiveSession)
+                        _controlIconButton(
+                          icon: const Icon(Icons.skip_next, color: Colors.white70),
+                          onTap: () {
+                            if (!hasActiveSession) _cycleMode();
+                          },
+                        )
+                      else
+                        _controlIconButton(
+                          icon: const Icon(Icons.stop, color: Colors.white70),
+                          onTap: () async {
+                            await ref.read(activeFocusProvider.notifier).endSession();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Session completed!')),
+                              );
+                            }
+                          },
+                        ),
                     ],
                   ),
                   const SizedBox(height: 26),
-                  // Ambient sounds (local toggle only)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
@@ -326,7 +386,6 @@ class _FocusPageState extends ConsumerState<FocusPage> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  // Stats placeholder
                   Container(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                     decoration: BoxDecoration(
@@ -355,7 +414,6 @@ class _FocusPageState extends ConsumerState<FocusPage> {
     );
   }
 
-  // Helper: get initial seconds for idle state
   int _getInitialSeconds() {
     switch (_mode) {
       case 'Pomodoro':
@@ -369,7 +427,6 @@ class _FocusPageState extends ConsumerState<FocusPage> {
     }
   }
 
-  // Build TimerSettings object from current UI state
   TimerSettings _buildTimerSettings() {
     switch (_mode) {
       case 'Pomodoro':
@@ -422,21 +479,18 @@ class _FocusPageState extends ConsumerState<FocusPage> {
     }
   }
 
-  // Open appropriate customiser based on current mode
   void _openTimerCustomizer() async {
     if (_mode == 'Pomodoro') {
       await _showPomodoroSettingsSheet();
     } else if (_mode == 'Countdown') {
       await _showCountdownSettingsSheet();
     } else {
-      // Stopwatch has no settings
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Stopwatch does not have custom settings')),
       );
     }
   }
 
-  // Bottom sheet for Pomodoro settings (focus, short break, long break)
   Future<void> _showPomodoroSettingsSheet() async {
     int focus = _focusMinutes;
     int shortBreak = _shortBreakMinutes;
@@ -633,7 +687,6 @@ class _FocusPageState extends ConsumerState<FocusPage> {
     );
   }
 
-  // Bottom sheet for countdown settings (minutes and seconds)
   Future<void> _showCountdownSettingsSheet() async {
     int minutes = _countdownMinutes;
     int seconds = _countdownSeconds;
@@ -840,14 +893,12 @@ class _FocusPageState extends ConsumerState<FocusPage> {
     );
   }
 
-  // Helper: format time (mm:ss)
   String _formatTime(int seconds) {
     final m = (seconds % 3600) ~/ 60;
     final s = seconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  // Accent colour depending on mode
   Color _accent() {
     if (_mode == 'Countdown') return const Color(0xFFF8B878);
     if (_mode == 'Stopwatch') return const Color(0xFFA2ADD0);
@@ -872,7 +923,6 @@ class _FocusPageState extends ConsumerState<FocusPage> {
   }
 }
 
-// Custom painter for the ring progress
 class _RingPainter extends CustomPainter {
   final double progress;
   final Color color;

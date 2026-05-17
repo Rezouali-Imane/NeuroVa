@@ -23,6 +23,6 @@ export const CreateSession = async (data: CreateFocusSessionDTO) => {
     ...(data.endtime ? { endtime: data.endtime } : {}),
     allowbreakminutes: data.allowbreakminutes ?? 0,
     focusscore: 0,
-    status: SessionStatus.SCHEDULED,
+    status: SessionStatus.ACTIVE,
   });
 };

@@ -13,9 +13,16 @@ export const UpdateTimer = async (timerid: string, data: any) => {
     } else if (data.durationminutes === timer.longbreakminutes) {
       data.remainingseconds = timer.longbreakminutes * 60;
     }
-
     data.isrunning = false;
     data.endtime = null;
+    data.starttime = null;
+  }
+
+  if (timer.type !== TimerType.POMODORO && data.durationminutes !== undefined) {
+    data.remainingseconds = data.durationminutes * 60;
+    data.isrunning = false;
+    data.endtime = null;
+    data.starttime = null;
   }
 
   if (data.isrunning !== undefined) {
