@@ -23,8 +23,6 @@ router.delete('/:timerid/timer', FocusSessionController.removeTimer);
 
 router.post('/:sessionid/end', FocusSessionController.end);
 
-router.delete('/:sessionid', FocusSessionController.delete);
-
 router.post('/:sessionid/audio', FocusSessionController.addAudio);
 
 router.patch('/:settingsid/audio-settings', FocusSessionController.updateAudioSettings);
@@ -44,6 +42,9 @@ router.get('/audio-settings/:soundid/get_ambientsound', FocusSessionController.g
 router.patch('/audio-settings/:soundid/ambient-sound', FocusSessionController.updateAmbientSound);
 
 router.delete('/:soundid/ambient-sound', FocusSessionController.deleteAmbientSound);
+
+router.delete('/:sessionid', FocusSessionController.delete);
+
 router.post('/:sessionid/calculate-focus-score', FocusSessionController.CalculateFocusScore);
 
 export default router;

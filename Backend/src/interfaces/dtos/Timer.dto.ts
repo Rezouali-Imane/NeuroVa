@@ -18,7 +18,7 @@ export interface UpdateTimerDTO {
     durationminutes?: number; 
     breakminutes?: number;    
     longbreakminutes?: number; 
-    pomodoroscycle?: number;
+    pomodorocycles?: number;
     isrunning?: boolean;
     remainingseconds?: number;
     starttime?: Date | null;

@@ -12,7 +12,7 @@ export class Timer {
         public durationminutes: number,
         public breakminutes: number,
         public longbreakminutes: number,
-        public pomodoroscycle: number,
+        public pomodorocycles: number,
         public isrunning: boolean,
         public remainingseconds: number,
         public starttime?: Date | null,
