@@ -96,7 +96,7 @@ export class GamificationService {
   }
 
   // Diagram signature: getLeaderboardTopN(n)
-  static async getLeaderboardTopN(n: number, leaderboardid: string = "global") {
+  static async getLeaderboardTopN(n: number, leaderboardid: string) {
     return GetLeaderboardTopN({ leaderboardid, limit: n } as GetLeaderboardDTO);
   }
 
@@ -117,6 +117,7 @@ export class GamificationService {
   }
 
   static async calculateFocusScore(data: {
+    userid: string;
     sessionid: string;
     focusminutes: number;
     breakminutes: number;

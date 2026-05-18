@@ -1,6 +1,9 @@
+import { XPSource } from "../../entities/Gamification.entities.js";
 import { GamificationRepository } from "../../interfaces/repositories/GamificationRepository.js";
+import { AwardXP } from "./AwardXP.js";
 
 interface CalculateFocusScoreDTO {
+    userid: string;
     sessionid: string;
     focusminutes: number;
     breakminutes: number;
@@ -8,7 +11,7 @@ interface CalculateFocusScoreDTO {
 }
 
 export const CalculateFocusScore = async (dto: CalculateFocusScoreDTO) => {
-    const { sessionid, focusminutes, breakminutes, taskscompleted } = dto;
+    const { userid, sessionid, focusminutes, breakminutes, taskscompleted } = dto;
 
     const baseScore = focusminutes * 1.0;
     const breakPenalty = breakminutes * 0.5;
@@ -19,5 +22,15 @@ export const CalculateFocusScore = async (dto: CalculateFocusScoreDTO) => {
 
     await GamificationRepository.updateFocusScore(sessionid, rounded);
 
-    return { success: true, message: "Focus score calculated", score: rounded };
+    const xpAmount = Math.round(score);
+    if (xpAmount > 0) {
+        await AwardXP({
+            userid,
+            amount: xpAmount,
+            source: XPSource.SESSION_COMPLETED,
+            description: `Focus score: ${rounded} from session ${sessionid}`,
+        });
+    }
+
+    return { success: true, message: "Focus score calculated", score: rounded, xpAwarded: xpAmount };
 };

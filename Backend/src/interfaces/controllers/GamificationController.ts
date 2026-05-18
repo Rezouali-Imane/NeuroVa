@@ -129,8 +129,10 @@ export const GamificationController = {
 
   async calculateFocusScore(req: Request, res: Response) {
     try {
+      const { userid } = (req as AuthRequest).user!;
       const { sessionid, focusminutes, breakminutes, taskscompleted } = req.body;
       const result = await GamificationService.calculateFocusScore({
+        userid,
         sessionid,
         focusminutes,
         breakminutes,

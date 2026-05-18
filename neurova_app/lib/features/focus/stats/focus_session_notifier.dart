@@ -7,6 +7,7 @@ import '../services/foucs_session_services.dart';
 import '../Models/focus_session_module.dart';
 import '../../../shared/services/local_storage_service.dart';
 import '../../auth/state/auth_notifier.dart';
+import '../../gamification/state/gamification_notifier.dart';
 
 // --- Provider setup ----------------------------------------------------------
 final focusSessionServiceProvider = Provider((ref) {
@@ -126,19 +127,41 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
 
   Future<void> _completeSession() async {
     if (state.session == null) return;
-    await _service.endSession(state.session!.sessionid);
+    final sessionId = state.session!.sessionid;
+    final focusedSeconds = _initialDuration - state.remainingSeconds;
+    final focusMinutes = (focusedSeconds / 60).ceil().clamp(0, 9999);
+
+    await _service.endSession(sessionId);
 
     state = ActiveFocusState(remainingSeconds: 0, isRunning: false);
     _timer?.cancel();
     _currentTimerId = null;
+
+    _ref.read(gamificationNotifierProvider.notifier).calculateFocusScore(
+      sessionId: sessionId,
+      focusMinutes: focusMinutes,
+      breakMinutes: 0,
+      tasksCompleted: 0,
+    );
   }
 
   Future<void> endSession() async {
     if (state.session == null) return;
+    final sessionId = state.session!.sessionid;
+    final focusedSeconds = _initialDuration - state.remainingSeconds;
+    final focusMinutes = (focusedSeconds / 60).ceil().clamp(0, 9999);
+
     _timer?.cancel();
-    await _service.endSession(state.session!.sessionid);
+    await _service.endSession(sessionId);
     state = ActiveFocusState(remainingSeconds: 0, isRunning: false);
     _currentTimerId = null;
+
+    _ref.read(gamificationNotifierProvider.notifier).calculateFocusScore(
+      sessionId: sessionId,
+      focusMinutes: focusMinutes,
+      breakMinutes: 0,
+      tasksCompleted: 0,
+    );
   }
 
   void pause() {
