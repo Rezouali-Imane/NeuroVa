@@ -112,7 +112,7 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
       // For stopwatch, increment time; for countdown modes, decrement
-      final isStopwatch = state.timer?.type == 'STOPWATCH';
+      final isStopwatch = state.timer?.type == 'CHRONOMETER';
       
       if (isStopwatch) {
         // Stopwatch increments indefinitely until manually stopped

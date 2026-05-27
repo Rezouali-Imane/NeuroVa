@@ -507,7 +507,7 @@ class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProvider
         );
       case 'Stopwatch':
         return TimerSettings(
-          type: 'STOPWATCH',
+          type: 'CHRONOMETER',
           durationminutes: 0,
           remainingseconds: 0,
           isrunning: true,
