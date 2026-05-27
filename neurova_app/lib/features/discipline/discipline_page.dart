@@ -46,9 +46,10 @@ class _DisciplinePageState extends ConsumerState<DisciplinePage> {
     ];
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final storage = ref.read(localStorageServiceProvider);
-      _userId = (await storage.readUserId()) ?? '';
-      if (mounted && _userId.isNotEmpty) {
-        ref.read(disciplineNotifierProvider(_userId).notifier).refreshData();
+      final userId = (await storage.readUserId()) ?? '';
+      if (mounted && userId.isNotEmpty) {
+        _userId = userId;
+        setState(() {});
       }
     });
   }

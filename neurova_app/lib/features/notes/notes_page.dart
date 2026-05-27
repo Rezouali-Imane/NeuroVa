@@ -533,6 +533,7 @@ class _NotesPageState extends ConsumerState<NotesPage> {
     return UnifiedBottomNavBar(
       selectedIndex: _selectedNavIndex,
       onNavItemTapped: (index) => setState(() => _selectedNavIndex = index),
+      isPositioned: true,
     );
   }
 }
