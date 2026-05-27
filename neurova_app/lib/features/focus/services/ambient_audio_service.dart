@@ -4,12 +4,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AmbientSound {
   final String id;
   final String name;
-  final String assetPath;
+  final String assetPath; // For local assets
+  final String? remoteUrl; // For streaming from URLs
   
   AmbientSound({
     required this.id,
     required this.name,
-    required this.assetPath,
+    this.assetPath = '',
+    this.remoteUrl,
   });
 }
 
@@ -22,13 +24,38 @@ class AmbientAudioService {
   bool _isPlaying = false;
 
   final List<AmbientSound> availableSounds = [
-    AmbientSound(id: 'off', name: 'Off', assetPath: ''),
-    AmbientSound(id: 'rain', name: 'Rain', assetPath: 'assets/ambient/rain.m4a'),
-    AmbientSound(id: 'cafe', name: 'Café', assetPath: 'assets/ambient/cafe.m4a'),
-    AmbientSound(id: 'forest', name: 'Forest', assetPath: 'assets/ambient/forest.m4a'),
-    AmbientSound(id: 'ocean', name: 'Ocean', assetPath: 'assets/ambient/ocean.m4a'),
-    AmbientSound(id: 'white_noise', name: 'White Noise', assetPath: 'assets/ambient/white_noise.m4a'),
-    AmbientSound(id: 'study', name: 'Study Beats', assetPath: 'assets/ambient/study_beats.m4a'),
+    AmbientSound(id: 'off', name: 'Off', assetPath: '', remoteUrl: null),
+    // Free streaming ambient sounds from royalty-free sources
+    AmbientSound(
+      id: 'rain',
+      name: 'Rain',
+      remoteUrl: 'https://assets.mixkit.co/active_storage/sfx/2404/2404-preview.mp3',
+    ),
+    AmbientSound(
+      id: 'cafe',
+      name: 'Café',
+      remoteUrl: 'https://assets.mixkit.co/active_storage/sfx/1996/1996-preview.mp3',
+    ),
+    AmbientSound(
+      id: 'forest',
+      name: 'Forest',
+      remoteUrl: 'https://assets.mixkit.co/active_storage/sfx/1988/1988-preview.mp3',
+    ),
+    AmbientSound(
+      id: 'ocean',
+      name: 'Ocean',
+      remoteUrl: 'https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3',
+    ),
+    AmbientSound(
+      id: 'white_noise',
+      name: 'White Noise',
+      remoteUrl: 'https://assets.mixkit.co/active_storage/sfx/2404/2404-preview.mp3',
+    ),
+    AmbientSound(
+      id: 'study',
+      name: 'Study Beats',
+      remoteUrl: 'https://assets.mixkit.co/active_storage/sfx/2162/2162-preview.mp3',
+    ),
   ];
 
   factory AmbientAudioService() {
@@ -64,7 +91,15 @@ class AmbientAudioService {
       } else {
         final sound = availableSounds.firstWhere((s) => s.id == soundId);
         
-        await _audioPlayer.setAsset(sound.assetPath);
+        // Use remote URL if available, otherwise use asset
+        if (sound.remoteUrl != null && sound.remoteUrl!.isNotEmpty) {
+          await _audioPlayer.setUrl(sound.remoteUrl!);
+        } else if (sound.assetPath.isNotEmpty) {
+          await _audioPlayer.setAsset(sound.assetPath);
+        } else {
+          throw Exception('No audio source available for $soundId');
+        }
+        
         await _audioPlayer.setLoopMode(LoopMode.all);
         await _audioPlayer.play();
         
