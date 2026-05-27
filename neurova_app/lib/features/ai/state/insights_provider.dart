@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/ai_models.dart';
 import '../services/ai_service.dart';
+import '../../auth/state/auth_notifier.dart' show aiServiceProvider, localStorageServiceProvider;
 
 
 final List<AIInsight> _fallbackInsights = [
@@ -221,37 +222,28 @@ class InsightsNotifier extends StateNotifier<InsightsState> {
 // PROVIDERS
 // ==============================================================================
 
-// Provider for AIService - implement this in your main app
-final aiServiceProvider = Provider<AIService?>((ref) {
-  // TODO: Wire up AIService from your DI container
-  // Example:
-  // final dio = ref.watch(dioProvider);
-  // final localStorage = ref.watch(localStorageServiceProvider);
-  // return AIService(dio, localStorage);
-  return null;
-});
-
-// Provider for current user ID - implement this in your main app
-final currentUserIdProvider = Provider<String?>((ref) {
-  // TODO: Wire up current user ID from your auth provider
-  // Example:
-  // final auth = ref.watch(authProvider);
-  // return auth.user?.id;
-  return null;
+// Provider for current user ID
+final currentUserIdProvider = FutureProvider<String?>((ref) async {
+  final localStorage = ref.watch(localStorageServiceProvider);
+  return await localStorage.readUserId();
 });
 
 // Insights state notifier provider
 final insightsProvider =
     StateNotifierProvider<InsightsNotifier, InsightsState>((ref) {
   final aiService = ref.watch(aiServiceProvider);
-  final userId = ref.watch(currentUserIdProvider);
+  final userIdAsync = ref.watch(currentUserIdProvider);
   
-  // Return an uninitialized state if dependencies are missing
-  if (aiService == null || userId == null) {
-    return InsightsNotifier._uninitialized();
-  }
-  
-  return InsightsNotifier(aiService, userId);
+  return userIdAsync.when(
+    loading: () => InsightsNotifier._uninitialized(),
+    error: (_, _) => InsightsNotifier._uninitialized(),
+    data: (userId) {
+      if (userId == null || userId.isEmpty) {
+        return InsightsNotifier._uninitialized();
+      }
+      return InsightsNotifier(aiService, userId);
+    },
+  );
 });
 
 // Current insight provider

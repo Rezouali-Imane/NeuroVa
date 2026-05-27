@@ -412,36 +412,3 @@ class AINotifier extends StateNotifier<AIState> {
     state = state.copyWith(error: '', hasError: false);
   }
 }
-
-// ==============================================================================
-// PROVIDERS
-// ==============================================================================
-
-// TODO: Create provider in your providers file or main.dart
-// You'll need to:
-// 1. Import AIService: import '../services/ai_service.dart';
-// 2. Create AIService provider (using your existing dio and localStorage providers)
-// 3. Create AINotifier provider like this:
-//
-// final aiServiceProvider = Provider((ref) {
-//   final dio = ref.watch(dioProvider);  // Your existing provider
-//   final localStorage = ref.watch(localStorageServiceProvider);  // Your existing provider
-//   return AIService(dio, localStorage);
-// });
-//
-// final aiNotifierProvider = StateNotifierProvider.family<AINotifier, AIState, String>((ref, userId) {
-//   final aiService = ref.watch(aiServiceProvider);
-//   return AINotifier(aiService, userId);
-// });
-
-// For now, we provide a basic notifier that can be created manually:
-// Example usage in your screen:
-// final notifier = AINotifier(aiService, userId);
-
-// Convenience providers for current user
-final currentUserIdProvider = Provider<String>((ref) {
-  // This should be injected or obtained from auth state
-  // For now, return empty string - you'll need to update this
-  throw UnimplementedError(
-      'currentUserIdProvider must be implemented with actual user ID');
-});
