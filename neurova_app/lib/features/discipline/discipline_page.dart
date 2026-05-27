@@ -1,55 +1,83 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/widgets/profile_view_shell.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
+import '../auth/state/auth_notifier.dart' show localStorageServiceProvider;
+import './state/discipline_notifier.dart';
+import './state/faith_mode_provider.dart';
 
-class DisciplinePage extends StatefulWidget {
+class DisciplinePage extends ConsumerStatefulWidget {
   const DisciplinePage({super.key});
 
   @override
-  State<DisciplinePage> createState() => _DisciplinePageState();
+  ConsumerState<DisciplinePage> createState() => _DisciplinePageState();
 }
 
-class _DisciplinePageState extends State<DisciplinePage> {
+class _DisciplinePageState extends ConsumerState<DisciplinePage> {
   int _selectedNavIndex = -1;
   bool _focusShield = true;
   String _filterLevel = 'Medium';
-  final List<Map<String, dynamic>> _weekly = [
-    {'d': 'M', 'v': 3.2},
-    {'d': 'T', 'v': 2.8},
-    {'d': 'W', 'v': 4.1},
-    {'d': 'T', 'v': 1.9},
-    {'d': 'F', 'v': 3.7},
-    {'d': 'S', 'v': 0.8},
-    {'d': 'S', 'v': 1.2},
-  ];
+  late String _userId;
 
-  final List<Map<String, dynamic>> _schedules = [
-    {'label': 'Morning Focus', 'time': '09:00 - 12:00', 'days': 'Mon Tue Wed Thu Fri', 'active': true},
-    {'label': 'Afternoon Block', 'time': '14:00 - 17:00', 'days': 'Mon Wed Fri', 'active': true},
-    {'label': 'Night Study', 'time': '20:00 - 23:00', 'days': 'Sun', 'active': false},
-  ];
+  late List<Map<String, dynamic>> _schedules;
 
-  final List<Map<String, dynamic>> _apps = [
-    {'name': 'Instagram', 'icon': '�', 'blocked': true, 'saved': '2h 14m today'},
-    {'name': 'TikTok', 'icon': '🎵', 'blocked': true, 'saved': '1h 38m today'},
-    {'name': 'Twitter/X', 'icon': '𝕏', 'blocked': true, 'saved': '47m today'},
-    {'name': 'YouTube', 'icon': '▶️', 'blocked': false, 'saved': 'Not restricted'},
-    {'name': 'WhatsApp', 'icon': '💬', 'blocked': false, 'saved': 'Not restricted'},
-    {'name': 'Reddit', 'icon': '🟠', 'blocked': true, 'saved': '58m today'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _schedules = [
+      {
+        'label': 'Morning Routine',
+        'time': '6:00 AM - 8:00 AM',
+        'days': 'Mon Tue Wed Thu Fri',
+        'active': true,
+      },
+      {
+        'label': 'Study Time',
+        'time': '9:00 AM - 12:00 PM',
+        'days': 'Mon Tue Wed Thu Fri',
+        'active': true,
+      },
+      {
+        'label': 'Evening Focus',
+        'time': '2:00 PM - 5:00 PM',
+        'days': 'Sat Sun',
+        'active': false,
+      },
+    ];
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final storage = ref.read(localStorageServiceProvider);
+      _userId = (await storage.readUserId()) ?? '';
+      if (mounted && _userId.isNotEmpty) {
+        ref.read(disciplineNotifierProvider(_userId).notifier).refreshData();
+      }
+    });
+  }
 
-  final List<Map<String, dynamic>> _sites = [
-    {'domain': 'facebook.com', 'category': 'Social Media', 'blocked': true},
-    {'domain': 'twitter.com', 'category': 'Social Media', 'blocked': true},
-    {'domain': 'youtube.com', 'category': 'Entertainment', 'blocked': false},
-    {'domain': 'reddit.com', 'category': 'Social Media', 'blocked': true},
-    {'domain': 'netflix.com', 'category': 'Entertainment', 'blocked': false},
-    {'domain': 'amazon.com', 'category': 'Shopping', 'blocked': true},
-  ];
+
 
   @override
   Widget build(BuildContext context) {
-    final blockedApps = _apps.where((a) => a['blocked'] == true).length;
+    // Store context as local variable to pass to dialog methods
+    final buildContext = context;
+    
+    if (_userId.isEmpty) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
+    final disciplineState = ref.watch(disciplineNotifierProvider(_userId));
+    
+    final apps = disciplineState.whenData((data) {
+      final settings = data['settings'] as Map<String, dynamic>?;
+      if (settings == null) return <Map<String, dynamic>>[];
+      // Return formatted apps list from backend
+      return <Map<String, dynamic>>[]; // Placeholder - would be populated from backend
+    }).valueOrNull ?? <Map<String, dynamic>>[];
+
+    final blockedApps = apps.where((a) => a['blocked'] == true).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFF13111A),
@@ -94,7 +122,7 @@ class _DisciplinePageState extends State<DisciplinePage> {
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.add, color: Colors.white, size: 26),
-                        onPressed: _showScheduleMenu,
+                        onPressed: () => _showScheduleMenu(buildContext, ref, _userId),
                       ),
                     ),
                   ],
@@ -195,7 +223,7 @@ class _DisciplinePageState extends State<DisciplinePage> {
                   children: [
                     _sectionTitle('Blocked Apps'),
                     GestureDetector(
-                      onTap: _showAddAppDialog,
+                      onTap: () => _showAddAppDialog(buildContext, ref, _userId),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -224,19 +252,9 @@ class _DisciplinePageState extends State<DisciplinePage> {
                 ),
                 const SizedBox(height: 12),
                 _panel(
-                  children: _apps.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final app = entry.value;
-                    return _toggleRow(
-                      title: app['name'] as String,
-                      subtitle: app['blocked'] == true
-                          ? 'Blocked ${app['saved']}'
-                          : 'Not restricted',
-                      leading: Text(app['icon'] as String, style: const TextStyle(fontSize: 20)),
-                      value: app['blocked'] as bool,
-                      onChanged: (v) => setState(() => _apps[i]['blocked'] = v),
-                    );
-                  }).toList(),
+                  children: [
+                    _blockedAppsList(ref, _userId),
+                  ],
                 ),
                 const SizedBox(height: 18),
                 Row(
@@ -244,7 +262,7 @@ class _DisciplinePageState extends State<DisciplinePage> {
                   children: [
                     _sectionTitle('Blocked Websites'),
                     GestureDetector(
-                      onTap: _showAddWebsiteDialog,
+                      onTap: () => _showAddWebsiteDialog(buildContext, ref, _userId),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -273,17 +291,9 @@ class _DisciplinePageState extends State<DisciplinePage> {
                 ),
                 const SizedBox(height: 12),
                 _panel(
-                  children: _sites.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final site = entry.value;
-                    return _toggleRow(
-                      title: site['domain'] as String,
-                      subtitle: site['category'] as String,
-                      leading: const Icon(Icons.public_outlined, color: Colors.white54, size: 18),
-                      value: site['blocked'] as bool,
-                      onChanged: (v) => setState(() => _sites[i]['blocked'] = v),
-                    );
-                  }).toList(),
+                  children: [
+                    _blockedWebsitesList(ref, _userId),
+                  ],
                 ),
                 const SizedBox(height: 18),
                 _sectionTitle('AI Content Filter'),
@@ -372,6 +382,9 @@ class _DisciplinePageState extends State<DisciplinePage> {
                     );
                   }).toList(),
                 ),
+                const SizedBox(height: 18),
+                _sectionTitle('Prayer Times'),
+                _buildPrayerTimesSection(ref),
                 const SizedBox(height: 24),
                 if (_focusShield)
                   Container(
@@ -436,6 +449,55 @@ class _DisciplinePageState extends State<DisciplinePage> {
     );
   }
 
+  // Helper to render blocked apps list
+  Widget _blockedAppsList(WidgetRef ref, String userId) {
+    // For now, render hardcoded UI but wire actions to backend
+    final sampleApps = [
+      {'name': 'Instagram', 'icon': '📱', 'blocked': true},
+      {'name': 'TikTok', 'icon': '🎵', 'blocked': true},
+      {'name': 'YouTube', 'icon': '▶️', 'blocked': false},
+    ];
+    
+    return Column(
+      children: sampleApps.map((app) {
+        return _toggleRow(
+          title: app['name'] as String,
+          subtitle: app['blocked'] == true ? 'Blocked' : 'Not restricted',
+          leading: Text(app['icon'] as String, style: const TextStyle(fontSize: 20)),
+          value: app['blocked'] as bool,
+          onChanged: (v) async {
+            // Wire to backend if needed
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  // Helper to render blocked websites list
+  Widget _blockedWebsitesList(WidgetRef ref, String userId) {
+    final sampleSites = [
+      {'domain': 'facebook.com', 'category': 'Social Media', 'blocked': true},
+      {'domain': 'twitter.com', 'category': 'Social Media', 'blocked': true},
+      {'domain': 'youtube.com', 'category': 'Entertainment', 'blocked': false},
+    ];
+    
+    return Column(
+      children: sampleSites.map((site) {
+        return _toggleRow(
+          title: site['domain'] as String,
+          subtitle: site['category'] as String,
+          leading: const Icon(Icons.public_outlined, color: Colors.white54, size: 18),
+          value: site['blocked'] as bool,
+          onChanged: (v) async {
+            // Wire to backend if needed
+          },
+        );
+      }).toList(),
+    );
+  }
+}
+
+  // Original helper methods below
   Widget _sectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -682,6 +744,15 @@ class _DisciplinePageState extends State<DisciplinePage> {
 
   Widget _buildWeeklyChart() {
     const double maxVal = 4.1;
+    final List<Map<String, dynamic>> weekly = [
+      {'d': 'M', 'v': 3.2},
+      {'d': 'T', 'v': 2.8},
+      {'d': 'W', 'v': 4.1},
+      {'d': 'T', 'v': 1.9},
+      {'d': 'F', 'v': 3.7},
+      {'d': 'S', 'v': 0.8},
+      {'d': 'S', 'v': 1.2},
+    ];
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -712,7 +783,7 @@ class _DisciplinePageState extends State<DisciplinePage> {
             height: 90,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: _weekly.map((e) {
+              children: weekly.map((e) {
                 final v = (e['v'] as double);
                 return Expanded(
                   child: Padding(
@@ -776,7 +847,7 @@ class _DisciplinePageState extends State<DisciplinePage> {
     );
   }
 
-  void _showScheduleMenu() {
+  void _showScheduleMenu(BuildContext context, WidgetRef ref, String userId) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF20181F),
@@ -801,15 +872,15 @@ class _DisciplinePageState extends State<DisciplinePage> {
             const SizedBox(height: 16),
             _menuItem('Add Focus Schedule', Icons.schedule, () {
               Navigator.pop(context);
-              _showAddScheduleDialog();
+              _showAddScheduleDialog(context, ref, userId);
             }),
             _menuItem('Add App to Block', Icons.apps, () {
               Navigator.pop(context);
-              _showAddAppDialog();
+              _showAddAppDialog(context, ref, userId);
             }),
             _menuItem('Add Website to Block', Icons.public, () {
               Navigator.pop(context);
-              _showAddWebsiteDialog();
+              _showAddWebsiteDialog(context, ref, userId);
             }),
           ],
         ),
@@ -855,7 +926,7 @@ class _DisciplinePageState extends State<DisciplinePage> {
     );
   }
 
-  void _showAddAppDialog() {
+  void _showAddAppDialog(BuildContext context, WidgetRef ref, String userId) {
     final nameController = TextEditingController();
     final urlController = TextEditingController();
     showDialog(
@@ -910,18 +981,13 @@ class _DisciplinePageState extends State<DisciplinePage> {
             child: const Text('Cancel', style: TextStyle(color: Color(0x77FFFFFF))),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               if (nameController.text.isNotEmpty && urlController.text.isNotEmpty) {
-                setState(() {
-                  _apps.add({
-                    'name': nameController.text,
-                    'icon': '📱',
-                    'blocked': true,
-                    'saved': '0h 0m today',
-                    'url': urlController.text,
-                  });
-                });
-                Navigator.pop(context);
+                await ref.read(disciplineNotifierProvider(userId).notifier).addBlockedApp(
+                  nameController.text,
+                  urlController.text,
+                );
+                if (context.mounted) Navigator.pop(context);
               }
             },
             child: const Text('Add', style: TextStyle(color: Color(0xFFB284BE), fontWeight: FontWeight.w700)),
@@ -931,7 +997,7 @@ class _DisciplinePageState extends State<DisciplinePage> {
     );
   }
 
-  void _showAddWebsiteDialog() {
+  void _showAddWebsiteDialog(BuildContext context, WidgetRef ref, String userId) {
     final nameController = TextEditingController();
     final urlController = TextEditingController();
     showDialog(
@@ -986,17 +1052,13 @@ class _DisciplinePageState extends State<DisciplinePage> {
             child: const Text('Cancel', style: TextStyle(color: Color(0x77FFFFFF))),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               if (nameController.text.isNotEmpty && urlController.text.isNotEmpty) {
-                setState(() {
-                  _sites.add({
-                    'domain': urlController.text,
-                    'category': 'Custom',
-                    'blocked': true,
-                    'name': nameController.text,
-                  });
-                });
-                Navigator.pop(context);
+                await ref.read(disciplineNotifierProvider(userId).notifier).addBlockedWebsite(
+                  nameController.text,
+                  urlController.text,
+                );
+                if (context.mounted) Navigator.pop(context);
               }
             },
             child: const Text('Add', style: TextStyle(color: Color(0xFFB284BE), fontWeight: FontWeight.w700)),
@@ -1006,7 +1068,7 @@ class _DisciplinePageState extends State<DisciplinePage> {
     );
   }
 
-  void _showAddScheduleDialog() {
+  void _showAddScheduleDialog(BuildContext context, WidgetRef ref, String userId) {
     final labelController = TextEditingController();
     final timeController = TextEditingController();
     showDialog(
@@ -1059,17 +1121,13 @@ class _DisciplinePageState extends State<DisciplinePage> {
             child: const Text('Cancel', style: TextStyle(color: Color(0x77FFFFFF))),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               if (labelController.text.isNotEmpty && timeController.text.isNotEmpty) {
-                setState(() {
-                  _schedules.add({
-                    'label': labelController.text,
-                    'time': timeController.text,
-                    'days': 'Mon Tue Wed Thu Fri',
-                    'active': true,
-                  });
-                });
-                Navigator.pop(context);
+                await ref.read(disciplineNotifierProvider(userId).notifier).updateSchedule(
+                  labelController.text,
+                  timeController.text,
+                );
+                if (context.mounted) Navigator.pop(context);
               }
             },
             child: const Text('Add', style: TextStyle(color: Color(0xFFB284BE), fontWeight: FontWeight.w700)),
@@ -1078,4 +1136,201 @@ class _DisciplinePageState extends State<DisciplinePage> {
       ),
     );
   }
-}
+
+  Widget _buildPrayerTimesSection(WidgetRef ref) {
+    final faithModeState = ref.watch(faithModeSettingsProvider);
+    
+    if (!faithModeState.enabled) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF9D6BB4).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.more_time_rounded, color: Color(0xFF9D6BB4), size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Faith Mode',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Syne',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Enable to see prayer times and add them to your schedule',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontFamily: 'Syne',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () {
+                    ref.read(faithModeSettingsProvider.notifier).toggleFaithMode(true);
+                  },
+                  child: Container(
+                    width: 48,
+                    height: 28,
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Faith mode enabled - show prayer times
+    if (faithModeState.isLoading) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(color: Color(0xFF9D6BB4)),
+        ),
+      );
+    }
+
+    if (faithModeState.error != null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFF6B6B).withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B6B).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.error_outline, color: Color(0xFFFF6B6B), size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Could not load prayer times',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Syne',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        faithModeState.error ?? 'Unknown error',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontFamily: 'Syne',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () {
+                  if (faithModeState.city != null && faithModeState.country != null) {
+                    ref.read(faithModeSettingsProvider.notifier)
+                        .fetchPrayerTimes(faithModeState.city!, faithModeState.country!);
+                  }
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFF9D6BB4).withValues(alpha: 0.2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text(
+                  'Retry',
+                  style: TextStyle(
+                    color: Color(0xFF9D6BB4),
+                    fontFamily: 'Syne',
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Display prayer times
+    return _panel(
+      children: [
+        if (faithModeState.prayerTimes != null && faithModeState.prayerTimes!.isNotEmpty)
+          ...faithModeState.prayerTimes!.map((prayer) {
+            return _toggleRow(
+              title: prayer.name,
+              subtitle: prayer.time,
+              leading: const Icon(Icons.more_time, color: Color(0xFF9D6BB4), size: 18),
+              value: true,
+              onChanged: (_) {
+                // Mark as prayer schedule block
+              },
+            );
+          }),
+      ],
+    );
+  }
+
+
