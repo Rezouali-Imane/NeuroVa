@@ -111,7 +111,7 @@ class AmbientAudioService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('ambient_sound', _currentSound);
     } catch (e) {
-      print('[AmbientAudio] Error playing sound: $e');
+      // Silently handle errors to avoid disrupting user experience
     }
   }
 
@@ -124,7 +124,7 @@ class AmbientAudioService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble('ambient_volume', _volume);
     } catch (e) {
-      print('[AmbientAudio] Error setting volume: $e');
+      // Silently handle errors
     }
   }
 
@@ -134,7 +134,7 @@ class AmbientAudioService {
       _isPlaying = false;
       _currentSound = 'off';
     } catch (e) {
-      print('[AmbientAudio] Error stopping audio: $e');
+      // Silently handle errors
     }
   }
 
@@ -143,7 +143,7 @@ class AmbientAudioService {
       await _audioPlayer.pause();
       _isPlaying = false;
     } catch (e) {
-      print('[AmbientAudio] Error pausing audio: $e');
+      // Silently handle errors
     }
   }
 
@@ -154,7 +154,7 @@ class AmbientAudioService {
         _isPlaying = true;
       }
     } catch (e) {
-      print('[AmbientAudio] Error resuming audio: $e');
+      // Silently handle errors
     }
   }
 
