@@ -92,9 +92,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   gradient: LinearGradient(
-                    colors: [nc.lilacSurface.withOpacity(0.16), nc.amethystSurface.withOpacity(0.08)],
+                    colors: [nc.lilacSurface.withValues(alpha: 0.16), nc.amethystSurface.withValues(alpha: 0.08)],
                   ),
-                  border: Border.all(color: nc.lilacSurface.withOpacity(0.24)),
+                  border: Border.all(color: nc.lilacSurface.withValues(alpha: 0.24)),
                 ),
                 child: Text(
                   'Back To Profile',
