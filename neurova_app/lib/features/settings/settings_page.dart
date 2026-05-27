@@ -18,33 +18,34 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool notifications = true;
   bool haptic = true;
 
-  // Helper getter for NeuropaColors
-  NeuropaColors get _nc => Theme.of(context).extension<NeuropaColors>()!;
-
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
+    
+    // Safely get NeuropaColors from theme
+    final nc = Theme.of(context).extension<NeuropaColors>() ?? NeuropaColors.light;
 
     return Scaffold(
-      backgroundColor: _nc.background,
+      backgroundColor: nc.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
           'Settings',
-          style: AppTypography.headline2.copyWith(color: _nc.textPrimary),
+          style: AppTypography.headline2.copyWith(color: nc.textPrimary),
         ),
       ),
       body: ProfileViewShell(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
-            _section('Preferences'),
+            _section('Preferences', nc),
             _card(
+              nc: nc,
               child: Column(
                 children: [
-                  _switchTile('Notifications', notifications, (v) => setState(() => notifications = v)),
-                  _divider(),
+                  _switchTile('Notifications', notifications, (v) => setState(() => notifications = v), nc),
+                  _divider(nc),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     child: Row(
@@ -52,7 +53,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       children: [
                         Text(
                           'Dark Mode',
-                          style: AppTypography.title2.copyWith(color: _nc.textPrimary),
+                          style: AppTypography.title2.copyWith(color: nc.textPrimary),
                         ),
                         NeurThemeToggle(
                           currentMode: themeMode,
@@ -63,21 +64,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ],
                     ),
                   ),
-                  _divider(),
-                  _switchTile('Haptic Feedback', haptic, (v) => setState(() => haptic = v)),
+                  _divider(nc),
+                  _switchTile('Haptic Feedback', haptic, (v) => setState(() => haptic = v), nc),
                 ],
               ),
             ),
             const SizedBox(height: 14),
-            _section('General'),
+            _section('General', nc),
             _card(
+              nc: nc,
               child: Column(
                 children: [
-                  _menuTile('Language', 'English (US)'),
-                  _divider(),
-                  _menuTile('Privacy', 'Data & permissions'),
-                  _divider(),
-                  _menuTile('Help & FAQ', 'Get support'),
+                  _menuTile('Language', 'English (US)', nc),
+                  _divider(nc),
+                  _menuTile('Privacy', 'Data & permissions', nc),
+                  _divider(nc),
+                  _menuTile('Help & FAQ', 'Get support', nc),
                 ],
               ),
             ),
@@ -90,13 +92,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   gradient: LinearGradient(
-                    colors: [_nc.lilacSurface.withOpacity(0.16), _nc.amethystSurface.withOpacity(0.08)],
+                    colors: [nc.lilacSurface.withOpacity(0.16), nc.amethystSurface.withOpacity(0.08)],
                   ),
-                  border: Border.all(color: _nc.lilacSurface.withOpacity(0.24)),
+                  border: Border.all(color: nc.lilacSurface.withOpacity(0.24)),
                 ),
                 child: Text(
                   'Back To Profile',
-                  style: AppTypography.title2.copyWith(color: _nc.lilacSurface),
+                  style: AppTypography.title2.copyWith(color: nc.lilacSurface),
                 ),
               ),
             ),
@@ -106,13 +108,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Widget _section(String title) => Padding(
+  Widget _section(String title, NeuropaColors nc) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Text(
           title.toUpperCase(),
           style: TextStyle(
             fontFamily: 'Syne',
-            color: _nc.textMuted,
+            color: nc.textMuted,
             fontWeight: FontWeight.w700,
             fontSize: 10,
             letterSpacing: 1,
@@ -120,16 +122,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
       );
 
-  Widget _card({required Widget child}) => Container(
+  Widget _card({required NeuropaColors nc, required Widget child}) => Container(
         decoration: BoxDecoration(
-          color: _nc.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _nc.surfaceElevated),
+          color: nc.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: nc.surfaceElevated),
         ),
         child: child,
       );
 
-  Widget _switchTile(String title, bool value, ValueChanged<bool> onChanged) {
+  Widget _switchTile(String title, bool value, ValueChanged<bool> onChanged, NeuropaColors nc) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
@@ -137,7 +139,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Expanded(
             child: Text(
               title,
-              style: AppTypography.title2.copyWith(color: _nc.textPrimary),
+              style: AppTypography.title2.copyWith(color: nc.textPrimary),
             ),
           ),
           GestureDetector(
@@ -149,7 +151,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(999),
-                color: value ? _nc.lilacSurface : _nc.surfaceElevated,
+                color: value ? nc.lilacSurface : nc.surfaceElevated,
               ),
               child: Align(
                 alignment: value ? Alignment.centerRight : Alignment.centerLeft,
@@ -158,7 +160,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   height: 20,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _nc.background,
+                    color: nc.background,
                   ),
                 ),
               ),
@@ -169,7 +171,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Widget _menuTile(String title, String subtitle) {
+  Widget _menuTile(String title, String subtitle, NeuropaColors nc) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
@@ -180,25 +182,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: [
                 Text(
                   title,
-                  style: AppTypography.title2.copyWith(color: _nc.textPrimary),
+                  style: AppTypography.title2.copyWith(color: nc.textPrimary),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: AppTypography.body2.copyWith(color: _nc.textMuted),
+                  style: AppTypography.body2.copyWith(color: nc.textMuted),
                 ),
               ],
             ),
           ),
-          Icon(Icons.chevron_right, color: _nc.textSecondary, size: 18),
+          Icon(Icons.chevron_right, color: nc.textSecondary, size: 18),
         ],
       ),
     );
   }
 
-  Widget _divider() => Container(
+  Widget _divider(NeuropaColors nc) => Container(
         margin: const EdgeInsets.only(left: 16, right: 16),
         height: 1,
-        color: _nc.surfaceElevated,
+        color: nc.surfaceElevated,
       );
 }

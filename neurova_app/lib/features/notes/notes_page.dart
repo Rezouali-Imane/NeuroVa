@@ -17,8 +17,6 @@ class NotesPage extends ConsumerStatefulWidget {
 class _NotesPageState extends ConsumerState<NotesPage> {
   int _selectedNavIndex = 1;
   String _searchQuery = '';
-  String _selectedCategory = 'All';
-
   @override
   void initState() {
     super.initState();
@@ -33,15 +31,6 @@ class _NotesPageState extends ConsumerState<NotesPage> {
     final notesState = ref.watch(notesNotifierProvider);
     final notes = notesState.notes;
 
-
-    final availableCategories = <String>{
-      ...notes.map((note) => note.title.trim()).where((t) => t.isNotEmpty),
-    };
-
-    final categories = ['All'];
-
-    final selectedCategory =
-        categories.contains(_selectedCategory) ? _selectedCategory : 'All';
 
     final filteredNotes = notes.where((note) {
       final query = _searchQuery.toLowerCase();

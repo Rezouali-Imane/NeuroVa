@@ -89,6 +89,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
   // Additional controllers used by the sheet
   final TextEditingController _projectController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   // Aliases so existing code can use underscored names without changing UI code.
   TextEditingController get _searchController => searchController;
@@ -116,6 +117,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     taskController.dispose();
     searchController.dispose();
     _projectController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -1452,6 +1454,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   void _openCreateSheet() {
     _titleController.clear();
     _projectController.clear();
+    _descriptionController.clear();
     _selectedPriority = '1';
     _selectedCategory = 'OTHER';
     _selectedTime = const TimeOfDay(hour: 12, minute: 0);
@@ -1469,7 +1472,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 430),
                 child: Container(
-                  height: 680,
+                  height: 760,
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Color(0xFF181526),
@@ -1544,6 +1547,19 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         ),
                         const SizedBox(height: 8),
                         _sheetInput(_projectController, 'Project name...'),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'DESCRIPTION',
+                          style: TextStyle(
+                            color: Color(0x55FFFFFF),
+                            fontFamily: 'Syne',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _sheetInput(_descriptionController, 'Add notes or details...', maxLines: 3),
                         const SizedBox(height: 16),
                         const Text(
                           'PRIORITY',
@@ -1581,11 +1597,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            _categoryChip('DESIGN', setModalState, emoji: '🎨'),
-                            _categoryChip('DEVELOPMENT', setModalState, emoji: '⚛️'),
-                            _categoryChip('RESEARCH', setModalState, emoji: '🔎'),
-                            _categoryChip('STUDY', setModalState, emoji: '📚'),
+                            _categoryChip('ACADEMIC', setModalState, emoji: '📚'),
                             _categoryChip('PERSONAL', setModalState, emoji: '🌱'),
+                            _categoryChip('WORK', setModalState, emoji: '💼'),
+                            _categoryChip('HEALTH', setModalState, emoji: '🏃'),
                             _categoryChip('OTHER', setModalState, emoji: '📌'),
                           ],
                         ),
@@ -1674,11 +1689,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         GestureDetector(
                           onTap: () async {
                         if (_titleController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('Please enter a task title')),
-                          );
+                          print('[Tasks] Please enter a task title');
                           return;
                         }
 
@@ -1690,10 +1701,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         if (!context.mounted) return;
 
                         if (userId == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('User not authenticated')),
-                          );
+                          print('[Tasks] User not authenticated');
                           return;
                         }
 
@@ -1707,9 +1715,13 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                                   int.tryParse(selectedPriority) ?? 1,
                               status: 'PENDING',
                               category: selectedCategory,
+                              description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text,
+                              deadline: selectedDeadline,
                             );
 
                         taskController.clear();
+                        _projectController.clear();
+                        _descriptionController.clear();
                         selectedPriority = "1";
                         selectedCategory = "OTHER";
 
@@ -1749,9 +1761,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     );
   }
 
-  Widget _sheetInput(TextEditingController controller, String hint) {
+  Widget _sheetInput(TextEditingController controller, String hint, {int maxLines = 1}) {
     return Container(
-      height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF14101F),
@@ -1760,6 +1771,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
       ),
       child: TextField(
         controller: controller,
+        maxLines: maxLines,
         style: const TextStyle(color: Colors.white, fontFamily: 'Syne'),
         decoration: InputDecoration(border: InputBorder.none, hintText: hint, hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35))),
       ),
