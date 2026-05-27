@@ -660,11 +660,3 @@ class AIService {
     return Exception(error.toString());
   }
 }
-
-// TODO: Add AI Service provider in your providers file or main.dart
-// Example:
-// final aiServiceProvider = Provider((ref) {
-//   final dio = ref.watch(dioProvider);  // Your existing dio provider
-//   final localStorage = ref.watch(localStorageServiceProvider);  // Your existing storage provider
-//   return AIService(dio, localStorage);
-// });
