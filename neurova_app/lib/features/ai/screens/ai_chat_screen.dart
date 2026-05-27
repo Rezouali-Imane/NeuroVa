@@ -401,9 +401,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load chat history: $e')),
-      );
+      print('[AI Chat] Failed to load chat history: $e');
     }
   }
 
@@ -512,11 +510,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       _speechReady = await _speechToText.initialize();
     }
     if (!_speechReady) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Microphone is not available on this device.')),
-        );
-      }
+      print('[Voice Call] Microphone is not available on this device.');
       return;
     }
 
@@ -530,15 +524,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
       await _notifier.connectVoiceCall();
       await _startListeningCycle();
     } catch (e) {
+      print('[Voice Call Error] $e');
       if (mounted) {
         setState(() {
           _voiceCallMode = false;
           _isListening = false;
           _isSpeaking = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Voice call unavailable: $e')),
-        );
       }
     }
   }
