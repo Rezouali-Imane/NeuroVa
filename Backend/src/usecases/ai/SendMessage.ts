@@ -1,5 +1,6 @@
-import openai from '../../infrastructure/ai/openai.client.js';
+import { aiClient } from '../../infrastructure/ai/openai.client.js';
 import type { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat/completions';
+import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import prisma from '../../infrastructure/database/prisma.client.js';
 import { getEmbedding } from '../../infrastructure/embedding.client.js';
 import { searchSimilarChunks } from '../../infrastructure/supabase.vector.client.js';
@@ -235,13 +236,35 @@ const UPDATE_ONLY_TOOL_NAMES = new Set([
 
 const sleep = async (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+// Helper to extract text content from Claude or OpenAI response
+const getResponseText = (response: any): string | null => {
+  if (aiClient.isClaude) {
+    return response.content?.[0]?.text ?? null;
+  }
+  return response.choices?.[0]?.message?.content ?? null;
+};
 
-const DEFAULT_COMPLETION_TIMEOUT_MS = AI_PROVIDER === 'ollama' ? 35000 : 18000;
-const DEFAULT_COMPLETION_TOTAL_BUDGET_MS = AI_PROVIDER === 'ollama' ? 70000 : 30000;
+// Helper to extract tool calls from Claude or OpenAI response
+const getToolCalls = (response: any): any[] => {
+  if (aiClient.isClaude) {
+    return response.content?.filter((block: any) => block.type === 'tool_use') ?? [];
+  }
+  return response.choices?.[0]?.message?.tool_calls ?? [];
+};
+
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'claude').toLowerCase();
+
+const DEFAULT_COMPLETION_TIMEOUT_MS = AI_PROVIDER === 'ollama' ? 35000 : AI_PROVIDER === 'claude' ? 25000 : 18000;
+const DEFAULT_COMPLETION_TOTAL_BUDGET_MS = AI_PROVIDER === 'ollama' ? 70000 : AI_PROVIDER === 'claude' ? 50000 : 30000;
 
 const AI_COMPLETION_TIMEOUT_MS = Number(process.env.AI_COMPLETION_TIMEOUT_MS ?? DEFAULT_COMPLETION_TIMEOUT_MS);
 const AI_COMPLETION_TOTAL_BUDGET_MS = Number(process.env.AI_COMPLETION_TOTAL_BUDGET_MS ?? DEFAULT_COMPLETION_TOTAL_BUDGET_MS);
+
+const DEFAULT_CLAUDE_MODELS = [
+  'claude-sonnet-4-20250514',
+  'claude-sonnet-4-5',
+  'claude-3-5-sonnet-20241022',
+] as const;
 
 const DEFAULT_GEMINI_MODELS = [
   'gemini-2.0-flash',
@@ -262,10 +285,15 @@ const DEFAULT_OLLAMA_MODELS = [
   'llama3.2:3b',
 ] as const;
 
-const getGeminiModelPool = (): string[] => {
+const getModelPool = (): string[] => {
+  if (AI_PROVIDER === 'claude') {
+    const configuredModel = process.env.CLAUDE_MODEL?.trim();
+    if (!configuredModel) return [...DEFAULT_CLAUDE_MODELS];
+    return [configuredModel, ...DEFAULT_CLAUDE_MODELS.filter((m) => m !== configuredModel)];
+  }
+
   if (AI_PROVIDER === 'ollama') {
     const configuredModel = process.env.OLLAMA_MODEL?.trim();
-    // Ollama should use a single explicit model to avoid intermittent 404s from non-installed fallbacks.
     if (!configuredModel) return [...DEFAULT_OLLAMA_MODELS];
     return [configuredModel];
   }
@@ -281,8 +309,8 @@ const getGeminiModelPool = (): string[] => {
   return [configuredModel, ...DEFAULT_GEMINI_MODELS.filter((m) => m !== configuredModel)];
 };
 
-const createGeminiCompletion = async (params: {
-  messages: ChatCompletionMessageParam[];
+const createCompletion = async (params: {
+  messages: ChatCompletionMessageParam[] | MessageParam[];
   tools?: ChatCompletionTool[];
   directchat: boolean;
   maxRetries?: number;
@@ -290,8 +318,9 @@ const createGeminiCompletion = async (params: {
   const { messages, tools, directchat, maxRetries = 2 } = params;
   let lastError: unknown;
   let quotaError: unknown;
-  const modelPool = getGeminiModelPool();
+  const modelPool = getModelPool();
   const startedAt = Date.now();
+  const isClaude = aiClient.isClaude;
 
   const runWithTimeout = async <T>(operation: Promise<T>): Promise<T> => {
     let timeoutHandle: NodeJS.Timeout | undefined;
@@ -317,30 +346,73 @@ const createGeminiCompletion = async (params: {
       }
 
       try {
-        if (directchat || !tools || tools.length === 0) {
+        if (isClaude) {
+          // Claude API call
+          const claudeMessages = (messages as MessageParam[]).filter(
+            (m) => m.role === 'user' || m.role === 'assistant'
+          );
+          
+          if (directchat || !tools || tools.length === 0) {
+            return await runWithTimeout(
+              aiClient.claude.messages.create({
+                model,
+                messages: claudeMessages,
+                max_tokens: 1024,
+              }) as unknown as Promise<any>
+            );
+          }
+
+          // Claude tools format
+          const claudeTools = tools?.map((tool: any) => ({
+            name: tool.function?.name || '',
+            description: tool.function?.description || '',
+            input_schema: tool.function?.parameters || {},
+          })) || [];
+
           return await runWithTimeout(
-            openai.chat.completions.create({
+            aiClient.claude.messages.create({
               model,
-              messages,
+              messages: claudeMessages,
+              tools: claudeTools.length > 0 ? claudeTools : undefined,
+              max_tokens: 1024,
+            }) as unknown as Promise<any>
+          );
+        } else {
+          // OpenAI/Gemini/Ollama/OpenRouter API call
+          if (directchat || !tools || tools.length === 0) {
+            return await runWithTimeout(
+              aiClient.openai.chat.completions.create({
+                model,
+                messages: messages as ChatCompletionMessageParam[],
+                max_tokens: 1000,
+              })
+            );
+          }
+
+          return await runWithTimeout(
+            aiClient.openai.chat.completions.create({
+              model,
+              messages: messages as ChatCompletionMessageParam[],
+              tools,
+              tool_choice: 'auto',
               max_tokens: 1000,
-            }),
+            })
           );
         }
-
-        return await runWithTimeout(
-          openai.chat.completions.create({
-            model,
-            messages,
-            tools,
-            tool_choice: 'auto',
-            max_tokens: 1000,
-          }),
-        );
-      } catch (error) {
+      } catch (error: any) {
         lastError = error;
         const status = (error as { status?: number })?.status;
         const isRateLimited = status === 429;
         const hasRetryLeft = attempt < maxRetries;
+
+        // Log Claude-specific errors
+        if (isClaude) {
+          console.error(`[Claude API Error - Attempt ${attempt + 1}/${maxRetries + 1}]:`, {
+            status: error?.status,
+            message: error?.message,
+            error: error?.error?.message || error?.error?.type,
+          });
+        }
 
         if (isRateLimited) quotaError = error;
 
@@ -357,7 +429,16 @@ const createGeminiCompletion = async (params: {
   }
 
   const finalError = quotaError ?? lastError;
-  throw finalError instanceof Error ? finalError : new Error('Gemini request failed');
+  
+  if (isClaude) {
+    console.error('[Claude API] All retries failed. Final error:', {
+      message: finalError instanceof Error ? finalError.message : String(finalError),
+      status: (finalError as any)?.status,
+      type: (finalError as any)?.error?.type,
+    });
+  }
+  
+  throw finalError instanceof Error ? finalError : new Error('AI request failed');
 };
 
 const ensureTaskListId = async (userid: string, listid?: string): Promise<string> => {
@@ -385,17 +466,33 @@ const parseEndDate = (content: string): Date | null => {
   return null;
 };
 
-const buildProviderFallbackReply = (content: string, language: string): string => {
+const buildProviderFallbackReply = (content: string, language: string, error?: Error): string => {
   const text = content.toLowerCase();
   const isOllama = AI_PROVIDER === 'ollama';
+  const isClaude = AI_PROVIDER === 'claude';
+
+  // Log error for debugging
+  if (error) {
+    console.error(`[AI Error - ${AI_PROVIDER}]`, error.message);
+  }
 
   if (text.includes('study plan') || text.includes('schedule')) {
+    if (isClaude) {
+      return language === 'French'
+        ? 'Claude API est temporairement indisponible. Plan rapide: 1) 25 min revision active, 2) 5 min pause, 3) 25 min exercices, 4) 10 min recap. Reessayez dans quelques secondes.'
+        : 'Claude API is temporarily unavailable. Quick plan: 1) 25 min active review, 2) 5 min break, 3) 25 min practice, 4) 10 min recap. Retry in a few seconds.';
+    }
     return language === 'French'
       ? 'Le modele IA local est temporairement occupe. Plan rapide: 1) 25 min revision active, 2) 5 min pause, 3) 25 min exercices, 4) 10 min recap. Reessayez dans quelques secondes.'
       : 'The local AI model is temporarily busy. Quick plan: 1) 25 min active review, 2) 5 min break, 3) 25 min practice, 4) 10 min recap. Retry in a few seconds.';
   }
 
   if (text.includes('quiz')) {
+    if (isClaude) {
+      return language === 'French'
+        ? 'Claude API est temporairement indisponible. Mini quiz: 1) Complexite de la recherche binaire? 2) Difference pile vs file? 3) Quand utiliser une table de hachage?'
+        : 'Claude API is temporarily unavailable. Mini quiz: 1) Binary search complexity? 2) Stack vs queue? 3) When do you use a hash map?';
+    }
     return language === 'French'
       ? 'Le modele IA est temporairement occupe. Mini quiz: 1) Complexite de la recherche binaire? 2) Difference pile vs file? 3) Quand utiliser une table de hachage?'
       : 'The AI model is temporarily busy. Mini quiz: 1) Binary search complexity? 2) Stack vs queue? 3) When do you use a hash map?';
@@ -407,9 +504,15 @@ const buildProviderFallbackReply = (content: string, language: string): string =
       : 'The local AI model is temporarily busy. Please retry in 10-20 seconds.';
   }
 
+  if (isClaude) {
+    return language === 'French'
+      ? 'Le service Claude API est actuellement indisponible. Veuillez verifier votre cle API et reessayer dans quelques instants.'
+      : 'Claude API service is currently unavailable. Please check your API key and try again in a few moments.';
+  }
+
   return language === 'French'
-    ? 'Le fournisseur IA gratuit est actuellement indisponible ou limite (429/404). Reessayez dans 1-2 minutes. Je peux quand meme vous proposer un plan court si vous dites: "plan de 30 minutes".'
-    : 'The free AI provider is currently unavailable or rate-limited (429/404). Retry in 1-2 minutes. I can still give you a short structured plan if you ask: "make me a 30-minute plan".';
+    ? 'Le fournisseur IA est actuellement indisponible. Reessayez dans 1-2 minutes.'
+    : 'The AI provider is currently unavailable. Retry in 1-2 minutes.';
 };
 
 const extractStatusFromContent = (content: string): TaskStatus | null => {
@@ -1092,15 +1195,23 @@ export const SendMessage = async (data: SendMessageDTO) => {
 
     let aiReply = "Sorry, I couldn't generate a response right now.";
     try {
-      const response = await createGeminiCompletion({
+      const response = await createCompletion({
         messages,
         directchat: true,
       });
-      aiReply = response.choices[0]?.message?.content ?? aiReply;
-    } catch {
+      const getResponseContent = (resp: any): string | null => {
+        if (aiClient.isClaude) {
+          const textBlock = (resp.content as any[])?.[0];
+          return textBlock?.type === 'text' ? textBlock.text : null;
+        }
+        return resp.choices?.[0]?.message?.content ?? null;
+      };
+      const content = getResponseContent(response);
+      aiReply = content ?? aiReply;
+    } catch (error1: any) {
       try {
         // Compact retry path for local models: minimal context reduces intermittent Ollama failures.
-        const compactRetry = await createGeminiCompletion({
+        const compactRetry = await createCompletion({
           messages: [
             {
               role: 'system',
@@ -1111,9 +1222,10 @@ export const SendMessage = async (data: SendMessageDTO) => {
           directchat: true,
           maxRetries: 0,
         });
-        aiReply = compactRetry.choices[0]?.message?.content?.trim() || buildProviderFallbackReply(data.content, language);
-      } catch {
-        aiReply = buildProviderFallbackReply(data.content, language);
+        const compactText = getResponseText(compactRetry);
+        aiReply = compactText?.trim() || buildProviderFallbackReply(data.content, language, error1);
+      } catch (error2: any) {
+        aiReply = buildProviderFallbackReply(data.content, language, error2);
       }
     }
 
@@ -1131,25 +1243,27 @@ export const SendMessage = async (data: SendMessageDTO) => {
 
   let aiReply = "Sorry, I couldn't put together a response just yet.";
   let actions: string[] = [];
+  let lastError: any = null;
 
   try {
-    const response = await createGeminiCompletion({
+    const response = await createCompletion({
       messages,
       tools: allowedTools,
       directchat: Boolean(data.directchat),
     });
 
-    const assistantMessage = response.choices[0]?.message;
-    aiReply = assistantMessage?.content ?? aiReply;
-
-    const nativeToolCalls = assistantMessage?.tool_calls ?? [];
-    const inlineToolCalls = nativeToolCalls.length === 0 ? parseInlineToolCalls(aiReply) : [];
-    const toolCallsToExecute = nativeToolCalls.length > 0 ? nativeToolCalls : inlineToolCalls;
+    const assistantContent = getResponseText(response) ?? '';
+    aiReply = assistantContent;
+    const toolCalls = getToolCalls(response);
+    const inlineToolCalls = toolCalls.length === 0 ? parseInlineToolCalls(aiReply) : [];
+    const toolCallsToExecute = toolCalls.length > 0 ? toolCalls : inlineToolCalls;
 
     if (toolCallsToExecute.length > 0) {
-      if (assistantMessage) {
-        messages.push(assistantMessage as ChatCompletionMessageParam);
-      }
+      // Add assistant message to conversation
+      messages.push({
+        role: 'assistant',
+        content: aiReply,
+      } as ChatCompletionMessageParam);
 
       for (const toolCall of toolCallsToExecute) {
         if (toolCall.type !== 'function') continue;
@@ -1370,12 +1484,13 @@ export const SendMessage = async (data: SendMessageDTO) => {
         }
       }
 
-      const followUp = await createGeminiCompletion({
+      const followUp = await createCompletion({
         messages,
         directchat: true,
       });
 
-      aiReply = followUp.choices[0]?.message?.content ?? aiReply;
+      const followUpText = getResponseText(followUp);
+      aiReply = followUpText ?? aiReply;
     }
 
     if (isActionIntent(data.content)) {
@@ -1389,13 +1504,16 @@ export const SendMessage = async (data: SendMessageDTO) => {
         actions = fallback.actions;
       }
     }
-  } catch (error) {
+  } catch (error: any) {
+    lastError = error;
+    console.error('[SendMessage] AI Completion Error:', error.message);
+    
     if (isActionIntent(data.content)) {
       const fallback = await fallbackAssistantAction(data.userid, data.content);
       aiReply = fallback.reply;
       actions = fallback.actions;
     } else {
-      aiReply = buildProviderFallbackReply(data.content, language);
+      aiReply = buildProviderFallbackReply(data.content, language, error);
       actions = [];
     }
   }
