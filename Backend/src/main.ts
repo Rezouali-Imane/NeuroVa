@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http'; 
 import { Server } from 'socket.io'; 
 import { JwtClient } from './infrastructure/jwt.client.js';
-import { SendMessage } from './usecases/ai/SendMessage.js';
 import { FilterContent } from './usecases/contentModeration/FilterContent.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -103,6 +102,8 @@ aiCallNamespace.on('connection', (socket) => {
         return;
       }
 
+      // Lazy import SendMessage to defer AI client initialization
+      const { SendMessage } = await import('./usecases/ai/SendMessage.js');
       const result = await SendMessage({
         userid,
         content,
