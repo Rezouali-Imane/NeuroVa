@@ -445,6 +445,7 @@ class _DisciplinePageState extends ConsumerState<DisciplinePage> {
         onNavItemTapped: (index) {
           setState(() => _selectedNavIndex = index);
         },
+        isPositioned: false,
       ),
     );
   }
