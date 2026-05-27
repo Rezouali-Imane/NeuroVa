@@ -17,7 +17,7 @@ class _DisciplinePageState extends ConsumerState<DisciplinePage> {
   int _selectedNavIndex = -1;
   bool _focusShield = true;
   String _filterLevel = 'Medium';
-  late String _userId;
+  String _userId = '';
 
   late List<Map<String, dynamic>> _schedules;
 
