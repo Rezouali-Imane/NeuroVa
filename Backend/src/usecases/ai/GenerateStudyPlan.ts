@@ -1,4 +1,4 @@
-import openai from '../../infrastructure/ai/openai.client.js';
+import { aiClient } from '../../infrastructure/ai/openai.client.js';
 import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
 import { getPrayerTimes } from '../../infrastructure/external/prayertime.client.js';
 import prisma from '../../infrastructure/database/prisma.client.js';
@@ -59,13 +59,30 @@ ${data.faithmode ? '5. Avoids all prayer times' : ''}
 
 Format: **Day 1 — [Date]** then bullet points per time block.`;
 
- 
-  const response = await openai.chat.completions.create({
-    model: resolveChatModel(),
-    messages: [{ role: 'user', content: prompt }],
-    max_tokens: 1500,
-  });
+  const model = resolveChatModel();
+  let plan = "I couldn't build your study plan right now. Try again in a bit.";
 
-  const plan = response.choices[0]?.message?.content ?? "I couldn't build your study plan right now. Try again in a bit.";
+  try {
+    if (aiClient.isClaude) {
+      const response = await aiClient.claude.messages.create({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1500,
+      });
+      const textBlock = response.content?.[0] as any;
+      const claudeText = textBlock?.type === 'text' ? textBlock.text : null;
+      plan = claudeText ?? plan;
+    } else {
+      const response = await aiClient.openai.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 1500,
+      });
+      plan = response.choices[0]?.message?.content ?? plan;
+    }
+  } catch (error) {
+    console.error('Study plan generation error:', error);
+  }
+
   return { plan };
 };

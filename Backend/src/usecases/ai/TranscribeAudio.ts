@@ -1,4 +1,4 @@
-import openai from '../../infrastructure/ai/openai.client.js';
+import { aiClient } from '../../infrastructure/ai/openai.client.js';
 import { toFile } from 'openai/uploads';
 
 export const TranscribeAudio = async (
@@ -15,7 +15,7 @@ export const TranscribeAudio = async (
       type: mimetype || 'audio/webm',
     });
 
-    const transcript = await openai.audio.transcriptions.create({
+    const transcript = await aiClient.openai.audio.transcriptions.create({
       file,
       model: 'whisper-1',
     });
