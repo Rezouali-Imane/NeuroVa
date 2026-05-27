@@ -1,4 +1,4 @@
-import openai from '../../infrastructure/ai/openai.client.js';
+import { aiClient } from '../../infrastructure/ai/openai.client.js';
 import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
 import prisma from '../../infrastructure/database/prisma.client.js';
 
@@ -37,13 +37,31 @@ Rules:
 
 Example: [{"title": "Study for algorithms exam", "category": "ACADEMIC", "priority": 3, "deadline": "2026-03-20T00:00:00.000Z"}]`;
 
-    const response = await openai.chat.completions.create({
-      model: resolveChatModel(),
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 300,
-    });
+    const model = resolveChatModel();
+    let raw = '[]';
 
-    const raw = response.choices[0]?.message?.content ?? '[]';
+    try {
+      if (aiClient.isClaude) {
+        const response = await aiClient.claude.messages.create({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 300,
+        });
+        const textBlock = response.content?.[0] as any;
+        raw = (textBlock?.type === 'text' ? textBlock.text : null) ?? '[]';
+      } else {
+        const response = await aiClient.openai.chat.completions.create({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 300,
+        });
+        raw = response.choices[0]?.message?.content ?? '[]';
+      }
+    } catch (error) {
+      console.error('Task detection error:', error);
+      return;
+    }
+
     const clean = raw.replace(/```json|```/g, '').trim();
     const tasks = JSON.parse(clean);
 

@@ -1,9 +1,9 @@
-import openai from '../../infrastructure/ai/openai.client.js';
+import { aiClient } from '../../infrastructure/ai/openai.client.js';
 import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
 import { StudentMemoryRepository } from '../../interfaces/repositories/AIRepositories.js';
 
-const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
-const ENABLE_OLLAMA_MEMORY_EXTRACTION = (process.env.OLLAMA_ENABLE_MEMORY_EXTRACTION || 'false').toLowerCase() === 'true';
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'claude').toLowerCase();
+const ENABLE_MEMORY_EXTRACTION = (process.env.CLAUDE_ENABLE_MEMORY_EXTRACTION || 'true').toLowerCase() === 'true';
 
 const MEMORY_KEYS = [
   'name',
@@ -21,7 +21,7 @@ export const ExtractAndSaveMemory = async (
   userMessage: string,
   existingMemory: Record<string, string>
 ): Promise<void> => {
-  if (AI_PROVIDER === 'ollama' && !ENABLE_OLLAMA_MEMORY_EXTRACTION) return;
+  if (!ENABLE_MEMORY_EXTRACTION) return;
 
   try {
     const alreadyKnown = Object.entries(existingMemory)
@@ -43,13 +43,31 @@ Rules:
 - If nothing new, return {}
 - Return ONLY valid JSON, no explanation, no markdown`;
 
-    const response = await openai.chat.completions.create({
-      model: resolveChatModel(),
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 200,
-    });
+    const model = resolveChatModel();
+    let raw = '{}';
 
-    const raw = response.choices[0]?.message?.content ?? '{}';
+    try {
+      if (aiClient.isClaude) {
+        const response = await aiClient.claude.messages.create({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 200,
+        });
+        const textBlock = response.content?.[0] as any;
+        raw = (textBlock?.type === 'text' ? textBlock.text : null) ?? '{}';
+      } else {
+        const response = await aiClient.openai.chat.completions.create({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 200,
+        });
+        raw = response.choices[0]?.message?.content ?? '{}';
+      }
+    } catch (error) {
+      console.error('Memory extraction API error:', error);
+      return;
+    }
+
     const clean = raw.replace(/```json|```/g, '').trim();
     const extracted = JSON.parse(clean);
 

@@ -1,4 +1,4 @@
-import openai from '../../infrastructure/ai/openai.client.js';
+import { aiClient } from '../../infrastructure/ai/openai.client.js';
 import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
 import prisma from '../../infrastructure/database/prisma.client.js';
 import { StudentMemoryRepository } from '../../interfaces/repositories/AIRepositories.js';
@@ -55,13 +55,30 @@ Provide:
 
 Use markdown. Be specific and personal.`;
 
-  const response = await openai.chat.completions.create({
-    model: resolveChatModel(),
-    messages: [{ role: 'user', content: prompt }],
-    max_tokens: 800,
-  });
+  const model = resolveChatModel();
+  let analysis = "I couldn't finish the analysis right now. Try again in a moment.";
 
-  const analysis = response.choices[0]?.message?.content ?? "I couldn't finish the analysis right now. Try again in a moment.";
+  try {
+    if (aiClient.isClaude) {
+      const response = await aiClient.claude.messages.create({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+      });
+      const textBlock = response.content?.[0] as any;
+      const claudeText = textBlock?.type === 'text' ? textBlock.text : null;
+      analysis = claudeText ?? analysis;
+    } else {
+      const response = await aiClient.openai.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+      });
+      analysis = response.choices[0]?.message?.content ?? analysis;
+    }
+  } catch (error) {
+    console.error('Weakness analysis error:', error);
+  }
 
   const weakCategories = Object.entries(summary)
     .filter(([, s]) => s.total > 0 && (s.overdue / s.total) > 0.3)
