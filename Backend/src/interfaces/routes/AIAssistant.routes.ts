@@ -30,4 +30,6 @@ router.post('/schedule-session/:userid', AIAssistantController.scheduleFocusSess
 router.post('/reminders/:userid', AIAssistantController.sendReminders);
 router.post('/reminders', AIAssistantController.sendReminders); // Broadcast reminders for all users
 
+router.post('/discipline-advice/:userid', AIAssistantController.generateDisciplineAdvice);
+
 export default router;

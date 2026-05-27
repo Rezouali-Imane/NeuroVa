@@ -87,7 +87,7 @@ export const StudentMemoryRepository = {
 export const KnowledgeBaseRepository = {
 
   async create(data: {
-    assistantid?: string;
+    assistantid: string;
     major?: string;
     subject?: string;
     filename?: string;

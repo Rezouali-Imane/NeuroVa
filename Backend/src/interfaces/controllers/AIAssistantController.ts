@@ -2,20 +2,6 @@ import type { Request, Response } from 'express';
 import multer from 'multer';
 import type { FileFilterCallback } from 'multer';
 import type { AuthRequest } from '../../infrastructure/middleware/authMiddleware.js';
-import { SendMessage } from '../../usecases/ai/SendMessage.js';
-import { GetChatHistory } from '../../usecases/ai/GetChatHistory.js';
-import { ClearChatHistory } from '../../usecases/ai/ClearChatHistory.js';
-import { GenerateStudyPlan } from '../../usecases/ai/GenerateStudyPlan.js';
-import { AnalyzeWeakness } from '../../usecases/ai/Analyzeweakness.js';
-import { GetStudentMemory } from '../../usecases/ai/Getstudentmemory.js';
-import { UpdateStudentMemory } from '../../usecases/ai/Updatestudentmemory.js';
-import { ProcessDocument } from '../../usecases/ai/Processdocument.js';
-import { GetInsights } from '../../usecases/ai/GetInsights.js';
-import { GetKnowledgeBase, DeleteDocument } from '../../usecases/ai/Knowledgebase.usecases.js';
-import { ScheduleFocusSession } from '../../usecases/ai/Schedulefocussession.js';
-import { SendTaskReminders } from '../../usecases/ai/Sendtaskreminders.js';
-import { SendImageMessage } from '../../usecases/ai/SendImageMessage.js';
-import { TranscribeAudio } from '../../usecases/ai/TranscribeAudio.js';
 import { FilterContent } from '../../usecases/contentModeration/FilterContent.js';
 import { AnalyzeImage } from '../../usecases/contentModeration/AnalyzeImage.js';
 import {
@@ -100,6 +86,8 @@ export const AIAssistantController = {
         }
       }
 
+      // Lazy import to defer AI client initialization
+      const { SendMessage } = await import('../../usecases/ai/SendMessage.js');
       const result = await SendMessage(payload);
 
       const outgoingDecision = await FilterContent(userid, result.reply);
@@ -137,6 +125,8 @@ export const AIAssistantController = {
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
       const offset = parseInt(req.query.offset as string) || 0;
 
+      // Lazy import to defer AI client initialization
+      const { GetChatHistory } = await import('../../usecases/ai/GetChatHistory.js');
       const history = await GetChatHistory(userid);
       // Simple pagination
       const paginatedHistory = history.slice(offset, offset + limit);
@@ -185,6 +175,8 @@ export const AIAssistantController = {
         });
       }
 
+      // Lazy import to defer AI client initialization
+      const { SendImageMessage } = await import('../../usecases/ai/SendImageMessage.js');
       const result = await SendImageMessage({
         userid,
         prompt,
@@ -224,6 +216,8 @@ export const AIAssistantController = {
         throw new AIError(AIErrorCode.VALIDATION_ERROR, 'No audio uploaded', 400);
       }
 
+      // Lazy import to defer AI client initialization
+      const { TranscribeAudio } = await import('../../usecases/ai/TranscribeAudio.js');
       const transcript = await TranscribeAudio(file.buffer, file.originalname, file.mimetype);
 
       const prefix = String(req.body.promptPrefix ?? '').trim();
@@ -238,6 +232,7 @@ export const AIAssistantController = {
         });
       }
 
+      const { SendMessage } = await import('../../usecases/ai/SendMessage.js');
       const result = await SendMessage({
         userid,
         content,
@@ -272,6 +267,8 @@ export const AIAssistantController = {
 
       validateUserAccess(requestUserId, userid);
 
+      // Lazy import to defer AI client initialization
+      const { ClearChatHistory } = await import('../../usecases/ai/ClearChatHistory.js');
       const result = await ClearChatHistory(userid);
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
@@ -287,6 +284,8 @@ export const AIAssistantController = {
       validateUserAccess(requestUserId, userid);
 
       const { faithmode, city, country } = req.body;
+      // Lazy import to defer AI client initialization
+      const { GenerateStudyPlan } = await import('../../usecases/ai/GenerateStudyPlan.js');
       const result = await GenerateStudyPlan({ userid, faithmode, city, country });
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
@@ -301,6 +300,8 @@ export const AIAssistantController = {
 
       validateUserAccess(requestUserId, userid);
 
+      // Lazy import to defer AI client initialization
+      const { AnalyzeWeakness } = await import('../../usecases/ai/Analyzeweakness.js');
       const result = await AnalyzeWeakness({ userid });
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
@@ -316,6 +317,8 @@ export const AIAssistantController = {
 
       validateUserAccess(requestUserId, userid);
 
+      // Lazy import to defer AI client initialization
+      const { GetStudentMemory } = await import('../../usecases/ai/Getstudentmemory.js');
       const result = await GetStudentMemory(userid);
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
@@ -330,6 +333,8 @@ export const AIAssistantController = {
 
       validateUserAccess(requestUserId, userid);
 
+      // Lazy import to defer AI client initialization
+      const { UpdateStudentMemory } = await import('../../usecases/ai/Updatestudentmemory.js');
       const result = await UpdateStudentMemory({ userid, ...req.body });
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
@@ -350,6 +355,8 @@ export const AIAssistantController = {
       validateUserAccess(requestUserId, userid);
 
       const { major, subject } = req.body;
+      // Lazy import to defer AI client initialization
+      const { ProcessDocument } = await import('../../usecases/ai/Processdocument.js');
       const result = await ProcessDocument({
         userid,
         major,
@@ -371,6 +378,8 @@ export const AIAssistantController = {
 
       validateUserAccess(requestUserId, userid);
 
+      // Lazy import to defer AI client initialization
+      const { GetKnowledgeBase } = await import('../../usecases/ai/Knowledgebase.usecases.js');
       const docs = await GetKnowledgeBase(userid);
       res.status(200).json({ success: true, data: docs });
     } catch (error: any) {
@@ -381,6 +390,8 @@ export const AIAssistantController = {
   async deleteDocument(req: AuthRequest, res: Response) {
     try {
       const id = req.params['id'] as string;
+      // Lazy import to defer AI client initialization
+      const { DeleteDocument } = await import('../../usecases/ai/Knowledgebase.usecases.js');
       const result = await DeleteDocument(id);
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
@@ -396,6 +407,8 @@ export const AIAssistantController = {
       validateUserAccess(requestUserId, userid);
 
       const { taskid, durationMinutes } = req.body;
+      // Lazy import to defer AI client initialization
+      const { ScheduleFocusSession } = await import('../../usecases/ai/Schedulefocussession.js');
       const result = await ScheduleFocusSession({ userid, taskid, durationMinutes });
       res.status(201).json({ success: true, data: result });
     } catch (error: any) {
@@ -410,6 +423,8 @@ export const AIAssistantController = {
         const requestUserId = (req.user as any)?.userid;
         validateUserAccess(requestUserId, userid);
       }
+      // Lazy import to defer AI client initialization
+      const { SendTaskReminders } = await import('../../usecases/ai/Sendtaskreminders.js');
       const result = await SendTaskReminders(userid);
       res.status(200).json({ success: true, data: result });
     } catch (error: any) {
@@ -425,8 +440,26 @@ export const AIAssistantController = {
       // Validate user can only access their own insights
       validateUserAccess(requestUserId, userid);
 
+      // Lazy import to defer AI client initialization
+      const { GetInsights } = await import('../../usecases/ai/GetInsights.js');
       const insights = await GetInsights(userid);
       res.status(200).json({ success: true, data: insights });
+    } catch (error: any) {
+      handleAIError(error, res);
+    }
+  },
+
+  async generateDisciplineAdvice(req: AuthRequest, res: Response) {
+    try {
+      const userid = req.params['userid'] as string;
+      const requestUserId = (req.user as any)?.userid;
+
+      // Validate user can only access their own discipline advice
+      validateUserAccess(requestUserId, userid);
+
+      const { GenerateDisciplineAdvice } = await import('../../usecases/ai/GenerateDisciplineAdvice.js');
+      const result = await GenerateDisciplineAdvice(userid);
+      res.status(200).json({ success: true, data: result });
     } catch (error: any) {
       handleAIError(error, res);
     }
