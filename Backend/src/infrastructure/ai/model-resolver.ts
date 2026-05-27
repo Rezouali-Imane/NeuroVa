@@ -1,8 +1,12 @@
 import 'dotenv/config';
 
-const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'claude').toLowerCase();
 
 export const resolveChatModel = (): string => {
+  if (AI_PROVIDER === 'claude') {
+    return process.env.CLAUDE_MODEL?.trim() || 'claude-sonnet-4-20250514';
+  }
+
   if (AI_PROVIDER === 'ollama') {
     return process.env.OLLAMA_MODEL?.trim() || 'llama3.2:1b';
   }
