@@ -1,4 +1,4 @@
-import openai from '../../infrastructure/ai/openai.client.js';
+import { aiClient } from '../../infrastructure/ai/openai.client.js';
 import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
 import prisma from '../../infrastructure/database/prisma.client.js';
 import { StudentMemoryRepository } from '../../interfaces/repositories/AIRepositories.js';
@@ -39,13 +39,30 @@ Return a JSON object with:
 
 Return ONLY valid JSON, no explanation.`;
 
-  const response = await openai.chat.completions.create({
-    model: resolveChatModel(),
-    messages: [{ role: 'user', content: prompt }],
-    max_tokens: 150,
-  });
+  const model = resolveChatModel();
+  let raw = '{}';
 
-  const raw = response.choices[0]?.message?.content ?? '{}';
+  try {
+    if (aiClient.isClaude) {
+      const response = await aiClient.claude.messages.create({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 150,
+      });
+      const textBlock = response.content?.[0] as any;
+      raw = (textBlock?.type === 'text' ? textBlock.text : null) ?? '{}';
+    } else {
+      const response = await aiClient.openai.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 150,
+      });
+      raw = response.choices[0]?.message?.content ?? '{}';
+    }
+  } catch (error) {
+    console.error('Focus session scheduling error:', error);
+  }
+
   const clean = raw.replace(/```json|```/g, '').trim();
   const suggestion = JSON.parse(clean);
 
