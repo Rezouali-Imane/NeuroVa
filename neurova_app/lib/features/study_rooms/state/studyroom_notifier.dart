@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../services/studyroom_service.dart';
 import '../models/studyroom_module.dart';
 import '../../auth/state/auth_notifier.dart' show localStorageServiceProvider;
-import '../../../shared/services/Socket_service.dart';
+import '../../../shared/services/socket_service.dart';
 import '../../../core/constants/app_constants.dart';
 
 class StudyRoomState {
@@ -58,7 +58,7 @@ class StudyRoomNotifier extends StateNotifier<StudyRoomState> {
   final StudyRoomService _studyRoomService;
   final SocketService _socketService;
   final Ref _ref;
-  IO.Socket? _socket;
+  io.Socket? _socket;
   String? _currentUserId;
   String? _currentUsername;
 
