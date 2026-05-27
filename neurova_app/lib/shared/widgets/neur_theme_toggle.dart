@@ -20,7 +20,7 @@ class NeurThemeToggle extends StatefulWidget {
 class _NeurThemeToggleState extends State<NeurThemeToggle> {
   @override
   Widget build(BuildContext context) {
-    final nc = Theme.of(context).extension<NeuropaColors>()!;
+    final nc = Theme.of(context).extension<NeuropaColors>() ?? NeuropaColors.dark;
     const kLilac = Color(0xFFC8B8E8);
 
     final isDark = widget.currentMode == ThemeMode.dark;
@@ -38,12 +38,12 @@ class _NeurThemeToggleState extends State<NeurThemeToggle> {
           color: isDark ? nc.surface : const Color(0xFFEAE5F5),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: kLilac.withOpacity(0.3),
+            color: kLilac.withValues(alpha: 0.3),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: kLilac.withOpacity(0.1),
+              color: kLilac.withValues(alpha: 0.1),
               blurRadius: 8,
               spreadRadius: 0,
             ),
@@ -86,7 +86,7 @@ class _NeurThemeToggleState extends State<NeurThemeToggle> {
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       spreadRadius: 0,
                     ),
@@ -123,7 +123,7 @@ class NeurThemeToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nc = Theme.of(context).extension<NeuropaColors>()!;
+    final nc = Theme.of(context).extension<NeuropaColors>() ?? NeuropaColors.dark;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

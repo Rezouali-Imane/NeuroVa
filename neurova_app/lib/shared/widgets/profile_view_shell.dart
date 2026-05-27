@@ -10,7 +10,7 @@ class ProfileViewShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nc = Theme.of(context).extension<NeuropaColors>()!;
+    final nc = Theme.of(context).extension<NeuropaColors>() ?? NeuropaColors.dark;
 
     return SafeArea(
       child: Container(
