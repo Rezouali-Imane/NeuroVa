@@ -44,7 +44,7 @@ describe('session usecases', () => {
     const end = new Date('2026-01-01T11:00:00Z');
     const createSpy = vi.spyOn(FocusSessionRepository, 'create').mockResolvedValue({ sessionid: 'ssn1' } as any);
     await CreateSession({ userid: 'usr1', starttime: start, endtime: end } as any);
-    expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ userid: 'usr1', allowbreakminutes: 0, focusscore: 0, status: SessionStatus.SCHEDULED, scheduleid: null, roomid: null }));
+    expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ userid: 'usr1', allowbreakminutes: 0, focusscore: 0, status: SessionStatus.ACTIVE, scheduleid: null, roomid: null }));
   });
 
   it('GetSessions returns repository data', async () => {
@@ -82,7 +82,7 @@ describe('session usecases', () => {
   });
 
   it('GetTimer usecases return or reject correctly', async () => {
-    vi.spyOn(TimerRepository, 'findBySessionId').mockResolvedValue(null as any);
+    vi.spyOn(TimerRepository, 'findManyBySession').mockResolvedValue([] as any);
     await expect(GetTimerBySession('ssn1')).rejects.toThrow('Timer not found for this session');
 
     vi.spyOn(TimerRepository, 'findById').mockResolvedValue(null as any);
@@ -123,7 +123,7 @@ describe('session usecases', () => {
     await expect(CreateFocusAudio('')).rejects.toThrow('A Session ID is required to initialize audio settings.');
     const createSpy = vi.spyOn(FocusAudioRepository, 'create').mockResolvedValue({ settingsid: 'fas1' } as any);
     await CreateFocusAudio('ssn1');
-    expect(createSpy).toHaveBeenCalledWith({ sessionid: 'ssn1', volumelevel: 1, mixambientsounds: false, sounds: [] });
+    expect(createSpy).toHaveBeenCalledWith({ sessionid: 'ssn1', volumelevel: 1, mixmultiplesounds: false, sounds: [] });
   });
 
   it('GetAudio usecases validate ids and delegate correctly', async () => {

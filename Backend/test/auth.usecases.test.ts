@@ -78,7 +78,7 @@ describe('auth usecases', () => {
     vi.spyOn(UserRepository, 'findByEmailOrUsername').mockResolvedValue({ userid: 'usr1', passwordhash: 'hash', islocked: false, failedloginattempts: 4 } as any);
     vi.spyOn(PasswordService, 'compare').mockResolvedValue(false);
     const updateSpy = vi.spyOn(UserRepository, 'updateLoginAttempts').mockResolvedValue({} as any);
-    await expect(Login({ identifier: 'a@test.com', password: 'bad' } as any)).rejects.toThrow('Invalid credentials.');
+    await expect(Login({ identifier: 'a@test.com', password: 'bad' } as any)).rejects.toThrow('Incorrect password. Please try again.');
     expect(updateSpy).toHaveBeenCalledWith('usr1', 5, true);
   });
 

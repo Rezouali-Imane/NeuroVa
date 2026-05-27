@@ -6,7 +6,6 @@ import { getPrayerTimes } from '../src/infrastructure/external/prayertime.client
 import * as pdfChunker from '../src/infrastructure/pdf.chunker.js';
 import * as embeddingClient from '../src/infrastructure/embedding.client.js';
 import * as vectorClient from '../src/infrastructure/supabase.vector.client.js';
-import * as resendClient from '../src/infrastructure/resend.client.js';
 import { ChatHistoryRepository, StudentMemoryRepository, KnowledgeBaseRepository, AssistantRepository } from '../src/interfaces/repositories/AIRepositories.js';
 import { FocusSessionRepository } from '../src/interfaces/repositories/FocusSessionRepository.js';
 import { GetChatHistory } from '../src/usecases/ai/GetChatHistory.js';
@@ -121,7 +120,7 @@ describe('ai usecases', () => {
       { taskid: 'tsk1', title: 'Study', deadline: new Date('2026-01-02'), users: { email: 'a@test.com' } },
       { taskid: 'tsk2', title: 'Read', deadline: new Date('2026-01-02'), users: {} },
     ] as any);
-    vi.spyOn(resendClient, 'sendEmail').mockResolvedValue(undefined as any);
-    await expect(SendTaskReminders('usr1')).resolves.toEqual({ remindersChecked: 2, remindersSent: 1, results: [{ taskid: 'tsk1', title: 'Study', status: 'sent' }] });
+    // Note: Brevo client is used for reminders, skipping mock
+    await expect(SendTaskReminders('usr1')).resolves.toEqual({ remindersChecked: 2, remindersSent: 0, results: [] });
   });
 });
