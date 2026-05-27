@@ -2,7 +2,6 @@ import 'dart:async';
 import '../../../core/constants/app_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import 'package:neurova_app/core/constants/app_constants.dart';
 import '../services/foucs_session_services.dart';
 import '../Models/focus_session_module.dart';
 import '../../../shared/services/local_storage_service.dart';
@@ -112,15 +111,28 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
   void _startTicker() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
-      if (state.remainingSeconds <= 0) {
-        _timer?.cancel();
-        await _completeSession();
-        return;
-      }
-      final newSeconds = state.remainingSeconds - 1;
-      state = state.copyWith(remainingSeconds: newSeconds);
-      if (_currentTimerId != null) {
-        await _service.updateTimer(_currentTimerId!, newSeconds, true);
+      // For stopwatch, increment time; for countdown modes, decrement
+      final isStopwatch = state.timer?.type == 'STOPWATCH';
+      
+      if (isStopwatch) {
+        // Stopwatch increments indefinitely until manually stopped
+        final newSeconds = state.remainingSeconds + 1;
+        state = state.copyWith(remainingSeconds: newSeconds);
+        if (_currentTimerId != null) {
+          await _service.updateTimer(_currentTimerId!, newSeconds, true);
+        }
+      } else {
+        // Countdown modes decrement until time expires
+        if (state.remainingSeconds <= 0) {
+          _timer?.cancel();
+          await _completeSession();
+          return;
+        }
+        final newSeconds = state.remainingSeconds - 1;
+        state = state.copyWith(remainingSeconds: newSeconds);
+        if (_currentTimerId != null) {
+          await _service.updateTimer(_currentTimerId!, newSeconds, true);
+        }
       }
     });
   }
