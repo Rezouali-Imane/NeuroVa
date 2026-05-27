@@ -346,42 +346,101 @@ class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProvider
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(color: const Color(0xFF2B2550)),
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
-                        const Icon(Icons.volume_down_rounded, color: Color(0xFFF3C57D)),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Ambient Sounds', style: TextStyle(color: Colors.white, fontFamily: 'Syne', fontWeight: FontWeight.w700, fontSize: 14)),
-                              SizedBox(height: 2),
-                              Text('Cafe', style: TextStyle(color: Color(0x82FFFFFF), fontFamily: 'Syne', fontWeight: FontWeight.w600, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => setState(() => _ambientOn = !_ambientOn),
-                          child: Container(
-                            width: 56,
-                            height: 34,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _ambientOn ? const Color(0x26F3C57D) : const Color(0xFF211B37),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: _ambientOn ? const Color(0x99F3C57D) : const Color(0xFF2B2550)),
-                            ),
-                            child: Text(
-                              _ambientOn ? 'On' : 'Off',
-                              style: TextStyle(
-                                color: _ambientOn ? const Color(0xFFF3C57D) : Colors.white54,
-                                fontFamily: 'Syne',
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
+                        Row(
+                          children: [
+                            const Icon(Icons.volume_down_rounded, color: Color(0xFFF3C57D)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Ambient Sounds', style: TextStyle(color: Colors.white, fontFamily: 'Syne', fontWeight: FontWeight.w700, fontSize: 14)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Cafe',
+                                    style: const TextStyle(color: Color(0x82FFFFFF), fontFamily: 'Syne', fontWeight: FontWeight.w600, fontSize: 12),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
+                            GestureDetector(
+                              onTap: () => setState(() => _ambientOn = !_ambientOn),
+                              child: Container(
+                                width: 56,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: _ambientOn ? const Color(0x26F3C57D) : const Color(0xFF211B37),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: _ambientOn ? const Color(0x99F3C57D) : const Color(0xFF2B2550)),
+                                ),
+                                child: Text(
+                                  _ambientOn ? 'On' : 'Off',
+                                  style: TextStyle(
+                                    color: _ambientOn ? const Color(0xFFF3C57D) : Colors.white54,
+                                    fontFamily: 'Syne',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        if (_ambientOn)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                                  ),
+                                  child: DropdownButton<String>(
+                                    value: 'cafe',
+                                    dropdownColor: const Color(0xFF20181F),
+                                    style: const TextStyle(color: Colors.white, fontFamily: 'Syne', fontWeight: FontWeight.w600, fontSize: 13),
+                                    underline: const SizedBox.shrink(),
+                                    items: const [
+                                      DropdownMenuItem(value: 'cafe', child: Text('Café')),
+                                      DropdownMenuItem(value: 'rain', child: Text('Rain')),
+                                      DropdownMenuItem(value: 'forest', child: Text('Forest')),
+                                      DropdownMenuItem(value: 'ocean', child: Text('Ocean')),
+                                      DropdownMenuItem(value: 'white_noise', child: Text('White Noise')),
+                                    ],
+                                    onChanged: (value) {
+                                      if (value != null) {
+                                        // Play sound
+                                      }
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.volume_mute, color: Color(0x66FFFFFF), size: 16),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Slider(
+                                        value: 0.5,
+                                        onChanged: (val) {
+                                          // Set volume
+                                        },
+                                        activeColor: const Color(0xFFF3C57D),
+                                        inactiveColor: Colors.white.withValues(alpha: 0.1),
+                                      ),
+                                    ),
+                                    const Icon(Icons.volume_up, color: Color(0x66FFFFFF), size: 16),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -463,9 +522,7 @@ class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProvider
     final userId = await localStorage.readUserId();
     if (!mounted) return;
     if (userId == null || userId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in again to start a focus session')),
-      );
+      print('[Focus] Please sign in again to start a focus session');
       return;
     }
     final settings = _buildTimerSettings();
@@ -473,9 +530,7 @@ class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProvider
     if (!mounted) return;
     final error = ref.read(activeFocusProvider).error;
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $error'), backgroundColor: Colors.red),
-      );
+      print('[Focus Error] $error');
     }
   }
 
@@ -485,9 +540,7 @@ class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProvider
     } else if (_mode == 'Countdown') {
       await _showCountdownSettingsSheet();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Stopwatch does not have custom settings')),
-      );
+      print('[Timer Settings] Stopwatch does not have custom settings');
     }
   }
 

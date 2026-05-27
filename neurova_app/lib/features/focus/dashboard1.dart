@@ -220,7 +220,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                         )
                             : ListView.separated(
                           itemCount: notifications.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
                           itemBuilder: (context, index) {
                             return _buildNotificationTile(notifications[index], ref);
                           },
