@@ -52,12 +52,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage>
   Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
     if (widget.email.isEmpty || widget.code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Reset session expired. Please request a new code.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('[Reset Password] Reset session expired. Please request a new code.');
       return;
     }
 
@@ -76,14 +71,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage>
 
       context.go('/resetpassword-success');
     } catch (error) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('[Reset Password Error] ${error.toString().replaceFirst('Exception: ', '')}');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

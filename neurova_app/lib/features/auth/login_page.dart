@@ -89,18 +89,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
           }
         }
       } else if (authState.errorMessage != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(authState.errorMessage!)));
-        }
+        print('[Auth Error] ${authState.errorMessage}');
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An unexpected error occurred: $e')),
-        );
-      }
+      print('[Login Error] Unexpected error: $e');
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

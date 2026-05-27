@@ -79,18 +79,10 @@ class _SignupPageState extends ConsumerState<SignupPage>
           }
         }
       } else if (authState.errorMessage != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(authState.errorMessage!)));
-        }
+        print('[Auth Error] ${authState.errorMessage}');
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Sign up failed: $e')));
-      }
+      print('[Signup Error] Sign up failed: $e');
     } finally {
       if (mounted) {
         setState(() => _isGoogleSubmitting = false);
