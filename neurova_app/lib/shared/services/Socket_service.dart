@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'local_storage_service.dart';
 import '../../features/auth/state/auth_notifier.dart' show localStorageServiceProvider;
@@ -12,22 +12,22 @@ final socketServiceProvider = Provider((ref) {
 
 class SocketService {
   final LocalStorageService _localStorage;
-  IO.Socket? _studyRoomSocket;
+  io.Socket? _studyRoomSocket;
 
   SocketService(this._localStorage);
 
   Future<String?> _getToken() async => await _localStorage.readAuthToken();
 
-  Future<IO.Socket> getStudyRoomSocket() async {
+  Future<io.Socket> getStudyRoomSocket() async {
     if (_studyRoomSocket != null && _studyRoomSocket!.connected) {
       return _studyRoomSocket!;
     }
 
     final token = await _getToken();
-    final baseUrl = AppConstants.apiBaseUrl.replaceFirst('http://', '').replaceFirst('https://', '');
-    _studyRoomSocket = IO.io(
+
+    _studyRoomSocket = io.io(
       '${AppConstants.apiBaseUrl}/studyroom',
-      IO.OptionBuilder()
+      io.OptionBuilder()
           .setTransports(['websocket'])
           .setAuth({'token': token ?? ''})
           .enableReconnection()
