@@ -10,7 +10,7 @@ export const Login = async (data: LoginDTO) => {
 
   const user = await UserRepository.findByEmailOrUsername(normalizedIdentifier);
   if (!user) {
-    throw new Error("Invalid credentials.");
+    throw new Error("This email or username is not registered. Please sign up first.");
   }
 
   if (user.islocked) {
@@ -26,7 +26,7 @@ export const Login = async (data: LoginDTO) => {
     const shouldLock = newAttempts >= 5;
 
     await UserRepository.updateLoginAttempts(user.userid, newAttempts, shouldLock);
-    throw new Error("Invalid credentials.");
+    throw new Error("Incorrect password. Please try again.");
   }
 
   if (user.failedloginattempts > 0) {

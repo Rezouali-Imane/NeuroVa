@@ -31,7 +31,7 @@ export const Register = async (data: RegisterDTO) => {
 
   const existingEmail = await UserRepository.findByEmail(normalizedEmail);
   if (existingEmail) {
-    throw new Error('This email address is already in use.');
+    throw new Error('This email address is already registered. Please log in instead.');
   }
 
   const existingUsername = await UserRepository.findByUsername(normalizedUsername);
