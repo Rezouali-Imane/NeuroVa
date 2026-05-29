@@ -237,19 +237,42 @@ class SessionHistoryState {
         .where(
           (s) =>
               s.status == 'COMPLETED' &&
-              s.starttime.year == today.year &&
-              s.starttime.month == today.month &&
-              s.starttime.day == today.day,
+              s.starttime.toLocal().year == today.year &&
+              s.starttime.toLocal().month == today.month &&
+              s.starttime.toLocal().day == today.day,
         )
         .fold(0, (sum, s) => sum + (s.duration ?? 0));
+  }
+
+  int get streakDays {
+    final completedDays = sessions
+        .where((s) => s.status == 'COMPLETED')
+        .map((s) {
+          final local = s.starttime.toLocal();
+          return DateTime(local.year, local.month, local.day);
+        })
+        .toSet();
+
+    if (completedDays.isEmpty) return 0;
+
+    final today = DateTime.now();
+    var cursor = DateTime(today.year, today.month, today.day);
+    var streak = 0;
+
+    while (completedDays.contains(cursor)) {
+      streak += 1;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+
+    return streak;
   }
 
   // total minutes this week
   int get weekMinutes {
     final now = DateTime.now();
-    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
     return sessions
-        .where((s) => s.status == 'COMPLETED' && s.starttime.isAfter(weekStart))
+        .where((s) => s.status == 'COMPLETED' && s.starttime.toLocal().isAfter(weekStart))
         .fold(0, (sum, s) => sum + (s.duration ?? 0));
   }
 
@@ -257,9 +280,16 @@ class SessionHistoryState {
   String get bestDay {
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final Map<int, int> minutesByDay = {};
+    final now = DateTime.now();
+    final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+    final weekEnd = weekStart.add(const Duration(days: 7));
     for (final s in sessions) {
       if (s.status == 'COMPLETED') {
-        final day = s.starttime.weekday; // 1=Mon, 7=Sun
+        final localStart = s.starttime.toLocal();
+        if (localStart.isBefore(weekStart) || !localStart.isBefore(weekEnd)) {
+          continue;
+        }
+        final day = localStart.weekday; // 1=Mon, 7=Sun
         minutesByDay[day] = (minutesByDay[day] ?? 0) + (s.duration ?? 0);
       }
     }

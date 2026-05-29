@@ -815,7 +815,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                     color: Color(0xFFB284BE),
                     fontFamily: 'Syne',
                     fontWeight: FontWeight.w800,
-                    fontSize: 28,
+                    fontSize: 18,
                   ),
                 ),
               ],
