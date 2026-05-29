@@ -2,9 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/ai_models.dart';
 import '../services/ai_service.dart';
 
-// ==============================================================================
-// STATE
-// ==============================================================================
 
 class AIState {
   final List<AIMessage> messages;
@@ -54,15 +51,27 @@ class AIState {
   }
 }
 
-// ==============================================================================
-// NOTIFIER
-// ==============================================================================
 
 class AINotifier extends StateNotifier<AIState> {
   final AIService _aiService;
   final String _userId;
 
   AINotifier(this._aiService, this._userId) : super(const AIState());
+
+  bool _shouldUseToolPath(String content) {
+    final text = content.toLowerCase();
+    final patterns = <RegExp>[
+      RegExp(r'\b(create|add)\s+(a\s+)?task\b'),
+      RegExp(r'\b(update|edit|delete|remove)\s+(a\s+)?task\b'),
+      RegExp(r'\b(list|show)\s+(my\s+)?tasks?\b'),
+      RegExp(r'\b(task\s*list|tasklist)\b'),
+      RegExp(r'\b(start|schedule)\s+(a\s+)?focus\s+session\b'),
+      RegExp(r'\b(end|stop)\s+(the\s+)?focus\s+session\b'),
+      RegExp(r'\b(create|start)\s+(a\s+)?session\b'),
+    ];
+
+    return patterns.any((pattern) => pattern.hasMatch(text));
+  }
 
   Future<void> connectVoiceCall() async {
     try {
@@ -82,7 +91,7 @@ class AINotifier extends StateNotifier<AIState> {
   }
 
   // Send message to AI
-  Future<void> sendMessage(String content, {bool directChat = false}) async {
+  Future<void> sendMessage(String content, {bool? directChat}) async {
     try {
       state = state.copyWith(isSending: true, error: '', hasError: false);
 
@@ -100,7 +109,7 @@ class AINotifier extends StateNotifier<AIState> {
       final response = await _aiService.sendMessage(
         userId: _userId,
         content: content,
-        directChat: directChat,
+        directChat: directChat ?? !_shouldUseToolPath(content),
       );
 
       // Add AI message to chat
@@ -193,7 +202,7 @@ class AINotifier extends StateNotifier<AIState> {
 
   Future<void> sendRealtimeVoiceTurn(
     String transcript, {
-    bool directChat = true,
+    bool? directChat,
   }) async {
     try {
       state = state.copyWith(isSending: true, error: '', hasError: false);
@@ -209,7 +218,7 @@ class AINotifier extends StateNotifier<AIState> {
 
       final response = await _aiService.sendRealtimeVoiceTurn(
         transcript: transcript,
-        directChat: directChat,
+        directChat: directChat ?? !_shouldUseToolPath(transcript),
       );
 
       state = state.copyWith(

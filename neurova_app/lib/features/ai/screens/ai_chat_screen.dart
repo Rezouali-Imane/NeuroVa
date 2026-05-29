@@ -506,7 +506,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         _showConversation = true;
       });
     }
-    await _notifier.sendMessage(content, directChat: true);
+    await _notifier.sendMessage(content);
   }
 
   Future<void> _toggleVoiceCallMode() async {
@@ -588,7 +588,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     if (!_voiceCallMode) return;
 
     final before = _stateNotifier.value.messages.length;
-    await _notifier.sendRealtimeVoiceTurn(transcript, directChat: true);
+    await _notifier.sendRealtimeVoiceTurn(transcript);
 
     final messages = _stateNotifier.value.messages;
     String? assistantReply;
