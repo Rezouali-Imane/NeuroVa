@@ -30,7 +30,7 @@ class FocusSession {
       endtime: json['endtime'] != null ? DateTime.parse(json['endtime']).toLocal() : null,
       status: json['status'] ?? 'SCHEDULED',
       duration: json['duration'] as int?,
-      focusscore: json['focusscore'] as int?,
+      focusscore: (json['focusscore'] as num?)?.toInt(),
       scheduleid: json['scheduleid'] != null ? DateTime.parse(json['scheduleid']).toLocal() : null,
     );
   }

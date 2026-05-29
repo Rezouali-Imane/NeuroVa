@@ -7,10 +7,16 @@ export const FocusSessionRepository = {
   },
 
   async findAllByUser(userid: string) {
-    return await prisma.focussession.findMany({
+    const sessions = await prisma.focussession.findMany({
       where: { userid },
       orderBy: { starttime: 'desc' },
     });
+    return sessions.map((s) => ({
+      ...s,
+      duration: s.starttime && s.endtime
+        ? Math.round((s.endtime.getTime() - s.starttime.getTime()) / 60000)
+        : 0,
+    }));
   },
 
   async findById(sessionid: string) {
