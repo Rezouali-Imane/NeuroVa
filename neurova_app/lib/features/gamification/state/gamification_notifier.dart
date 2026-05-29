@@ -139,6 +139,63 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
       state = state.copyWith(error: e.toString());
     }
   }
+
+  Future<void> awardXP({
+    required int amount,
+    required String source,
+    String? description,
+  }) async {
+    try {
+      await _service.awardXP(amount: amount, source: source, description: description);
+      final xpHistory = await _service.getXpHistory();
+      state = state.copyWith(xpHistory: xpHistory);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> checkAndAwardAchievement() async {
+    try {
+      await _service.checkAndAwardAchievement();
+      final achievements = await _service.getAchievements();
+      state = state.copyWith(achievements: achievements);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> awardBadge(String badgeId) async {
+    try {
+      await _service.awardBadge(badgeId);
+      final badges = await _service.getBadges();
+      state = state.copyWith(badges: badges);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> updateLeaderboard({
+    required String leaderboardId,
+    required int xpPoints,
+  }) async {
+    try {
+      await _service.updateLeaderboard(leaderboardId: leaderboardId, xpPoints: xpPoints);
+      final leaderboard = await _service.getLeaderboard(leaderboardId);
+      state = state.copyWith(leaderboard: leaderboard);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> assignDailyChallenge() async {
+    try {
+      await _service.assignDailyChallenge();
+      final challenges = await _service.getActiveChallenges();
+      state = state.copyWith(challenges: challenges);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
 }
 
 final gamificationNotifierProvider =

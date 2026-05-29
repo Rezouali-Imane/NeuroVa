@@ -142,4 +142,79 @@ class GamificationService {
       throw Exception(_readError(e, 'Failed to calculate focus score'));
     }
   }
+
+  Future<void> awardXP({
+    required int amount,
+    required String source,
+    String? description,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        '/api/gamification/xp/award',
+        data: {
+          'amount': amount,
+          'source': source,
+          'description': description,
+        },
+        options: await _options(),
+      );
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to award XP'));
+    }
+  }
+
+  Future<Map<String, dynamic>> checkAndAwardAchievement() async {
+    try {
+      final response = await _dio.post<dynamic>(
+        '/api/gamification/achievements/check-and-award',
+        options: await _options(),
+      );
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to check and award achievement'));
+    }
+  }
+
+  Future<Map<String, dynamic>> awardBadge(String badgeId) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        '/api/gamification/badges/award',
+        data: {'badgeid': badgeId},
+        options: await _options(),
+      );
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to award badge'));
+    }
+  }
+
+  Future<void> updateLeaderboard({
+    required String leaderboardId,
+    required int xpPoints,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        '/api/gamification/leaderboard/update',
+        data: {
+          'leaderboardid': leaderboardId,
+          'xppoints': xpPoints,
+        },
+        options: await _options(),
+      );
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to update leaderboard'));
+    }
+  }
+
+  Future<Map<String, dynamic>> assignDailyChallenge() async {
+    try {
+      final response = await _dio.post<dynamic>(
+        '/api/gamification/daily-challenges/assign',
+        options: await _options(),
+      );
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to assign daily challenge'));
+    }
+  }
 }
