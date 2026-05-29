@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/prayer_times_service.dart';
@@ -85,7 +86,7 @@ class FaithModeNotifier extends StateNotifier<FaithModeSettings> {
         await fetchPrayerTimes(city, country);
       }
     } catch (e) {
-      print('[FaithMode] Error loading settings: $e');
+      debugPrint('[FaithMode] Error loading settings: $e');
     }
   }
   
@@ -100,7 +101,7 @@ class FaithModeNotifier extends StateNotifier<FaithModeSettings> {
         state = state.copyWith(prayerTimes: null);
       }
     } catch (e) {
-      print('[FaithMode] Error toggling faith mode: $e');
+      debugPrint('[FaithMode] Error toggling faith mode: $e');
       state = state.copyWith(error: 'Failed to save settings');
     }
   }
@@ -115,7 +116,7 @@ class FaithModeNotifier extends StateNotifier<FaithModeSettings> {
       
       await fetchPrayerTimes(city, country);
     } catch (e) {
-      print('[FaithMode] Error setting location: $e');
+      debugPrint('[FaithMode] Error setting location: $e');
       state = state.copyWith(error: 'Failed to save location');
     }
   }
@@ -142,7 +143,7 @@ class FaithModeNotifier extends StateNotifier<FaithModeSettings> {
         );
       }
     } catch (e) {
-      print('[FaithMode] Error fetching prayer times: $e');
+      debugPrint('[FaithMode] Error fetching prayer times: $e');
       state = state.copyWith(
         error: 'Error: $e',
         isLoading: false,

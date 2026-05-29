@@ -10,7 +10,18 @@ export const TaskController = {
 
   async create(req: Request, res: Response) {
     try {
-      const task = await CreateTask(req.body);
+      const deadlineInput = req.body.deadline;
+      const deadline = typeof deadlineInput === 'string' && deadlineInput.trim()
+        ? (() => {
+            const parsed = new Date(deadlineInput);
+            return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+          })()
+        : undefined;
+
+      const task = await CreateTask({
+        ...req.body,
+        deadline,
+      });
       res.status(201).json({ success: true, data: task });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../../../core/constants/app_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
@@ -101,9 +102,9 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
       _startTicker();
     } catch (e) {
       if (e is DioException && e.response != null) {
-        print(' Backend error: ${e.response?.data}');
+        debugPrint(' Backend error: ${e.response?.data}');
       } else {
-        print(' startNewSession error: $e');
+        debugPrint(' startNewSession error: $e');
       }
       state = state.copyWith(isLoading: false, error: e.toString());
     }

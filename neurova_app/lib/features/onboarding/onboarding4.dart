@@ -380,7 +380,7 @@ class PomodoroArcPainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     final blurPaint = Paint()
-      ..color = Colors.white.withOpacity(0.12)
+      ..color = Colors.white.withValues(alpha: 0.12)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 18
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24);
@@ -446,7 +446,7 @@ class PomodoroArcPainter extends CustomPainter {
         tipOffset,
         12,
         Paint()
-          ..color = const Color(0xFFF6F0D6).withOpacity(0.55)
+          ..color = const Color(0xFFF6F0D6).withValues(alpha: 0.55)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
       );
 

@@ -79,10 +79,10 @@ class _SignupPageState extends ConsumerState<SignupPage>
           }
         }
       } else if (authState.errorMessage != null) {
-        print('[Auth Error] ${authState.errorMessage}');
+        debugPrint('[Auth Error] ${authState.errorMessage}');
       }
     } catch (e) {
-      print('[Signup Error] Sign up failed: $e');
+      debugPrint('[Signup Error] Sign up failed: $e');
     } finally {
       if (mounted) {
         setState(() => _isGoogleSubmitting = false);

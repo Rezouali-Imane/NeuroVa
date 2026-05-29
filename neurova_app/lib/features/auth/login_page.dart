@@ -89,10 +89,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
           }
         }
       } else if (authState.errorMessage != null) {
-        print('[Auth Error] ${authState.errorMessage}');
+        debugPrint('[Auth Error] ${authState.errorMessage}');
       }
     } catch (e) {
-      print('[Login Error] Unexpected error: $e');
+      debugPrint('[Login Error] Unexpected error: $e');
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

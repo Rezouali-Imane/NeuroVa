@@ -47,7 +47,7 @@ class NeurChip extends StatelessWidget {
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: kLilac.withOpacity(0.20),
+                    color: kLilac.withValues(alpha: 0.20),
                     blurRadius: 16,
                     spreadRadius: 0,
                   ),

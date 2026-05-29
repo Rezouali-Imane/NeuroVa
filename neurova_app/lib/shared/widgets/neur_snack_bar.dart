@@ -100,17 +100,17 @@ class _NeurSnackBarWidgetState extends State<_NeurSnackBarWidget>
 
     switch (widget.type) {
       case SnackType.success:
-        backgroundColor = const Color(0xFF4CAF50).withOpacity(0.9);
+        backgroundColor = const Color(0xFF4CAF50).withValues(alpha: 0.9);
         textColor = Colors.white;
         icon = Icons.check_circle;
         break;
       case SnackType.error:
-        backgroundColor = const Color(0xFFEF5350).withOpacity(0.9);
+        backgroundColor = const Color(0xFFEF5350).withValues(alpha: 0.9);
         textColor = Colors.white;
         icon = Icons.error;
         break;
       case SnackType.warning:
-        backgroundColor = const Color(0xFFFFC107).withOpacity(0.9);
+        backgroundColor = const Color(0xFFFFC107).withValues(alpha: 0.9);
         textColor = Colors.white;
         icon = Icons.warning;
         break;
@@ -140,7 +140,7 @@ class _NeurSnackBarWidgetState extends State<_NeurSnackBarWidget>
                 borderRadius: BorderRadius.circular(100),
                 boxShadow: [
                   BoxShadow(
-                    color: backgroundColor.withOpacity(0.3),
+                    color: backgroundColor.withValues(alpha: 0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),

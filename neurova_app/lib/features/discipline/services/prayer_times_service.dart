@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
 class PrayerTime {
@@ -77,7 +78,7 @@ class PrayerTimesService {
         return PrayerTimesResponse.fromJson(data['data']);
       }
     } catch (e) {
-      print('[PrayerTimes] Error fetching prayer times: $e');
+      debugPrint('[PrayerTimes] Error fetching prayer times: $e');
     }
     return null;
   }
@@ -109,7 +110,7 @@ class PrayerTimesService {
         return PrayerTimesResponse.fromJson(data['data']);
       }
     } catch (e) {
-      print('[PrayerTimes] Error fetching prayer times by coords: $e');
+      debugPrint('[PrayerTimes] Error fetching prayer times by coords: $e');
     }
     return null;
   }

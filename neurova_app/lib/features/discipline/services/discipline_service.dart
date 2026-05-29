@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../models/discipline_model.dart';
 
@@ -15,7 +16,7 @@ class DisciplineService {
       }
       throw Exception('Failed to get discipline settings');
     } catch (e) {
-      print('[DisciplineService] Error getting settings: $e');
+      debugPrint('[DisciplineService] Error getting settings: $e');
       rethrow;
     }
   }
@@ -27,7 +28,7 @@ class DisciplineService {
         data: settings.toJson(),
       );
     } catch (e) {
-      print('[DisciplineService] Error updating settings: $e');
+      debugPrint('[DisciplineService] Error updating settings: $e');
       rethrow;
     }
   }
@@ -41,7 +42,7 @@ class DisciplineService {
       }
       return [];
     } catch (e) {
-      print('[DisciplineService] Error getting blocked apps: $e');
+      debugPrint('[DisciplineService] Error getting blocked apps: $e');
       return [];
     }
   }
@@ -53,7 +54,7 @@ class DisciplineService {
         data: app.toJson(),
       );
     } catch (e) {
-      print('[DisciplineService] Error adding blocked app: $e');
+      debugPrint('[DisciplineService] Error adding blocked app: $e');
       rethrow;
     }
   }
@@ -62,7 +63,7 @@ class DisciplineService {
     try {
       await _dio.delete('$_baseUrl/discipline/$userId/blocked-apps/$appId');
     } catch (e) {
-      print('[DisciplineService] Error removing blocked app: $e');
+      debugPrint('[DisciplineService] Error removing blocked app: $e');
       rethrow;
     }
   }
@@ -76,7 +77,7 @@ class DisciplineService {
       }
       return [];
     } catch (e) {
-      print('[DisciplineService] Error getting blocked websites: $e');
+      debugPrint('[DisciplineService] Error getting blocked websites: $e');
       return [];
     }
   }
@@ -88,7 +89,7 @@ class DisciplineService {
         data: website.toJson(),
       );
     } catch (e) {
-      print('[DisciplineService] Error adding blocked website: $e');
+      debugPrint('[DisciplineService] Error adding blocked website: $e');
       rethrow;
     }
   }
@@ -97,7 +98,7 @@ class DisciplineService {
     try {
       await _dio.delete('$_baseUrl/discipline/$userId/blocked-websites/$websiteId');
     } catch (e) {
-      print('[DisciplineService] Error removing blocked website: $e');
+      debugPrint('[DisciplineService] Error removing blocked website: $e');
       rethrow;
     }
   }
@@ -111,7 +112,7 @@ class DisciplineService {
       }
       return [];
     } catch (e) {
-      print('[DisciplineService] Error getting today usage: $e');
+      debugPrint('[DisciplineService] Error getting today usage: $e');
       return [];
     }
   }
@@ -126,7 +127,7 @@ class DisciplineService {
         },
       );
     } catch (e) {
-      print('[DisciplineService] Error logging usage: $e');
+      debugPrint('[DisciplineService] Error logging usage: $e');
       rethrow;
     }
   }
@@ -139,7 +140,7 @@ class DisciplineService {
       }
       throw Exception('Failed to calculate score');
     } catch (e) {
-      print('[DisciplineService] Error calculating score: $e');
+      debugPrint('[DisciplineService] Error calculating score: $e');
       rethrow;
     }
   }

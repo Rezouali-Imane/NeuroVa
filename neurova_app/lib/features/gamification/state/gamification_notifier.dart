@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../models/gamification_models.dart';
@@ -67,7 +68,7 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
   }
 
   Future<void> fetchAll(String leaderboardId) async {
-    print('=== GamificationNotifier.fetchAll() called with leaderboardId: $leaderboardId ===');
+    debugPrint('=== GamificationNotifier.fetchAll() called with leaderboardId: $leaderboardId ===');
     state = state.copyWith(isLoading: true, error: null);
     try {
       // Fetch the main data that doesn't depend on user being fully set up
@@ -83,10 +84,10 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
         final streakResult = await _service.calculateStreak();
         streakData = (streakResult['streak'] as int?) ?? 0;
       } catch (streakError) {
-        print('Warning: Streak calculation failed: $streakError. Continuing without streak.');
+        debugPrint('Warning: Streak calculation failed: $streakError. Continuing without streak.');
       }
 
-      print('Fetched: XP=${xpList.length}, Achievements=${achievements.length}, Badges=${badges.length}, Leaderboard=${leaderboardList.length}, Challenges=${challenges.length}, Streak=$streakData');
+      debugPrint('Fetched: XP=${xpList.length}, Achievements=${achievements.length}, Badges=${badges.length}, Leaderboard=${leaderboardList.length}, Challenges=${challenges.length}, Streak=$streakData');
 
       state = state.copyWith(
         xpHistory: xpList,
@@ -97,9 +98,9 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
         streak: streakData,
         isLoading: false,
       );
-      print('=== fetchAll() completed successfully ===');
+      debugPrint('=== fetchAll() completed successfully ===');
     } catch (e) {
-      print('=== fetchAll() ERROR: $e ===');
+      debugPrint('=== fetchAll() ERROR: $e ===');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
