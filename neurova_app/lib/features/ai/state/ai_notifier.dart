@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/ai_models.dart';
 import '../services/ai_service.dart';
+import '../../tasks/state/tasks_notifier.dart';
+import '../../focus/stats/focus_session_notifier.dart';
+import '../../gamification/state/gamification_notifier.dart';
 
 
 class AIState {
@@ -55,8 +58,9 @@ class AIState {
 class AINotifier extends StateNotifier<AIState> {
   final AIService _aiService;
   final String _userId;
+  final Ref? _ref;
 
-  AINotifier(this._aiService, this._userId) : super(const AIState());
+  AINotifier(this._aiService, this._userId, [this._ref]) : super(const AIState());
 
   bool _shouldUseToolPath(String content) {
     final text = content.toLowerCase();
@@ -71,6 +75,34 @@ class AINotifier extends StateNotifier<AIState> {
     ];
 
     return patterns.any((pattern) => pattern.hasMatch(text));
+  }
+
+  Future<void> _refreshFromActions(Map<String, dynamic>? metadata) async {
+    if (metadata == null || _ref == null) return;
+
+    final actions = (metadata['actions'] as List?)
+            ?.map((action) => action.toString().toLowerCase())
+            .toSet() ??
+        <String>{};
+
+    if (actions.isEmpty) return;
+
+    final taskActions = actions.any((action) =>
+        action.contains('task') ||
+        action.contains('task_list'));
+    final focusActions = actions.any((action) =>
+        action.contains('focus_session') ||
+        action.contains('session'));
+
+    if (taskActions) {
+      await _ref.read(tasksNotifierProvider.notifier).fetchTasks();
+      await _ref.read(gamificationNotifierProvider.notifier).fetchAll('global');
+    }
+
+    if (focusActions) {
+      await _ref.read(sessionHistoryProvider.notifier).fetchSessions();
+      await _ref.read(gamificationNotifierProvider.notifier).fetchAll('global');
+    }
   }
 
   Future<void> connectVoiceCall() async {
@@ -111,6 +143,8 @@ class AINotifier extends StateNotifier<AIState> {
         content: content,
         directChat: directChat ?? !_shouldUseToolPath(content),
       );
+
+      await _refreshFromActions(response.metadata);
 
       // Add AI message to chat
       state = state.copyWith(
@@ -220,6 +254,8 @@ class AINotifier extends StateNotifier<AIState> {
         transcript: transcript,
         directChat: directChat ?? !_shouldUseToolPath(transcript),
       );
+
+      await _refreshFromActions(response.metadata);
 
       state = state.copyWith(
         messages: [...state.messages, response],

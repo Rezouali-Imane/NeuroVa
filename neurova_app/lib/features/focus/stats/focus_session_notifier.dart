@@ -97,6 +97,7 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
         isRunning: true,
         isLoading: false,
       );
+      await _ref.read(sessionHistoryProvider.notifier).fetchSessions();
       _startTicker();
     } catch (e) {
       if (e is DioException && e.response != null) {
@@ -149,6 +150,8 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
     _timer?.cancel();
     _currentTimerId = null;
 
+    await _ref.read(sessionHistoryProvider.notifier).fetchSessions();
+
     _ref.read(gamificationNotifierProvider.notifier).calculateFocusScore(
       sessionId: sessionId,
       focusMinutes: focusMinutes,
@@ -167,6 +170,8 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
     await _service.endSession(sessionId);
     state = ActiveFocusState(remainingSeconds: 0, isRunning: false);
     _currentTimerId = null;
+
+    await _ref.read(sessionHistoryProvider.notifier).fetchSessions();
 
     _ref.read(gamificationNotifierProvider.notifier).calculateFocusScore(
       sessionId: sessionId,
@@ -198,6 +203,7 @@ class ActiveFocusNotifier extends StateNotifier<ActiveFocusState> {
     }
     state = ActiveFocusState(remainingSeconds: 0, isRunning: false);
     _currentTimerId = null;
+    await _ref.read(sessionHistoryProvider.notifier).fetchSessions();
   }
 
   @override

@@ -62,6 +62,10 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
 
   GamificationNotifier(this._service) : super(GamificationState());
 
+  Future<void> _refreshGlobalStats() async {
+    await fetchAll('global');
+  }
+
   Future<void> fetchAll(String leaderboardId) async {
     print('=== GamificationNotifier.fetchAll() called with leaderboardId: $leaderboardId ===');
     state = state.copyWith(isLoading: true, error: null);
@@ -133,8 +137,7 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
         breakMinutes: breakMinutes,
         tasksCompleted: tasksCompleted,
       );
-      final xpHistory = await _service.getXpHistory();
-      state = state.copyWith(xpHistory: xpHistory);
+      await _refreshGlobalStats();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -147,8 +150,7 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
   }) async {
     try {
       await _service.awardXP(amount: amount, source: source, description: description);
-      final xpHistory = await _service.getXpHistory();
-      state = state.copyWith(xpHistory: xpHistory);
+      await _refreshGlobalStats();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -157,8 +159,7 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
   Future<void> checkAndAwardAchievement() async {
     try {
       await _service.checkAndAwardAchievement();
-      final achievements = await _service.getAchievements();
-      state = state.copyWith(achievements: achievements);
+      await _refreshGlobalStats();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -167,8 +168,7 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
   Future<void> awardBadge(String badgeId) async {
     try {
       await _service.awardBadge(badgeId);
-      final badges = await _service.getBadges();
-      state = state.copyWith(badges: badges);
+      await _refreshGlobalStats();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -180,8 +180,7 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
   }) async {
     try {
       await _service.updateLeaderboard(leaderboardId: leaderboardId, xpPoints: xpPoints);
-      final leaderboard = await _service.getLeaderboard(leaderboardId);
-      state = state.copyWith(leaderboard: leaderboard);
+      await _refreshGlobalStats();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -190,8 +189,7 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
   Future<void> assignDailyChallenge() async {
     try {
       await _service.assignDailyChallenge();
-      final challenges = await _service.getActiveChallenges();
-      state = state.copyWith(challenges: challenges);
+      await _refreshGlobalStats();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }

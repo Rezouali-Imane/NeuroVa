@@ -62,7 +62,7 @@ final aiServiceProvider = Provider<AIService>((Ref ref) {
 final aiNotifierProvider = StateNotifierProvider.family<AINotifier, AIState, String>(
   (ref, userId) {
     final aiService = ref.watch(aiServiceProvider);
-    return AINotifier(aiService, userId);
+    return AINotifier(aiService, userId, ref);
   },
 );
 

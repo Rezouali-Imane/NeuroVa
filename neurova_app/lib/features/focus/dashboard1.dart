@@ -80,6 +80,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
       } catch (e) {
         debugPrint('Failed to load insights: $e');
       }
+      ref.read(tasksNotifierProvider.notifier).fetchTasks();
       ref.read(notificationNotifierProvider.notifier).fetchNotifications();
       ref.read(sessionHistoryProvider.notifier).fetchSessions();
       ref.read(gamificationNotifierProvider.notifier).fetchAll('global'); // ← ADD THIS

@@ -268,9 +268,7 @@ class AIService {
           content: replyText.isNotEmpty ? replyText : 'No response generated.',
           role: 'ASSISTANT',
           timestamp: DateTime.now(),
-          metadata: data['metadata'] is Map<String, dynamic>
-              ? data['metadata'] as Map<String, dynamic>
-              : null,
+          metadata: data,
         );
       }
       throw DioException(
@@ -321,9 +319,7 @@ class AIService {
           content: replyText.isNotEmpty ? replyText : 'No response generated.',
           role: 'ASSISTANT',
           timestamp: DateTime.now(),
-          metadata: data['metadata'] is Map<String, dynamic>
-              ? data['metadata'] as Map<String, dynamic>
-              : null,
+          metadata: data,
         );
       }
 
