@@ -108,13 +108,13 @@ class GamificationService {
     }
   }
 
-  Future<Map<String, dynamic>> calculateStreak() async {
+  Future<int> calculateStreak() async {
     try {
       final response = await _dio.post<dynamic>(
         '/api/gamification/streak/calculate',
         options: await _options(),
       );
-      return response.data['data'] as Map<String, dynamic>;
+      return (response.data['streak'] as int?) ?? 0;
     } catch (e) {
       throw Exception(_readError(e, 'Failed to calculate streak'));
     }

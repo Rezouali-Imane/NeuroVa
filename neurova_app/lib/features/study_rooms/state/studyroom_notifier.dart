@@ -4,7 +4,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../services/studyroom_service.dart';
 import '../models/studyroom_module.dart';
 import '../../auth/state/auth_notifier.dart' show localStorageServiceProvider;
-import '../../../shared/services/socket_service.dart';
+import '../../../shared/services/Socket_service.dart';
 import '../../../core/constants/app_constants.dart';
 
 class StudyRoomState {

@@ -76,8 +76,7 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
       // Streak calculation may fail if user record isn't fully initialized; make it optional
       int streakData = 0;
       try {
-        final streakResult = await _service.calculateStreak();
-        streakData = (streakResult['streak'] as int?) ?? 0;
+        streakData = await _service.calculateStreak();
       } catch (streakError) {
         print('Warning: Streak calculation failed: $streakError. Continuing without streak.');
       }

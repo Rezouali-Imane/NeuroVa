@@ -7,7 +7,7 @@ import '../../shared/widgets/unified_bottom_nav_bar.dart';
 import './models/studyroom_module.dart';
 import 'package:flutter/scheduler.dart';
 import './state/studyroom_notifier.dart';
-import '../../shared/services/socket_service.dart';
+import '../../shared/services/Socket_service.dart';
 import '../auth/state/auth_notifier.dart' show localStorageServiceProvider;
 
 class StudyRoomsPage extends ConsumerStatefulWidget {

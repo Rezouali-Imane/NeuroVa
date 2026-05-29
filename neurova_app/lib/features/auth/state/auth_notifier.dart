@@ -87,6 +87,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isverified: isverified,
         clearError: true,
       );
+
+      // Restore user profile data so userId/username/name are available
+      // for notes, tasks, and dashboard without requiring a re-login
+      if (token != null) {
+        await _fetchAndSaveProfile();
+      }
     } catch (error) {
       state = state.copyWith(
         isLoading: false,
@@ -103,17 +109,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final token = await _authService.login(email: email, password: password);
       final isverified = _extractIsVerifiedFromToken(token);
       final userId = _extractUserIdFromToken(token);
-      final username = _extractUsernameFromToken(token);
 
       // Save userId for later use
       if (userId != null) {
         await _localStorageService.saveUserId(userId);
       }
 
-      if (username != null) {
-        await _localStorageService.saveUsername(username);
-      }
-      
       state = state.copyWith(
         isLoading: false,
         token: token,
@@ -165,9 +166,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (token != null) {
         final userId = _extractUserIdFromToken(token);
-        final username = _extractUsernameFromToken(token);
         if (userId != null) await _localStorageService.saveUserId(userId);
-        if (username != null) await _localStorageService.saveUsername(username);
       }
 
       state = state.copyWith(
@@ -199,6 +198,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> signOut() async {
     await _authService.logout();
+    await _localStorageService.clearUserId();
+    await _localStorageService.clearUsername();
+    await _localStorageService.clearName();
     state = const AuthState.initial();
   }
 
@@ -281,10 +283,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final bool isNew = authData['isNewUser'] ?? false;
       final isverified = _extractIsVerifiedFromToken(token);
       final userId = _extractUserIdFromToken(token);
-      final username = _extractUsernameFromToken(token);
 
       if (userId != null) await _localStorageService.saveUserId(userId);
-      if (username != null) await _localStorageService.saveUsername(username);
 
       state = state.copyWith(
         isLoading: false,
@@ -391,8 +391,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (username != null) await _localStorageService.saveUsername(username);
       if (name != null) await _localStorageService.saveName(name);
       if (userid != null) await _localStorageService.saveUserId(userid);
-    } catch (_) {
-
+    } catch (e) {
+      // Profile fetch failed (e.g. backend unreachable, expired token).
+      // userId/username/name from SharedPreferences will be used as fallback.
     }
   }
 
@@ -456,20 +457,5 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  String? _extractUsernameFromToken(String token) {
-    try {
-      final parts = token.split('.');
-      if (parts.length != 3) return null;
-      final payload = parts[1];
-      final paddedPayload = payload.padRight(
-        payload.length + (4 - payload.length % 4) % 4, '=',
-      );
-      final decodedBytes = base64Url.decode(paddedPayload);
-      final decodedString = utf8.decode(decodedBytes);
-      final json = jsonDecode(decodedString) as Map<String, dynamic>;
-      return json['username'] as String?;
-    } catch (_) {
-      return null;
-    }
-  }
+
 }
