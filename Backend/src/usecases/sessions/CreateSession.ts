@@ -10,9 +10,17 @@ export const CreateSession = async (data: CreateFocusSessionDTO) => {
     throw new Error("Start time is required");
   }
 
+  if (!data.endtime) {
+    throw new Error("End time is required");
+  }
+
 
   if (data.allowbreakminutes !== undefined && data.allowbreakminutes < 0) {
     throw new Error("Break minutes cannot be negative");
+  }
+
+  if (data.endtime && data.starttime && data.endtime <= data.starttime) {
+    throw new Error("End time must be after start time");
   }
 
   return await FocusSessionRepository.create({
@@ -20,7 +28,7 @@ export const CreateSession = async (data: CreateFocusSessionDTO) => {
     scheduleid: data.scheduleid ?? null,
     roomid: data.roomid ?? null,
     starttime: data.starttime,
-    ...(data.endtime ? { endtime: data.endtime } : {}),
+    endtime: data.endtime,
     allowbreakminutes: data.allowbreakminutes ?? 0,
     focusscore: 0,
     status: SessionStatus.ACTIVE,

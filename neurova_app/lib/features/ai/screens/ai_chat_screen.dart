@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../../shared/services/local_storage_service.dart';
 import '../../../shared/theme/app_theme.dart' show AppColors, AppTypography;
 import '../models/ai_models.dart';
@@ -29,6 +30,7 @@ class AIChatScreen extends StatefulWidget {
 class _AIChatScreenState extends State<AIChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   late AINotifier _notifier;
   late ValueNotifier<AIState> _stateNotifier;
   bool _isInitialized = false;
@@ -46,6 +48,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
   String _voicePersona = 'Balanced';
   String _voiceSpeedPreset = 'Normal';
   List<Map<String, dynamic>> _availableVoices = [];
+  bool _isUploadingDocument = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -74,6 +78,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
     _initializeChat();
     _initializeVoiceChat();
     _loadSavedVoiceSettings();
+    _loadKnowledgeBase();
+  }
+
+  Future<void> _loadKnowledgeBase() async {
+    await _notifier.loadKnowledgeBase();
   }
 
   Future<void> _loadSavedVoiceSettings() async {
@@ -635,6 +644,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     _flutterTts.stop();
     _messageController.dispose();
     _scrollController.dispose();
+    _searchController.dispose();
     _stateNotifier.dispose();
     super.dispose();
   }
@@ -1239,6 +1249,168 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
+  Future<void> _pickAndUploadDocument() async {
+    try {
+      setState(() => _isUploadingDocument = true);
+
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'txt', 'md', 'doc', 'docx'],
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        final filePath = file.path;
+
+        if (filePath != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Uploading ${file.name}...'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+
+          await _notifier.uploadDocument(
+            filePath,
+            subject: 'General',
+            major: 'General',
+          );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${file.name} uploaded successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading file: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingDocument = false);
+      }
+    }
+  }
+
+  List<Widget> _buildDocumentList(List<KnowledgeItem> docs) {
+    final filteredDocs = _searchQuery.isEmpty
+        ? docs
+        : docs.where((doc) => doc.filename.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+
+    if (filteredDocs.isEmpty) {
+      return [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Center(
+            child: Text(
+              'No documents match your search',
+              style: AppTypography.body2.copyWith(color: AppColors.textMuted),
+            ),
+          ),
+        ),
+      ];
+    }
+
+    return List.generate(
+      filteredDocs.length,
+      (index) {
+        final doc = filteredDocs[index];
+        final timeAgo = _getTimeAgo(doc.uploadedAt);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: GestureDetector(
+            onLongPress: () {
+              _showDeleteConfirmation(doc.id, doc.filename);
+            },
+            child: _docTile(
+              doc.filename,
+              '${doc.chunkCount} chunks · $timeAgo',
+              const Color(0xFF3A2954),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _getTimeAgo(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '${weeks}w ago';
+    } else if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return '${months}mo ago';
+    } else {
+      final years = (difference.inDays / 365).floor();
+      return '${years}y ago';
+    }
+  }
+
+  void _showDeleteConfirmation(String documentId, String filename) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackgroundLight,
+        title: Text(
+          'Delete Document?',
+          style: AppTypography.title2.copyWith(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to delete "$filename"? This cannot be undone.',
+          style: AppTypography.body2.copyWith(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: AppTypography.body2.copyWith(color: Color(0xFFC8B8E8)),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _notifier.deleteDocument(documentId);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('$filename deleted'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
+            child: Text(
+              'Delete',
+              style: AppTypography.body2.copyWith(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildKnowledgeTab(AIState state) {
     final docs = state.knowledgeBase;
     final compactUploadCard = MediaQuery.of(context).size.height < 760;
@@ -1247,64 +1419,88 @@ class _AIChatScreenState extends State<AIChatScreen> {
       children: [
         Row(
           children: [
-            Expanded(child: _statCard('3', 'Documents', const Color(0xFF241B2F))),
+            Expanded(child: _statCard(docs.length.toString(), 'Documents', const Color(0xFF241B2F))),
             const SizedBox(width: 10),
-            Expanded(child: _statCard('3', 'Indexed', const Color(0xFF18261C))),
+            Expanded(
+              child: _statCard(
+                docs.fold<int>(0, (sum, doc) => sum + doc.chunkCount).toString(),
+                'Chunks',
+                const Color(0xFF18261C),
+              ),
+            ),
             const SizedBox(width: 10),
-            Expanded(child: _statCard('210', 'Total Pages', const Color(0xFF20212D))),
+            Expanded(
+              child: _statCard(
+                docs.fold<int>(0, (sum, doc) => sum + (doc.chunkCount ~/ 5)).toString(),
+                'Est. Pages',
+                const Color(0xFF20212D),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
-        Container(
-          height: compactUploadCard ? 176 : 188,
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: AppColors.purple.withValues(alpha: 0.28),
-              style: BorderStyle.solid,
+        GestureDetector(
+          onTap: _isUploadingDocument ? null : _pickAndUploadDocument,
+          child: Container(
+            height: compactUploadCard ? 176 : 188,
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: AppColors.purple.withValues(alpha: 0.28),
+                style: BorderStyle.solid,
+              ),
             ),
-          ),
-          child: CustomPaint(
-            painter: _DashedBorderPainter(color: AppColors.purple.withValues(alpha: 0.24)),
-            child: Padding(
-              padding: EdgeInsets.all(compactUploadCard ? 14 : 18),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width - 64,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: compactUploadCard ? 52 : 58,
-                        height: compactUploadCard ? 52 : 58,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18),
-                          color: AppColors.cardBackgroundLight,
+            child: CustomPaint(
+              painter: _DashedBorderPainter(color: AppColors.purple.withValues(alpha: 0.24)),
+              child: Padding(
+                padding: EdgeInsets.all(compactUploadCard ? 14 : 18),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width - 64,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: compactUploadCard ? 52 : 58,
+                          height: compactUploadCard ? 52 : 58,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            color: AppColors.cardBackgroundLight,
+                          ),
+                          child: _isUploadingDocument
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFC8B8E8)),
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.upload_outlined, color: Color(0xFFC8B8E8), size: 28),
                         ),
-                        child: const Icon(Icons.upload_outlined, color: Color(0xFFC8B8E8), size: 28),
-                      ),
-                      SizedBox(height: compactUploadCard ? 10 : 14),
-                      Text('Upload Documents', style: AppTypography.title2.copyWith(color: Colors.white)),
-                      SizedBox(height: compactUploadCard ? 4 : 6),
-                      Text(
-                        'Drag & drop PDFs, DOCX, or TXT files or tap to browse',
-                        textAlign: TextAlign.center,
-                        style: AppTypography.body2.copyWith(color: AppColors.textSecondary),
-                      ),
-                      SizedBox(height: compactUploadCard ? 8 : 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: const [
-                          _FileTag('.PDF'),
-                          _FileTag('.DOCX'),
-                          _FileTag('.TXT'),
-                          _FileTag('.MD'),
-                        ],
-                      ),
-                    ],
+                        SizedBox(height: compactUploadCard ? 10 : 14),
+                        Text('Upload Documents', style: AppTypography.title2.copyWith(color: Colors.white)),
+                        SizedBox(height: compactUploadCard ? 4 : 6),
+                        Text(
+                          'Tap to browse or select PDF, DOCX, TXT, MD files',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.body2.copyWith(color: AppColors.textSecondary),
+                        ),
+                        SizedBox(height: compactUploadCard ? 8 : 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: const [
+                            _FileTag('.PDF'),
+                            _FileTag('.DOCX'),
+                            _FileTag('.TXT'),
+                            _FileTag('.MD'),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1312,6 +1508,40 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
         ),
         const SizedBox(height: 18),
+        if (docs.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.glassBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.glassBorderLight),
+            ),
+            child: TextField(
+              controller: _searchController,
+              style: AppTypography.body2.copyWith(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Search documents...',
+                hintStyle: AppTypography.body2.copyWith(color: AppColors.textMuted),
+                border: InputBorder.none,
+                isDense: true,
+                prefixIcon: const Icon(Icons.search, color: Color(0xFFC8B8E8), size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? GestureDetector(
+                        onTap: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        child: const Icon(Icons.close, color: Color(0xFFC8B8E8), size: 20),
+                      )
+                    : null,
+              ),
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         const Text(
           'INDEXED DOCUMENTS',
           style: TextStyle(
@@ -1323,11 +1553,18 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _docTile('Algorithms_Lecture_Notes.pdf', '2.4 MB · 48 pages · 72h ago', const Color(0xFF3A2954)),
-        const SizedBox(height: 10),
-        _docTile('Linear_Algebra_Chapter3.pdf', '1.1 MB · 22 pages · 24h ago', const Color(0xFF3A2954)),
-        const SizedBox(height: 10),
-        _docTile('System_Design_Handbook.pdf', '5.8 MB · 140 pages · 1h ago', const Color(0xFF3A2954)),
+        if (docs.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'No documents uploaded yet',
+                style: AppTypography.body2.copyWith(color: AppColors.textMuted),
+              ),
+            ),
+          )
+        else
+          ..._buildDocumentList(docs),
         const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(16),

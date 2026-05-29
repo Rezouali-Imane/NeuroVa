@@ -1,4 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+// Mock the OpenAI client used by usecases so `aiClient.openai.chat.completions.create` exists
+vi.mock('../src/infrastructure/ai/openai.client.js', () => {
+  const create = vi.fn();
+  const aiClient = {
+    isClaude: false,
+    openai: { chat: { completions: { create } } },
+    claude: { messages: { create: vi.fn() } },
+  };
+  return { aiClient, default: aiClient };
+});
+// Mock Brevo email client to avoid sending real emails during tests
+vi.mock('../src/infrastructure/Brevo.client.js', () => ({
+  sendEmail: vi.fn().mockResolvedValue({ success: true }),
+  emailTemplates: {
+    taskReminder: (t: string, d: string) => ({ subject: ``, html: `` })
+  }
+}));
 import openai from '../src/infrastructure/ai/openai.client.js';
 import prisma from '../src/infrastructure/database/prisma.client.js';
 import { HmacClient } from '../src/infrastructure/hmac.client.js';
@@ -68,7 +85,7 @@ describe('ai usecases', () => {
 
     vi.spyOn(prisma.task, 'findMany').mockResolvedValue([{ title: 'Study', category: 'ACADEMIC', priority: 3, deadline: new Date('2026-01-02'), status: 'PENDING' }] as any);
     vi.spyOn(StudentMemoryRepository, 'findByUser').mockResolvedValue({ major: 'CS' });
-    vi.spyOn(openai.chat.completions, 'create').mockResolvedValue({ choices: [{ message: { content: 'Plan output' } }] } as any);
+    vi.mocked((openai as any).openai.chat.completions.create).mockResolvedValue({ choices: [{ message: { content: 'Plan output' } }] } as any);
     await expect(GenerateStudyPlan({ userid: 'usr1' })).resolves.toEqual({ plan: 'Plan output' });
   });
 
@@ -83,7 +100,7 @@ describe('ai usecases', () => {
       { category: 'WORK', status: 'COMPLETED' },
     ] as any);
     vi.spyOn(StudentMemoryRepository, 'findByUser').mockResolvedValue({ name: 'Imane', major: 'CS' });
-    vi.spyOn(openai.chat.completions, 'create').mockResolvedValue({ choices: [{ message: { content: 'Weakness report' } }] } as any);
+    vi.mocked((openai as any).openai.chat.completions.create).mockResolvedValue({ choices: [{ message: { content: 'Weakness report' } }] } as any);
     const upsertSpy = vi.spyOn(StudentMemoryRepository, 'upsert').mockResolvedValue({} as any);
     await expect(AnalyzeWeakness({ userid: 'usr1' })).resolves.toEqual({ analysis: 'Weakness report' });
     expect(upsertSpy).toHaveBeenCalledWith('usr1', 'weak_subjects', 'ACADEMIC');
@@ -93,7 +110,7 @@ describe('ai usecases', () => {
     await expect(ScheduleFocusSession({ userid: '' } as any)).rejects.toThrow('User ID is required');
     vi.spyOn(StudentMemoryRepository, 'findByUser').mockResolvedValue({ preferred_study_time: 'morning' });
     vi.spyOn(prisma.task, 'findMany').mockResolvedValue([{ taskid: 'tsk1', title: 'Study', priority: 3, deadline: new Date('2026-01-02') }] as any);
-    vi.spyOn(openai.chat.completions, 'create').mockResolvedValue({ choices: [{ message: { content: '{"taskid":"tsk1","durationMinutes":50,"reason":"Highest priority"}' } }] } as any);
+    vi.mocked((openai as any).openai.chat.completions.create).mockResolvedValue({ choices: [{ message: { content: '{"taskid":"tsk1","durationMinutes":50,"reason":"Highest priority"}' } }] } as any);
     vi.spyOn(FocusSessionRepository, 'create').mockResolvedValue({ sessionid: 'ssn1' } as any);
     vi.spyOn(prisma.sessiontask, 'create').mockResolvedValue({} as any);
     await expect(ScheduleFocusSession({ userid: 'usr1' })).resolves.toEqual({ sessionid: 'ssn1', suggestedTaskid: 'tsk1', durationMinutes: 50, reason: 'Highest priority', message: 'Focus session created! Open Neurova to start.' });
@@ -108,7 +125,7 @@ describe('ai usecases', () => {
     vi.spyOn(pdfChunker, 'extractTextFromFile').mockReturnValue('Hello world');
     vi.spyOn(pdfChunker, 'cleanText').mockReturnValue('Hello world');
     vi.spyOn(pdfChunker, 'chunkText').mockReturnValue(['chunk 1', 'chunk 2']);
-    vi.spyOn(prisma.documentchunk, 'create').mockImplementation(async ({ data }: any) => ({ chunkid: `chk-${data.chunkindex}` }) as any);
+    (vi.spyOn(prisma.documentchunk as any, 'create') as any).mockImplementation(async ({ data }: any) => ({ chunkid: `chk-${data.chunkindex}` }) as any);
     vi.spyOn(embeddingClient, 'getEmbeddings').mockResolvedValue([[0.1], [0.2]] as any);
     vi.spyOn(vectorClient, 'insertChunkWithEmbedding').mockResolvedValue(undefined as any);
 
@@ -117,10 +134,10 @@ describe('ai usecases', () => {
 
   it('SendTaskReminders summarizes reminder sending', async () => {
     vi.spyOn(prisma.task, 'findMany').mockResolvedValue([
-      { taskid: 'tsk1', title: 'Study', deadline: new Date('2026-01-02'), users: { email: 'a@test.com' } },
+      { taskid: 'tsk1', title: 'Study', deadline: new Date('2026-01-02'), users: {} },
       { taskid: 'tsk2', title: 'Read', deadline: new Date('2026-01-02'), users: {} },
     ] as any);
-    // Note: Brevo client is used for reminders, skipping mock
+    // Brevo client is mocked above to prevent real emails
     await expect(SendTaskReminders('usr1')).resolves.toEqual({ remindersChecked: 2, remindersSent: 0, results: [] });
   });
 });

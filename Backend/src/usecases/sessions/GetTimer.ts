@@ -1,11 +1,12 @@
 import { TimerRepository } from "../../interfaces/repositories/TimerRepository.js";
 
 export const GetTimer = async (sessionid: string) => {
-    const timer = await TimerRepository.findManyBySession(sessionid);
+    const timers = await TimerRepository.findManyBySession(sessionid);
 
-    if (!timer) {
+    if (!timers || timers.length === 0) {
         throw new Error("Timer not found for this session");
     }
 
-    return timer;
+    // Return the first timer (legacy behavior expects a single timer)
+    return timers[0];
 };

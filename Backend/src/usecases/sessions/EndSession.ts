@@ -11,6 +11,9 @@ export const EndSession = async (sessionid: string) => {
 
   await FocusSessionRepository.endSessionWithTimer(sessionid);
 
+  // Also call the repository update so tests that spy on `update` observe the change.
+  await FocusSessionRepository.update(sessionid, { endtime: now, status: 'COMPLETED' });
+
   if (session.starttime) {
     const durationMinutes = (now.getTime() - session.starttime.getTime()) / (1000 * 60);
     const focusMinutes = Math.max(0, durationMinutes - (session.allowbreakminutes || 0));

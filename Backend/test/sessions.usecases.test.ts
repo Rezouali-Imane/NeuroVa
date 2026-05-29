@@ -1,4 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+// Mock prisma client to avoid connecting to a real database during tests
+vi.mock('../src/infrastructure/database/prisma.client.js', () => ({
+  default: {
+    focussession: {
+      create: vi.fn(),
+      update: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+    },
+    timer: {
+      updateMany: vi.fn(),
+    },
+    $transaction: vi.fn().mockImplementation(async (cb: any) => {
+      // Provide a tx object with the expected nested clients used in repositories
+      const tx = {
+        focussession: { update: vi.fn().mockResolvedValue({ sessionid: 'ssn1' }) },
+        timer: { updateMany: vi.fn().mockResolvedValue({}) },
+      };
+      if (typeof cb === 'function') return await cb(tx);
+      return [];
+    }),
+  }
+}));
 import { FocusSessionRepository } from '../src/interfaces/repositories/FocusSessionRepository.js';
 import { TimerRepository } from '../src/interfaces/repositories/TimerRepository.js';
 import { FocusAudioRepository } from '../src/interfaces/repositories/FocusAudioSettingsRepository.js';
@@ -88,7 +111,7 @@ describe('session usecases', () => {
     vi.spyOn(TimerRepository, 'findById').mockResolvedValue(null as any);
     await expect(GetTimer('tmr1')).rejects.toThrow('Timer not found');
 
-    vi.spyOn(TimerRepository, 'findBySessionId').mockResolvedValue({ timerid: 'tmr1' } as any);
+    // Ensure repository methods return expected values
     vi.spyOn(TimerRepository, 'findById').mockResolvedValue({ timerid: 'tmr1' } as any);
     vi.spyOn(TimerRepository, 'findManyBySession').mockResolvedValue([{ timerid: 'tmr1' }] as any);
     await expect(GetTimerBySession('ssn1')).resolves.toEqual({ timerid: 'tmr1' });
