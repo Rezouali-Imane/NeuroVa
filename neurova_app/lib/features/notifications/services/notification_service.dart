@@ -79,4 +79,92 @@ class NotificationService {
       throw Exception(_readError(e, 'Failed to delete notification'));
     }
   }
+
+  Future<NotificationModel> createNotification({
+    required String title,
+    required String message,
+    required String type,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        '/api/notifications',
+        data: {
+          'title': title,
+          'message': message,
+          'type': type,
+        },
+        options: await _options(),
+      );
+      return NotificationModel.fromJson(response.data['data'] as Map<String, dynamic>);
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to create notification'));
+    }
+  }
+
+  Future<Map<String, dynamic>> getNotificationSettings() async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/notifications/settings',
+        options: await _options(),
+      );
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to fetch notification settings'));
+    }
+  }
+
+  Future<Map<String, dynamic>> updateNotificationSettings(
+    Map<String, dynamic> settings,
+  ) async {
+    try {
+      final response = await _dio.put<dynamic>(
+        '/api/notifications/settings',
+        data: settings,
+        options: await _options(),
+      );
+      return response.data['data'] as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to update notification settings'));
+    }
+  }
+
+  Future<void> sendEmailNotification({
+    required String subject,
+    required String message,
+    required String type,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        '/api/notifications/email',
+        data: {
+          'subject': subject,
+          'message': message,
+          'type': type,
+        },
+        options: await _options(),
+      );
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to send email notification'));
+    }
+  }
+
+  Future<void> sendPushNotification({
+    required String title,
+    required String message,
+    required String type,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        '/api/notifications/push',
+        data: {
+          'title': title,
+          'message': message,
+          'type': type,
+        },
+        options: await _options(),
+      );
+    } catch (e) {
+      throw Exception(_readError(e, 'Failed to send push notification'));
+    }
+  }
 }
