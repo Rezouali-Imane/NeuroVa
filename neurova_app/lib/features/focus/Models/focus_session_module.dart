@@ -26,12 +26,12 @@ class FocusSession {
       sessionid: json['sessionid'].toString(),
       userid: json['userid'].toString(),
       roomid: json['roomid']?.toString(),
-      starttime: DateTime.parse(json['starttime']),
-      endtime: json['endtime'] != null ? DateTime.parse(json['endtime']) : null,
+      starttime: DateTime.parse(json['starttime']).toLocal(),
+      endtime: json['endtime'] != null ? DateTime.parse(json['endtime']).toLocal() : null,
       status: json['status'] ?? 'SCHEDULED',
       duration: json['duration'] as int?,
       focusscore: json['focusscore'] as int?,
-      scheduleid: json['scheduleid'] != null ? DateTime.parse(json['scheduleid']) : null,
+      scheduleid: json['scheduleid'] != null ? DateTime.parse(json['scheduleid']).toLocal() : null,
     );
   }
 }

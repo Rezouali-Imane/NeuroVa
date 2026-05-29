@@ -88,7 +88,7 @@ class _NeurButtonState extends State<NeurButton>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: kLilac.withOpacity(0.20),
+                color: kLilac.withValues(alpha: 0.20),
                 blurRadius: 28,
                 spreadRadius: 0,
               ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
 import '../../../shared/services/local_storage_service.dart';
@@ -144,11 +145,11 @@ class AuthService {
     if (data is Map<String, dynamic>) {
       final token = data['accessToken'];
       if (token is String && token.isNotEmpty) {
-        print(' AccessToken extracted: ${token.substring(0, 10)}...');
+        debugPrint(' AccessToken extracted: ${token.substring(0, 10)}...');
         return token;
       }
     }
-    print(' FAILED to extract token. Data: $data');
+    debugPrint(' FAILED to extract token. Data: $data');
     throw const FormatException('AccessToken missing in backend response.');
   }
 

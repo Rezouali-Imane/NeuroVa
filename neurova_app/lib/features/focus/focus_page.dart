@@ -328,12 +328,12 @@ class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProvider
                         _controlIconButton(
                           icon: const Icon(Icons.stop, color: Colors.white70),
                           onTap: () async {
+                            final messenger = ScaffoldMessenger.of(context);
                             await ref.read(activeFocusProvider.notifier).endSession();
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Session completed!')),
-                              );
-                            }
+                            if (!mounted) return;
+                            messenger.showSnackBar(
+                              const SnackBar(content: Text('Session completed!')),
+                            );
                           },
                         ),
                     ],
@@ -418,7 +418,7 @@ class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProvider
     final userId = await localStorage.readUserId();
     if (!mounted) return;
     if (userId == null || userId.isEmpty) {
-      print('[Focus] Please sign in again to start a focus session');
+      debugPrint('[Focus] Please sign in again to start a focus session');
       return;
     }
     final settings = _buildTimerSettings();
@@ -426,7 +426,7 @@ class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProvider
     if (!mounted) return;
     final error = ref.read(activeFocusProvider).error;
     if (error != null) {
-      print('[Focus Error] $error');
+      debugPrint('[Focus Error] $error');
     }
   }
 
@@ -436,7 +436,7 @@ class _FocusPageState extends ConsumerState<FocusPage> with SingleTickerProvider
     } else if (_mode == 'Countdown') {
       await _showCountdownSettingsSheet();
     } else {
-      print('[Timer Settings] Stopwatch does not have custom settings');
+      debugPrint('[Timer Settings] Stopwatch does not have custom settings');
     }
   }
 

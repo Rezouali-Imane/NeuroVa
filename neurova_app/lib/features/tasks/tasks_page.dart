@@ -815,7 +815,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                     color: Color(0xFFB284BE),
                     fontFamily: 'Syne',
                     fontWeight: FontWeight.w800,
-                    fontSize: 28,
+                    fontSize: 18,
                   ),
                 ),
               ],
@@ -1689,7 +1689,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         GestureDetector(
                           onTap: () async {
                         if (_titleController.text.trim().isEmpty) {
-                          print('[Tasks] Please enter a task title');
+                          debugPrint('[Tasks] Please enter a task title');
                           return;
                         }
 
@@ -1701,9 +1701,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         if (!context.mounted) return;
 
                         if (userId == null) {
-                          print('[Tasks] User not authenticated');
+                          debugPrint('[Tasks] User not authenticated');
                           return;
                         }
+
+                        final deadline = selectedDeadline;
 
                         await ref
                             .read(tasksNotifierProvider.notifier)
@@ -1716,7 +1718,13 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                               status: 'PENDING',
                               category: selectedCategory,
                               description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text,
-                              deadline: selectedDeadline,
+                                    deadline: deadline == null
+                                  ? null
+                                  : DateTime(
+                                      deadline.year,
+                                      deadline.month,
+                                      deadline.day,
+                                    ),
                             );
 
                         taskController.clear();

@@ -410,7 +410,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      print('[AI Chat] Failed to load chat history: $e');
+      debugPrint('[AI Chat] Failed to load chat history: $e');
     }
   }
 
@@ -506,7 +506,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         _showConversation = true;
       });
     }
-    await _notifier.sendMessage(content, directChat: true);
+    await _notifier.sendMessage(content);
   }
 
   Future<void> _toggleVoiceCallMode() async {
@@ -519,7 +519,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       _speechReady = await _speechToText.initialize();
     }
     if (!_speechReady) {
-      print('[Voice Call] Microphone is not available on this device.');
+      debugPrint('[Voice Call] Microphone is not available on this device.');
       return;
     }
 
@@ -533,7 +533,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       await _notifier.connectVoiceCall();
       await _startListeningCycle();
     } catch (e) {
-      print('[Voice Call Error] $e');
+      debugPrint('[Voice Call Error] $e');
       if (mounted) {
         setState(() {
           _voiceCallMode = false;
@@ -588,7 +588,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     if (!_voiceCallMode) return;
 
     final before = _stateNotifier.value.messages.length;
-    await _notifier.sendRealtimeVoiceTurn(transcript, directChat: true);
+    await _notifier.sendRealtimeVoiceTurn(transcript);
 
     final messages = _stateNotifier.value.messages;
     String? assistantReply;

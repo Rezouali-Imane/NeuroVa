@@ -90,6 +90,8 @@ class TasksNotifier extends StateNotifier<TasksState> {
       if (syncWithGoogle) {
         await syncTaskToGoogle(task.taskid);
       }
+
+      await fetchTasks();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -138,6 +140,7 @@ class TasksNotifier extends StateNotifier<TasksState> {
           .map((t) => t.taskid == taskId ? task : t)
           .toList();
       state = state.copyWith(tasks: updatedTasks);
+      await fetchTasks();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -148,6 +151,7 @@ class TasksNotifier extends StateNotifier<TasksState> {
       await _tasksService.deleteTask(taskId);
       state = state.copyWith(
           tasks: state.tasks.where((t) => t.taskid != taskId).toList());
+      await fetchTasks();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }

@@ -486,7 +486,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         '2 achievements remaining',
                         style: TextStyle(
                           fontFamily: 'Syne',
-                          color: Colors.white.withOpacity(0.38),
+                          color: Colors.white.withValues(alpha: 0.38),
                           fontSize: 12,
                         ),
                       ),

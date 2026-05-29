@@ -26,8 +26,23 @@ import { RemoveAmbientSound } from "../../usecases/sessions/DeleteAmbientSound.j
 export const FocusSessionController = {
   async create(req: Request, res: Response) {
     try {
-      const session = await CreateSession(req.body);
       const timerInput = req.body.timerSettings ?? {};
+      const starttime = req.body.starttime ? new Date(req.body.starttime) : new Date();
+      const providedEndtime = req.body.endtime ? new Date(req.body.endtime) : null;
+      const durationMinutesRaw =
+        timerInput.durationminutes ??
+        timerInput.durationMinutes ??
+        req.body.durationminutes ??
+        req.body.durationMinutes;
+      const durationMinutes = Number(durationMinutesRaw);
+      const fallbackDurationMinutes = Number.isFinite(durationMinutes) && durationMinutes > 0 ? durationMinutes : 25;
+      const endtime = providedEndtime ?? new Date(starttime.getTime() + fallbackDurationMinutes * 60_000);
+
+      const session = await CreateSession({
+        ...req.body,
+        starttime,
+        endtime,
+      });
       if (timerInput.timertype) timerInput.type = timerInput.timertype;
       const timer = await CreateTimer(session.sessionid, timerInput);
       await CreateFocusAudio(session.sessionid);

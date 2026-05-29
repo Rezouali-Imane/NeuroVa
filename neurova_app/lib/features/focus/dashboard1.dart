@@ -585,22 +585,15 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
   Widget _buildTopStats() {
     return Consumer(
       builder: (context, ref, _) {
-        final gamif = ref.watch(gamificationNotifierProvider);
-        final streak = gamif.streak;
         final tasksState = ref.watch(tasksNotifierProvider);
-        final today = DateTime.now();
-        final todayTasks = tasksState.tasks.where((t) =>
-        t.createdat.year == today.year &&
-            t.createdat.month == today.month &&
-            t.createdat.day == today.day
-        ).toList();
-        final doneTasks = todayTasks.where((t) => t.status == 'COMPLETED').length;
-        final totalTasks = todayTasks.length;
         final sessionState = ref.watch(sessionHistoryProvider);
         final todayMins = sessionState.todayMinutes;
         final todayHours = todayMins ~/ 60;
         final todayRemMins = todayMins % 60;
-        final focusValue = todayMins == 0 ? '0m' : (todayHours > 0 ? '${todayHours}h\n${todayRemMins}m' : '${todayMins}m');
+        final focusValue = todayMins == 0 ? '0h' : (todayHours > 0 ? '${todayHours}h\n${todayRemMins}m' : '${todayMins}m');
+        final doneTasks = tasksState.tasks.where((t) => t.status == 'COMPLETED').length;
+        final totalTasks = tasksState.tasks.length;
+        final streak = sessionState.streakDays;
 
         return Row(
           children: [
@@ -631,7 +624,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
             Expanded(
               child: _buildStatItem(
                 icon: Icons.local_fire_department_outlined,
-                value: gamif.isLoading ? '-' : '$streak days',
+                value: '$streak days',
                 label: 'Streak',
                 colors: [const Color(0x24F8B878), const Color(0x10ECEBBD)],
                 valueColor: const Color(0xFFF8B878),
@@ -967,19 +960,34 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
     return Consumer(
       builder: (context, ref, _) {
         final sessionState = ref.watch(sessionHistoryProvider);
+        final activeState = ref.watch(activeFocusProvider);
         final sessions = sessionState.sessions;
 
         // Build a map of minutes per day for the past 35 days
         final now = DateTime.now();
         final Map<int, int> minutesByDayIndex = {};
         for (final s in sessions) {
-          if (s.status == 'COMPLETED') {
-            final diff = now.difference(s.starttime).inDays;
-            if (diff >= 0 && diff < 35) {
-              minutesByDayIndex[34 - diff] = (minutesByDayIndex[34 - diff] ?? 0) + (s.duration ?? 0);
+          final diff = now.difference(s.starttime).inDays;
+          if (diff >= 0 && diff < 35) {
+            final minutes = s.duration ?? 0;
+            if (minutes > 0) {
+              minutesByDayIndex[34 - diff] = (minutesByDayIndex[34 - diff] ?? 0) + minutes;
             }
           }
         }
+
+        final activeSession = activeState.session;
+        final activeTimer = activeState.timer;
+        if (activeSession != null && activeTimer != null && activeState.isRunning) {
+          final activeIndex = 34;
+          final activeMinutes = activeTimer.type.toUpperCase() == 'CHRONOMETER'
+              ? (activeState.remainingSeconds / 60).ceil()
+              : ((activeTimer.durationminutes * 60 - activeState.remainingSeconds) / 60).ceil();
+          if (activeMinutes > 0) {
+            minutesByDayIndex[activeIndex] = (minutesByDayIndex[activeIndex] ?? 0) + activeMinutes;
+          }
+        }
+
         final maxMinutes = minutesByDayIndex.values.isEmpty ? 1 : minutesByDayIndex.values.reduce((a, b) => a > b ? a : b);
 
         final weekMins = sessionState.weekMinutes;
@@ -1045,7 +1053,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                   final mins = minutesByDayIndex[index] ?? 0;
                   Color cellColor;
                   if (mins == 0) {
-                    cellColor = _nc.surfaceElevated;
+                    cellColor = _nc.surfaceElevated.withValues(alpha: 0.55);
                   } else {
                     final intensity = (mins / maxMinutes).clamp(0.0, 1.0);
                     cellColor = _nc.lilacSurface.withValues(alpha: 0.2 + intensity * 0.8);
@@ -1057,7 +1065,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                    .map((d) => Text(d, style: AppTypography.caption.copyWith(color: Colors.grey)))
+                    .map((d) => Text(d, style: AppTypography.caption.copyWith(color: _nc.textMuted)))
                     .toList(),
               ),
               const SizedBox(height: 20),
@@ -1678,14 +1686,9 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
     final gamif = ref.watch(gamificationNotifierProvider);
     final sessionState = ref.watch(sessionHistoryProvider);
     final tasksState = ref.watch(tasksNotifierProvider);
-    final today = DateTime.now();
-    final todayTasks = tasksState.tasks.where((t) =>
-        t.createdat.year == today.year &&
-        t.createdat.month == today.month &&
-        t.createdat.day == today.day
-    ).toList();
-    final doneTasks = todayTasks.where((t) => t.status == 'COMPLETED').length;
-    final totalTasks = todayTasks.length;
+    final doneTasks = tasksState.tasks.where((t) => t.status == 'COMPLETED').length;
+    final totalTasks = tasksState.tasks.length;
+    final streak = sessionState.streakDays;
     final totalXp = gamif.totalXp;
     final todayH = sessionState.todayMinutes ~/ 60;
     final todayM = sessionState.todayMinutes % 60;
@@ -1703,7 +1706,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
             children: [
               _DrawerStat(label: 'Focused', value: '${todayH}h ${todayM}m', color: _nc.lilacSurface),
               _DrawerStat(label: 'Tasks', value: '$doneTasks/$totalTasks', color: _nc.amethystSurface),
-              _DrawerStat(label: 'Streak', value: '${gamif.streak} days', color: _nc.lemonSurface),
+              _DrawerStat(label: 'Streak', value: '$streak days', color: _nc.lemonSurface),
             ],
           ),
           const SizedBox(height: 10),

@@ -77,7 +77,7 @@ class _NeurTextFieldState extends State<NeurTextField> {
         boxShadow: _isFocused
             ? [
                 BoxShadow(
-                  color: kLilac.withOpacity(0.15),
+                  color: kLilac.withValues(alpha: 0.15),
                   blurRadius: 20,
                   spreadRadius: 0,
                 ),

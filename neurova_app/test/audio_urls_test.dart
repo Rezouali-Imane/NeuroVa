@@ -1,7 +1,9 @@
+import 'dart:developer' as developer;
+
 import 'package:http/http.dart' as http;
 
 void main() async {
-  print('🔊 Testing Ambient Audio URLs...\n');
+  developer.log('Testing Ambient Audio URLs...\n', name: 'audio_urls_test');
   
   final sounds = {
     'rain': 'https://assets.mixkit.co/active_storage/sfx/2404/2404-preview.mp3',
@@ -21,25 +23,25 @@ void main() async {
           .timeout(const Duration(seconds: 5));
       
       if (response.statusCode == 200) {
-        print('✅ ${entry.key.padRight(15)} - ${response.statusCode} (URL accessible)');
+        developer.log('${entry.key.padRight(15)} - ${response.statusCode} (URL accessible)', name: 'audio_urls_test');
         successCount++;
       } else {
-        print('❌ ${entry.key.padRight(15)} - ${response.statusCode}');
+        developer.log('${entry.key.padRight(15)} - ${response.statusCode}', name: 'audio_urls_test');
         failureCount++;
       }
     } catch (e) {
-      print('❌ ${entry.key.padRight(15)} - Error: $e');
+      developer.log('${entry.key.padRight(15)} - Error: $e', name: 'audio_urls_test');
       failureCount++;
     }
   }
 
-  print('\n📊 Results:');
-  print('   ✅ Working: $successCount/6');
-  print('   ❌ Failed: $failureCount/6');
+  developer.log('\nResults:', name: 'audio_urls_test');
+  developer.log('   Working: $successCount/6', name: 'audio_urls_test');
+  developer.log('   Failed: $failureCount/6', name: 'audio_urls_test');
   
   if (successCount == 6) {
-    print('\n🎉 All audio URLs are accessible and ready to stream!');
+    developer.log('All audio URLs are accessible and ready to stream!', name: 'audio_urls_test');
   } else {
-    print('\n⚠️  Some URLs may not be accessible. Check network connection.');
+    developer.log('Some URLs may not be accessible. Check network connection.', name: 'audio_urls_test');
   }
 }

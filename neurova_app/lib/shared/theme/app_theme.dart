@@ -21,20 +21,20 @@ class AppColors {
 
   // Text colors
   static const Color white = Colors.white;
-  static final Color textPrimary = Colors.white.withOpacity(0.9);
-  static final Color textSecondary = Colors.white.withOpacity(0.65);
-  static final Color textTertiary = Colors.white.withOpacity(0.45);
-  static final Color textMuted = Colors.white.withOpacity(0.35);
+  static final Color textPrimary = Colors.white.withValues(alpha: 0.9);
+  static final Color textSecondary = Colors.white.withValues(alpha: 0.65);
+  static final Color textTertiary = Colors.white.withValues(alpha: 0.45);
+  static final Color textMuted = Colors.white.withValues(alpha: 0.35);
 
   // Glassmorphism backgrounds
-  static final Color glassBackground = Colors.white.withOpacity(0.04);
-  static final Color glassBackgroundHover = Colors.white.withOpacity(0.08);
-  static final Color glassBorder = Colors.white.withOpacity(0.1);
-  static final Color glassBorderLight = Colors.white.withOpacity(0.08);
+  static final Color glassBackground = Colors.white.withValues(alpha: 0.04);
+  static final Color glassBackgroundHover = Colors.white.withValues(alpha: 0.08);
+  static final Color glassBorder = Colors.white.withValues(alpha: 0.1);
+  static final Color glassBorderLight = Colors.white.withValues(alpha: 0.08);
 
   // Icon backgrounds
-  static final Color iconBackground = Colors.white.withOpacity(0.05);
-  static final Color iconBackgroundActive = Colors.white.withOpacity(0.12);
+  static final Color iconBackground = Colors.white.withValues(alpha: 0.05);
+  static final Color iconBackgroundActive = Colors.white.withValues(alpha: 0.12);
 
   // Gradient colors
   static const List<Color> purpleGradient = [Color(0xFFB284BE), Color(0xFFA2ADD0)];
@@ -63,8 +63,8 @@ class AppGradients {
 
   static LinearGradient glass([Color? tint]) => LinearGradient(
     colors: [
-      (tint ?? AppColors.purple).withOpacity(0.22),
-      (tint ?? AppColors.periwinkle).withOpacity(0.09),
+      (tint ?? AppColors.purple).withValues(alpha: 0.22),
+      (tint ?? AppColors.periwinkle).withValues(alpha: 0.09),
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -72,9 +72,9 @@ class AppGradients {
 
   static LinearGradient shimmer(Color color) => LinearGradient(
     colors: [
-      color.withOpacity(0.3),
-      color.withOpacity(0.5),
-      color.withOpacity(0.3),
+      color.withValues(alpha: 0.3),
+      color.withValues(alpha: 0.5),
+      color.withValues(alpha: 0.3),
     ],
     stops: const [0.0, 0.5, 1.0],
   );
@@ -173,25 +173,25 @@ class AppTypography {
 
 class AppShadows {
   static BoxShadow get card => BoxShadow(
-    color: Colors.black.withOpacity(0.4),
+    color: Colors.black.withValues(alpha: 0.4),
     blurRadius: 24,
     offset: const Offset(0, 8),
   );
 
   static BoxShadow glow(Color color) => BoxShadow(
-    color: color.withOpacity(0.4),
+    color: color.withValues(alpha: 0.4),
     blurRadius: 20,
     spreadRadius: 2,
   );
 
   static BoxShadow get buttonGlow => BoxShadow(
-    color: AppColors.purple.withOpacity(0.5),
+    color: AppColors.purple.withValues(alpha: 0.5),
     blurRadius: 20,
     spreadRadius: 4,
   );
 
   static BoxShadow get drawerShadow => BoxShadow(
-    color: Colors.black.withOpacity(0.65),
+    color: Colors.black.withValues(alpha: 0.65),
     blurRadius: 48,
     offset: const Offset(8, 0),
   );
@@ -246,7 +246,7 @@ class AppTheme {
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.cardBackground,
         selectedItemColor: AppColors.purple,
-        unselectedItemColor: Colors.white.withOpacity(0.45),
+        unselectedItemColor: Colors.white.withValues(alpha: 0.45),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
@@ -266,9 +266,9 @@ BoxDecoration glassCard({Color? tint, double? borderRadius}) {
 // Active nav item decoration
 BoxDecoration activeNavItem(Color color) {
   return BoxDecoration(
-    color: color.withOpacity(0.16),
+    color: color.withValues(alpha: 0.16),
     borderRadius: AppBorderRadius.largeCircular,
-    border: Border.all(color: color.withOpacity(0.28)),
+    border: Border.all(color: color.withValues(alpha: 0.28)),
   );
 }
 
@@ -276,7 +276,7 @@ BoxDecoration activeNavItem(Color color) {
 BoxDecoration iconContainer({Color? color, bool active = false}) {
   return BoxDecoration(
     color: active
-        ? (color ?? AppColors.purple).withOpacity(0.24)
+        ? (color ?? AppColors.purple).withValues(alpha: 0.24)
         : AppColors.iconBackground,
     borderRadius: AppBorderRadius.mediumCircular,
   );

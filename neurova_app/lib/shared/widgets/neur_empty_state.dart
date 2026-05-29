@@ -40,7 +40,7 @@ class NeurEmptyState extends StatelessWidget {
                 color: nc.lilacSurface,
                 boxShadow: [
                   BoxShadow(
-                    color: kLilac.withOpacity(0.15),
+                    color: kLilac.withValues(alpha: 0.15),
                     blurRadius: 32,
                     spreadRadius: 0,
                   ),
@@ -125,7 +125,7 @@ class NeurErrorState extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFEF5350).withOpacity(0.1),
+                color: const Color(0xFFEF5350).withValues(alpha: 0.1),
               ),
               child: const Icon(
                 Icons.error_outline,
