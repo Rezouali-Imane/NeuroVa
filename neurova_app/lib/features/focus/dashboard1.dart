@@ -7,6 +7,7 @@ import '../../shared/theme/app_theme.dart';
 import '../../core/theme/app_theme.dart' as core_theme;
 import '../../shared/widgets/profile_view_shell.dart';
 import '../../shared/widgets/unified_bottom_nav_bar.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../ai/state/insights_provider.dart';
 import '../notifications/state/notification_notifier.dart';
 import '../notifications/models/notification_model.dart';
@@ -74,16 +75,16 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    Future.microtask(() async {
       try {
         ref.read(insightsProvider.notifier).loadInsights();
       } catch (e) {
         debugPrint('Failed to load insights: $e');
       }
-      ref.read(tasksNotifierProvider.notifier).fetchTasks();
-      ref.read(notificationNotifierProvider.notifier).fetchNotifications();
-      ref.read(sessionHistoryProvider.notifier).fetchSessions();
-      ref.read(gamificationNotifierProvider.notifier).fetchAll('global');
+      await ref.read(tasksNotifierProvider.notifier).fetchTasks();
+      await ref.read(gamificationNotifierProvider.notifier).fetchAll('global');
+      await ref.read(notificationNotifierProvider.notifier).fetchNotifications();
+      await ref.read(sessionHistoryProvider.notifier).fetchSessions();
     });
   }
 
@@ -1270,53 +1271,12 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
   }
 
   Widget _buildDailyChallenges() {
-    final List<Map<String, dynamic>> challenges = [
-      {
-        'title': 'Triple Focus',
-        'description': 'Complete 3 Pomodoro sessions',
-        'progress': 2,
-        'target': 3,
-        'xp': 75,
-        'completed': false,
-        'icon': Icons.track_changes,
-        'color': _nc.lilacSurface,
-      },
-      {
-        'title': 'Task Master',
-        'description': 'Finish 5 tasks',
-        'progress': 4,
-        'target': 5,
-        'xp': 50,
-        'completed': false,
-        'icon': Icons.task_alt,
-        'color': _nc.amethystSurface,
-      },
-      {
-        'title': 'Note Taker',
-        'description': 'Create 2 new notes',
-        'progress': 2,
-        'target': 2,
-        'xp': 30,
-        'completed': true,
-        'icon': Icons.menu_book,
-        'color': _nc.lemonSurface,
-      },
-      {
-        'title': 'Early Bird',
-        'description': 'Start session before 9 AM',
-        'progress': 1,
-        'target': 1,
-        'xp': 100,
-        'completed': true,
-        'icon': Icons.wb_sunny,
-        'color': _nc.lemonSurface,
-      },
-    ];
-
-    final int completed = challenges.where((c) => c['completed'] == true).length;
+    final gamif = ref.watch(gamificationNotifierProvider);
+    final challenges = gamif.challenges;
+    final int completed = challenges.where((c) => c.iscompleted).length;
     final int xp = challenges
-        .where((c) => c['completed'] == true)
-        .fold<int>(0, (sum, c) => sum + (c['xp'] as int));
+        .where((c) => c.iscompleted)
+        .fold<int>(0, (sum, c) => sum + c.xpreward);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1345,7 +1305,11 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                       style: AppTypography.headline2,
                     ),
                     Text(
-                      '$completed of ${challenges.length} completed',
+                      gamif.isLoading && challenges.isEmpty
+                          ? 'Loading your challenges...'
+                          : challenges.isEmpty
+                              ? 'No daily challenges available'
+                              : '$completed of ${challenges.length} completed',
                       style: AppTypography.caption.copyWith(color: _nc.textMuted),
                     ),
                   ],
@@ -1360,7 +1324,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                 border: Border.all(color: _nc.lemonSurface.withValues(alpha: 0.3)),
               ),
               child: Text(
-                '+$xp XP',
+                challenges.isEmpty ? '0 XP' : '+$xp XP',
                 style: AppTypography.caption.copyWith(
                   color: _nc.lemonSurface,
                   fontWeight: FontWeight.w700,
@@ -1370,97 +1334,148 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
           ],
         ),
         const SizedBox(height: 12),
-        GridView.builder(
-          itemCount: challenges.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 1.15,
-          ),
-          itemBuilder: (context, index) {
-            final challenge = challenges[index];
-            final bool isCompleted = challenge['completed'] as bool;
-            final int progress = challenge['progress'] as int;
-            final int target = challenge['target'] as int;
-            final Color color = challenge['color'] as Color;
-            final double ratio = target == 0 ? 0 : progress / target;
-
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isCompleted ? color.withValues(alpha: 0.12) : _nc.surface,
-                borderRadius: BorderRadius.circular(AppBorderRadius.large),
-                border: Border.all(
-                  color: isCompleted ? color.withValues(alpha: 0.25) : _nc.surfaceElevated.withValues(alpha: 0.3),
+        if (gamif.isLoading && challenges.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _nc.surface,
+              borderRadius: BorderRadius.circular(AppBorderRadius.large),
+              border: Border.all(color: _nc.surfaceElevated.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: _nc.lemonSurface,
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Loading daily challenges...',
+                    style: AppTypography.body1.copyWith(color: _nc.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (challenges.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _nc.surface,
+              borderRadius: BorderRadius.circular(AppBorderRadius.large),
+              border: Border.all(color: _nc.surfaceElevated.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              'No daily challenges are assigned yet.',
+              style: AppTypography.body1.copyWith(color: _nc.textSecondary),
+            ),
+          )
+        else
+          GridView.builder(
+            itemCount: challenges.length,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.15,
+            ),
+            itemBuilder: (context, index) {
+              final challenge = challenges[index];
+              final bool isCompleted = challenge.iscompleted;
+              final Color color = isCompleted ? _nc.lemonSurface : _nc.lilacSurface;
+
+                return GestureDetector(
+                onTap: isCompleted
+                    ? null
+                    : () async {
+                        try {
+                          await ref.read(gamificationNotifierProvider.notifier).completeChallenge(challenge.challengeid);
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                        }
+                      },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isCompleted ? color.withValues(alpha: 0.12) : _nc.surface,
+                    borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                    border: Border.all(
+                      color: isCompleted ? color.withValues(alpha: 0.25) : _nc.surfaceElevated.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 26,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
+                      Row(
+                        children: [
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(Icons.flag_outlined, color: color, size: 14),
+                          ),
+                          const Spacer(),
+                          if (isCompleted)
+                            const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        challenge.title,
+                        style: AppTypography.body1.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        challenge.description ?? 'Complete today\'s objective.',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.textTertiary,
+                          height: 1.3,
                         ),
-                        alignment: Alignment.center,
-                        child: Icon(challenge['icon'] as IconData, color: color, size: 14),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const Spacer(),
-                      if (isCompleted)
-                        const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    challenge['title'] as String,
-                    style: AppTypography.body1.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    challenge['description'] as String,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.textTertiary,
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '$progress/$target',
-                        style: AppTypography.caption.copyWith(color: _nc.textSecondary.withValues(alpha: 0.7)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            isCompleted ? 'Completed' : 'Tap to complete',
+                            style: AppTypography.caption.copyWith(color: _nc.textSecondary.withValues(alpha: 0.7)),
+                          ),
+                          Text(
+                            '+${challenge.xpreward} XP',
+                            style: AppTypography.caption.copyWith(color: color, fontWeight: FontWeight.w700),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '+${challenge['xp']} XP',
-                        style: AppTypography.caption.copyWith(color: color, fontWeight: FontWeight.w700),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(99),
+                        child: LinearProgressIndicator(
+                          value: isCompleted ? 1 : 0.6,
+                          minHeight: 4,
+                          backgroundColor: _nc.surfaceElevated.withValues(alpha: 0.4),
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: LinearProgressIndicator(
-                      value: ratio.clamp(0.0, 1.0),
-                      minHeight: 4,
-                      backgroundColor: _nc.surfaceElevated.withValues(alpha: 0.4),
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+                ),
+              );
+            },
+          ),
       ],
     );
   }
@@ -1494,7 +1509,14 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                             height: 34,
                             decoration: BoxDecoration(gradient: LinearGradient(colors: [_nc.lilacSurface, _nc.amethystSurface]), borderRadius: BorderRadius.circular(12)),
                             alignment: Alignment.center,
-                            child: Icon(Icons.auto_awesome, color: _nc.background, size: 16),
+                            child: SvgPicture.asset(
+                              'lib/features/onboarding/assets/logo.svg',
+                              width: 16,
+                              height: 16,
+                              // Force white icon for good contrast over the gradient header
+                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                              semanticsLabel: 'Neurova logo',
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Text('NEUROVA', style: AppTypography.title1.copyWith(letterSpacing: -0.5)),
