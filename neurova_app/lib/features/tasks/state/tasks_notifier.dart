@@ -97,6 +97,40 @@ class TasksNotifier extends StateNotifier<TasksState> {
     }
   }
 
+  Future<void> updateTask({
+    required String taskId,
+    required String title,
+    String? description,
+    DateTime? deadline,
+    int priority = 1,
+    String category = 'OTHER',
+    bool syncWithGoogle = false,
+  }) async {
+    try {
+      final task = await _tasksService.updateTask(
+        taskId: taskId,
+        title: title,
+        description: description,
+        deadline: deadline,
+        priority: priority,
+        category: category,
+      );
+
+      final updatedTasks = state.tasks
+          .map((existingTask) => existingTask.taskid == taskId ? task : existingTask)
+          .toList();
+      state = state.copyWith(tasks: updatedTasks);
+
+      if (syncWithGoogle) {
+        await syncTaskToGoogle(task.taskid);
+      }
+
+      await fetchTasks();
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
   Future<void> syncTaskToGoogle(String taskId) async {
     try {
       await _calendarService.syncTaskToGoogle(taskId);

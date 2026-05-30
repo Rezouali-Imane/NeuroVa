@@ -1,12 +1,100 @@
 import { aiClient } from '../../infrastructure/ai/openai.client.js';
 import { resolveChatModel } from '../../infrastructure/ai/model-resolver.js';
+import { getPrayerTimes } from '../../infrastructure/external/prayertime.client.js';
 import prisma from '../../infrastructure/database/prisma.client.js';
 import { StudentMemoryRepository } from '../../interfaces/repositories/AIRepositories.js';
 import type { ScheduleFocusSessionDTO } from '../../interfaces/dtos/AI.dto.js';
 import { CreateSession } from '../sessions/CreateSession.js';
 
+const PRAYER_WINDOW_MINUTES = 30;
+const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
+
+type PrayerName = (typeof PRAYER_ORDER)[number];
+
+type PrayerWindow = {
+  name: PrayerName;
+  start: Date;
+  end: Date;
+};
+
+const parsePrayerTime = (time: string, baseDate: Date): Date | null => {
+  const match = time.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+
+  return new Date(
+    baseDate.getFullYear(),
+    baseDate.getMonth(),
+    baseDate.getDate(),
+    hour,
+    minute,
+    0,
+    0,
+  );
+};
+
+const buildPrayerWindows = (prayers: Record<PrayerName, string>, baseDate: Date): PrayerWindow[] =>
+  PRAYER_ORDER
+    .map((name) => {
+      const start = parsePrayerTime(prayers[name], baseDate);
+      if (!start) return null;
+
+      return {
+        name,
+        start,
+        end: new Date(start.getTime() + PRAYER_WINDOW_MINUTES * 60_000),
+      };
+    })
+    .filter((window): window is PrayerWindow => window !== null)
+    .sort((left, right) => left.start.getTime() - right.start.getTime());
+
+const overlaps = (start: Date, end: Date, window: PrayerWindow): boolean =>
+  start < window.end && end > window.start;
+
+const alignSessionAroundPrayerWindows = (
+  startTime: Date,
+  durationMinutes: number,
+  windows: PrayerWindow[],
+) => {
+  let sessionStart = new Date(startTime);
+  let sessionEnd = new Date(sessionStart.getTime() + durationMinutes * 60_000);
+  const protectedPrayerBlocks = new Set<PrayerName>();
+
+  let adjusted = false;
+  let shifted = true;
+  while (shifted) {
+    shifted = false;
+
+    for (const window of windows) {
+      if (!overlaps(sessionStart, sessionEnd, window)) continue;
+
+      protectedPrayerBlocks.add(window.name);
+      sessionStart = new Date(window.end);
+      sessionEnd = new Date(sessionStart.getTime() + durationMinutes * 60_000);
+      adjusted = true;
+      shifted = true;
+      break;
+    }
+  }
+
+  return {
+    startTime: sessionStart,
+    endTime: sessionEnd,
+    adjusted,
+    protectedPrayerBlocks: [...protectedPrayerBlocks],
+  };
+};
+
 export const ScheduleFocusSession = async (data: ScheduleFocusSessionDTO) => {
   if (!data.userid) throw new Error('User ID is required');
+
+  const settings = await prisma.digitaldisciplinesettings.findUnique({
+    where: { userid: data.userid },
+    select: { faithmodeenabled: true },
+  });
 
   const memory = await StudentMemoryRepository.findByUser(data.userid);
   const preferredTime = memory['preferred_study_time'] ?? 'morning';
@@ -67,8 +155,28 @@ Return ONLY valid JSON, no explanation.`;
   const suggestion = JSON.parse(clean);
 
   const durationMinutes = data.durationMinutes ?? suggestion.durationMinutes ?? 25;
-  const start = new Date();
-  const end = new Date(start.getTime() + durationMinutes * 60_000);
+  const faithmode = data.faithmode ?? settings?.faithmodeenabled ?? false;
+
+  let start = new Date();
+  let end = new Date(start.getTime() + durationMinutes * 60_000);
+  let prayerWindowInfo: {
+    adjusted: boolean;
+    protectedPrayerBlocks: PrayerName[];
+    prayerTimes: Record<PrayerName, string>;
+  } | null = null;
+
+  if (faithmode) {
+    const prayers = await getPrayerTimes(data.city ?? 'Bejaia', data.country ?? 'Algeria');
+    const windows = buildPrayerWindows(prayers, start);
+    const aligned = alignSessionAroundPrayerWindows(start, durationMinutes, windows);
+    start = aligned.startTime;
+    end = aligned.endTime;
+    prayerWindowInfo = {
+      adjusted: aligned.adjusted,
+      protectedPrayerBlocks: aligned.protectedPrayerBlocks,
+      prayerTimes: prayers,
+    };
+  }
 
   const focusSession = await CreateSession({
     userid: data.userid,
@@ -90,5 +198,18 @@ Return ONLY valid JSON, no explanation.`;
     durationMinutes,
     reason: suggestion.reason ?? 'Focus on your highest priority task.',
     message: 'Focus session created! Open Neurova to start.',
+    ...(prayerWindowInfo
+      ? {
+          faithModeApplied: true,
+          adjustedForPrayer: prayerWindowInfo.adjusted,
+          protectedPrayerBlocks: prayerWindowInfo.protectedPrayerBlocks,
+          prayerTimes: prayerWindowInfo.prayerTimes,
+          scheduledStartTime: start,
+          scheduledEndTime: end,
+          message: prayerWindowInfo.adjusted
+            ? 'Focus session created around prayer times. Open Neurova to start.'
+            : 'Focus session created with Faith Mode enabled. Open Neurova to start.',
+        }
+      : {}),
   };
 };

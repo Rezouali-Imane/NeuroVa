@@ -78,6 +78,54 @@ class StudyPlan {
     );
   }
 
+  factory StudyPlan.fromPlanText(String planText, {DateTime? generatedAt}) {
+    final normalizedText = planText.trim();
+    final lines = normalizedText.split('\n');
+    final sections = <String>[];
+    final buffer = <String>[];
+
+    void flushBuffer() {
+      if (buffer.isEmpty) return;
+      sections.add(buffer.join('\n').trim());
+      buffer.clear();
+    }
+
+    for (final rawLine in lines) {
+      final line = rawLine.trimRight();
+      final headingMatch = RegExp(r'^(?:\*\*)?(Day\s+\d+[^\*]*)(?:\*\*)?$').firstMatch(line.trim());
+
+      if (headingMatch != null && buffer.isNotEmpty) {
+        flushBuffer();
+      }
+
+      if (line.trim().isNotEmpty) {
+        buffer.add(line);
+      } else if (buffer.isNotEmpty) {
+        buffer.add('');
+      }
+    }
+
+    flushBuffer();
+
+    final fallbackSections = normalizedText
+        .split(RegExp(r'\n\s*\n'))
+        .map((section) => section.trim())
+        .where((section) => section.isNotEmpty)
+        .toList();
+
+    final resolvedSections = sections.isNotEmpty ? sections : fallbackSections;
+
+    return StudyPlan(
+      title: 'Study Plan',
+      sections: resolvedSections,
+      details: {
+        'rawPlan': normalizedText,
+        'sectionCount': resolvedSections.length,
+      },
+      generatedAt: generatedAt ?? DateTime.now(),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'title': title,

@@ -436,7 +436,23 @@ class AIService {
       );
 
       if (response.statusCode == 200) {
-        return StudyPlan.fromJson(response.data['data']);
+        final payload = response.data['data'];
+        if (payload is Map<String, dynamic>) {
+          final title = payload['title']?.toString();
+          final sectionsRaw = payload['sections'];
+          if (title != null || sectionsRaw is List) {
+            return StudyPlan.fromJson(payload);
+          }
+
+          final planText = payload['plan']?.toString() ?? payload['content']?.toString() ?? '';
+          return StudyPlan.fromPlanText(planText);
+        }
+
+        if (payload is String) {
+          return StudyPlan.fromPlanText(payload);
+        }
+
+        throw Exception('Invalid study plan response payload');
       }
       throw Exception('Failed to generate study plan');
     } catch (e) {

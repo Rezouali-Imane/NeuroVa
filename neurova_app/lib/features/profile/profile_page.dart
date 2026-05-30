@@ -10,6 +10,7 @@ import '../gamification/state/gamification_notifier.dart';
 import '../tasks/state/tasks_notifier.dart';
 import '../focus/stats/focus_session_notifier.dart';
 import '../notes/state/note_notifier.dart';
+import '../discipline/state/faith_mode_provider.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key, this.isVerified = false});
@@ -28,7 +29,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   bool notificationsEnabled = true;
   bool hapticEnabled = true;
   bool focusRemindersEnabled = true;
-  bool faithModeEnabled = false;
   String _displayName = 'Loading...';
   String _displayEmail = 'Fetching account details';
 
@@ -647,6 +647,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Widget _buildToggleCard() {
+    final faithModeState = ref.watch(faithModeSettingsProvider);
+
     return _cardShell(
       child: Column(
         children: [
@@ -678,8 +680,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             icon: Icons.star_outline,
             title: 'Faith Mode',
             subtitle: 'Include prayer blocks in plans',
-            value: faithModeEnabled,
-            onChanged: (v) => setState(() => faithModeEnabled = v),
+            value: faithModeState.enabled,
+            onChanged: (v) => ref.read(faithModeSettingsProvider.notifier).toggleFaithMode(v),
           ),
         ],
       ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:neurova_app/features/auth/state/auth_notifier.dart';
+import 'package:neurova_app/features/discipline/models/prayer_schedule_block.dart';
+import 'package:neurova_app/features/discipline/state/faith_mode_provider.dart';
 import 'package:neurova_app/features/gamification/state/gamification_notifier.dart';
 import 'package:neurova_app/shared/theme/app_theme.dart';
 import 'package:neurova_app/shared/widgets/profile_view_shell.dart';
@@ -125,6 +127,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   Widget build(BuildContext context) {
     final tasksState = ref.watch(tasksNotifierProvider);
     final totalXp = ref.watch(gamificationNotifierProvider).totalXp;
+    final faithModeState = ref.watch(faithModeSettingsProvider);
+    final prayerBlocks = buildPrayerScheduleBlocks(
+      faithModeState.enabled ? faithModeState.prayerTimes : null,
+      referenceDate: DateTime.now(),
+    );
 
     List<Task> filteredTasks = tasksState.tasks;
     if (selectedTab == 1) {
@@ -193,6 +200,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                   if (_activeView == 'tasks') ...[
                     _buildProgressCard(progressPercentInt, todoCount, inProgressCount, doneCount),
                     const SizedBox(height: 16),
+                    if (prayerBlocks.isNotEmpty) ...[
+                      _buildPrayerBlocksSection(prayerBlocks),
+                      const SizedBox(height: 14),
+                    ],
                     _buildSearch(),
                     const SizedBox(height: 14),
                     _buildFilters(),
@@ -323,6 +334,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
   Widget _buildCalendarView(List<Task> tasks) {
     final selectedDayTasks = _applyFilters(_tasksForDay(_selectedDate, tasks), _searchController.text.trim().toLowerCase());
+    final faithModeState = ref.watch(faithModeSettingsProvider);
+    final prayerBlocks = buildPrayerScheduleBlocks(
+      faithModeState.enabled ? faithModeState.prayerTimes : null,
+      referenceDate: _selectedDate,
+    );
     final weekStart = _selectedDate.subtract(Duration(days: _selectedDate.weekday % 7));
     final days = List.generate(7, (index) {
       return DateTime(weekStart.year, weekStart.month, weekStart.day + index);
@@ -425,6 +441,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           ),
         ),
         const SizedBox(height: 12),
+        if (prayerBlocks.isNotEmpty) ...[
+          _buildPrayerBlocksSection(prayerBlocks),
+          const SizedBox(height: 14),
+        ],
         if (_calendarScope == 'Day View')
           _buildDayTimeline(selectedDayTasks)
         else if (selectedDayTasks.isEmpty)
@@ -1115,6 +1135,107 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     );
   }
 
+  Widget _buildPrayerBlocksSection(List<PrayerScheduleBlock> prayerBlocks) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1628),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF2A2440), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.more_time, size: 18, color: Color(0xFFB284BE)),
+              const SizedBox(width: 8),
+              const Text(
+                'Protected Prayer Blocks',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Syne',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${prayerBlocks.length} blocks',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontFamily: 'Syne',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...prayerBlocks.map(
+            (block) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14101F),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFF2A2440)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFB284BE),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          block.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Syne',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Protected time block',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontFamily: 'Syne',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    block.timeLabel,
+                    style: const TextStyle(
+                      color: Color(0xFFDEB8E8),
+                      fontFamily: 'Syne',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyAllState() {
     return Container(
       margin: const EdgeInsets.only(top: 16),
@@ -1140,128 +1261,131 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   Widget _buildTaskCard(Task task) {
     final statusInfo = _statusConfig(task.status);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1628),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: const Color(0xFF2A2440),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () => _openTaskActionsSheet(task),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1628),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: const Color(0xFF2A2440),
+            width: 1,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(color: statusInfo.color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${task.category} · ${_priorityLabel(task.priority)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.42),
-                    fontFamily: 'Syne',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(color: statusInfo.color, shape: BoxShape.circle),
                 ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  final nextStatus = _nextStatus(task.status);
-                  ref.read(tasksNotifierProvider.notifier).updateTaskStatus(task.taskid, nextStatus);
-                },
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: task.status == 'COMPLETED' ? const Color(0x1A4CAF50) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                      color: task.status == 'COMPLETED' ? const Color(0xFF4CAF50) : const Color(0xFF3A3850),
-                      width: 1.2,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${task.category} · ${_priorityLabel(task.priority)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.42),
+                      fontFamily: 'Syne',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    task.status == 'COMPLETED' ? Icons.check : Icons.circle_outlined,
-                    color: task.status == 'COMPLETED' ? const Color(0xFF4CAF50) : Colors.white.withValues(alpha: 0.25),
-                    size: 14,
+                ),
+                GestureDetector(
+                  onTap: () {
+                    final nextStatus = _nextStatus(task.status);
+                    ref.read(tasksNotifierProvider.notifier).updateTaskStatus(task.taskid, nextStatus);
+                  },
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: task.status == 'COMPLETED' ? const Color(0x1A4CAF50) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(
+                        color: task.status == 'COMPLETED' ? const Color(0xFF4CAF50) : const Color(0xFF3A3850),
+                        width: 1.2,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      task.status == 'COMPLETED' ? Icons.check : Icons.circle_outlined,
+                      color: task.status == 'COMPLETED' ? const Color(0xFF4CAF50) : Colors.white.withValues(alpha: 0.25),
+                      size: 14,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            task.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: task.status == 'COMPLETED' ? Colors.white.withValues(alpha: 0.48) : Colors.white,
-              fontFamily: 'Syne',
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-              decoration: task.status == 'COMPLETED' ? TextDecoration.lineThrough : null,
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.calendar_today, size: 13, color: Colors.white.withValues(alpha: 0.3)),
-              const SizedBox(width: 6),
-              Text(
-                _deadlineLabel(task.deadline),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.45),
-                  fontFamily: 'Syne',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+            const SizedBox(height: 8),
+            Text(
+              task.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: task.status == 'COMPLETED' ? Colors.white.withValues(alpha: 0.48) : Colors.white,
+                fontFamily: 'Syne',
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+                decoration: task.status == 'COMPLETED' ? TextDecoration.lineThrough : null,
               ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: statusInfo.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(
-                    color: statusInfo.color.withValues(alpha: 0.2),
-                    width: 0.8,
-                  ),
-                ),
-                child: Text(
-                  statusInfo.label,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 13, color: Colors.white.withValues(alpha: 0.3)),
+                const SizedBox(width: 6),
+                Text(
+                  _deadlineLabel(task.deadline),
                   style: TextStyle(
-                    color: statusInfo.color,
+                    color: Colors.white.withValues(alpha: 0.45),
                     fontFamily: 'Syne',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: statusInfo.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: statusInfo.color.withValues(alpha: 0.2),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    statusInfo.label,
+                    style: TextStyle(
+                      color: statusInfo.color,
+                      fontFamily: 'Syne',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+    )
     );
   }
 
@@ -1270,100 +1394,103 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     final deadline = task.deadline;
     final timeLabel = _timeRangeLabel(deadline);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1628),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFF2A2440), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: statusInfo.color.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 6,
-            height: 120,
-            decoration: BoxDecoration(
-              color: statusInfo.color,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(28),
-                bottomLeft: Radius.circular(28),
+    return GestureDetector(
+      onTap: () => _openTaskActionsSheet(task),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1628),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: const Color(0xFF2A2440), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: statusInfo.color.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 120,
+              decoration: BoxDecoration(
+                color: statusInfo.color,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  bottomLeft: Radius.circular(28),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Syne',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Syne',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: Colors.white.withValues(alpha: 0.48),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        timeLabel,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
-                          fontFamily: 'Syne',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: Colors.white.withValues(alpha: 0.48),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 14,
-                        color: Colors.white.withValues(alpha: 0.38),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          task.description?.trim().isNotEmpty == true ? task.description!.trim() : task.category,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        const SizedBox(width: 6),
+                        Text(
+                          timeLabel,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.42),
+                            color: Colors.white.withValues(alpha: 0.55),
                             fontFamily: 'Syne',
                             fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 14,
+                          color: Colors.white.withValues(alpha: 0.38),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            task.description?.trim().isNotEmpty == true ? task.description!.trim() : task.category,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.42),
+                              fontFamily: 'Syne',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1451,20 +1578,122 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     return names[month - 1];
   }
 
-  void _openCreateSheet() {
-    _titleController.clear();
-    _projectController.clear();
-    _descriptionController.clear();
-    _selectedPriority = '1';
-    _selectedCategory = 'OTHER';
-    _selectedTime = const TimeOfDay(hour: 12, minute: 0);
-    DateTime? selectedDeadline = _selectedDate;
+  void _openTaskActionsSheet(Task task) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF181526),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFF2A2440)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ListTile(
+                    leading: const Icon(Icons.edit_outlined, color: Color(0xFFC6A6DC)),
+                    title: const Text(
+                      'Edit task',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Syne', fontWeight: FontWeight.w700),
+                    ),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _openCreateSheet(task);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.delete_outline, color: Color(0xFFFF7A7A)),
+                    title: const Text(
+                      'Delete task',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Syne', fontWeight: FontWeight.w700),
+                    ),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _confirmDeleteTask(task);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteTask(Task task) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF181526),
+          title: const Text('Delete task?', style: TextStyle(color: Colors.white, fontFamily: 'Syne')),
+          content: Text(
+            'This will permanently remove "${task.title}".',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.72), fontFamily: 'Syne'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Delete', style: TextStyle(color: Color(0xFFFF7A7A))),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+
+    await ref.read(tasksNotifierProvider.notifier).deleteTask(task.taskid);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Deleted "${task.title}"'),
+        backgroundColor: const Color(0xFF1A1628),
+      ),
+    );
+  }
+
+  void _openCreateSheet([Task? task]) {
+    _titleController.text = task?.title ?? '';
+    _projectController.text = '';
+    _descriptionController.text = task?.description ?? '';
+    _selectedPriority = (task?.priority ?? 1).toString();
+    _selectedCategory = task?.category ?? 'OTHER';
+    _selectedTime = task?.deadline != null
+        ? TimeOfDay.fromDateTime(task!.deadline!)
+        : const TimeOfDay(hour: 12, minute: 0);
+    DateTime? selectedDeadline = task?.deadline != null
+        ? DateTime(task!.deadline!.year, task.deadline!.month, task.deadline!.day)
+        : _selectedDate;
+    final isEditing = task != null;
 
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Align(
@@ -1476,7 +1705,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Color(0xFF181526),
-                    borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
@@ -1497,9 +1729,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'New Task',
-                              style: TextStyle(
+                            Text(
+                              isEditing ? 'Edit Task' : 'New Task',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontFamily: 'Syne',
                                 fontSize: 24,
@@ -1507,7 +1739,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () => Navigator.pop(context),
+                              onTap: () => Navigator.pop(sheetContext),
                               child: Container(
                                 width: 36,
                                 height: 36,
@@ -1610,9 +1842,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                             Expanded(
                               child: _sheetDateTimeField(
                                 label: 'DATE',
-                                value: selectedDeadline == null
-                                    ? 'Pick date'
-                                    : '${selectedDeadline!.month.toString().padLeft(2, '0')}/${selectedDeadline!.day.toString().padLeft(2, '0')}/${selectedDeadline!.year}',
+                                value: _deadlineDisplayLabel(selectedDeadline),
                                 icon: Icons.calendar_today,
                                 onTap: () async {
                                   final now = DateTime.now();
@@ -1688,81 +1918,92 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         const SizedBox(height: 12),
                         GestureDetector(
                           onTap: () async {
-                        if (_titleController.text.trim().isEmpty) {
-                          debugPrint('[Tasks] Please enter a task title');
-                          return;
-                        }
+                            final title = _titleController.text.trim();
+                            if (title.isEmpty) {
+                              debugPrint('[Tasks] Please enter a task title');
+                              return;
+                            }
 
-                        final localStorage =
-                            ref.read(localStorageServiceProvider);
-                        final userId =
-                            await localStorage.readUserId();
+                            final deadline = selectedDeadline;
+                            final combinedDeadline = deadline == null
+                                ? null
+                                : DateTime(
+                                    deadline.year,
+                                    deadline.month,
+                                    deadline.day,
+                                    _selectedTime.hour,
+                                    _selectedTime.minute,
+                                  );
 
-                        if (!context.mounted) return;
+                            if (isEditing) {
+                              await ref.read(tasksNotifierProvider.notifier).updateTask(
+                                    taskId: task.taskid,
+                                    title: title,
+                                    description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+                                    deadline: combinedDeadline,
+                                    priority: int.tryParse(selectedPriority) ?? 1,
+                                    category: selectedCategory,
+                                    syncWithGoogle: task.syncwithgoogle,
+                                  );
+                            } else {
+                              final localStorage = ref.read(localStorageServiceProvider);
+                              final userId = await localStorage.readUserId();
 
-                        if (userId == null) {
-                          debugPrint('[Tasks] User not authenticated');
-                          return;
-                        }
+                              if (!context.mounted) return;
 
-                        final deadline = selectedDeadline;
+                              if (userId == null) {
+                                debugPrint('[Tasks] User not authenticated');
+                                return;
+                              }
 
-                        await ref
-                            .read(tasksNotifierProvider.notifier)
-                            .createTask(
-                              userId: userId,
-                              title: taskController.text,
-                              listId: 'default',
-                              priority:
-                                  int.tryParse(selectedPriority) ?? 1,
-                              status: 'PENDING',
-                              category: selectedCategory,
-                              description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text,
-                                    deadline: deadline == null
-                                  ? null
-                                  : DateTime(
-                                      deadline.year,
-                                      deadline.month,
-                                      deadline.day,
-                                    ),
-                            );
+                              await ref.read(tasksNotifierProvider.notifier).createTask(
+                                    userId: userId,
+                                    title: title,
+                                    listId: 'default',
+                                    priority: int.tryParse(selectedPriority) ?? 1,
+                                    status: 'PENDING',
+                                    category: selectedCategory,
+                                    description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+                                    deadline: combinedDeadline,
+                                  );
+                            }
 
-                        taskController.clear();
-                        _projectController.clear();
-                        _descriptionController.clear();
-                        selectedPriority = "1";
-                        selectedCategory = "OTHER";
+                            _titleController.clear();
+                            _projectController.clear();
+                            _descriptionController.clear();
+                            selectedPriority = '1';
+                            selectedCategory = 'OTHER';
 
-                        if (!context.mounted) return;
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFB284BE),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Add Task',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontFamily: 'Syne',
-                              fontWeight: FontWeight.w700,
+                            if (!context.mounted) return;
+                            Navigator.pop(sheetContext);
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFB284BE),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text(
+                                isEditing ? 'Save Changes' : 'Add Task',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontFamily: 'Syne',
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
-                    const SizedBox(height: 20),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          )         );
-         
+            );
           },
         );
       },
@@ -1781,9 +2022,21 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         controller: controller,
         maxLines: maxLines,
         style: const TextStyle(color: Colors.white, fontFamily: 'Syne'),
-        decoration: InputDecoration(border: InputBorder.none, hintText: hint, hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35))),
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+        ),
       ),
     );
+  }
+
+  String _deadlineDisplayLabel(DateTime? deadline) {
+    if (deadline == null) {
+      return 'Pick date';
+    }
+
+    return '${deadline.month.toString().padLeft(2, '0')}/${deadline.day.toString().padLeft(2, '0')}/${deadline.year}';
   }
 
   Widget _sheetDateTimeField({required String label, required String value, required IconData icon, required VoidCallback onTap}) {

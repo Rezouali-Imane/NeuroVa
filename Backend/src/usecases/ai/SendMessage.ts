@@ -178,6 +178,24 @@ const extractEntityQueryFromContent = (content: string, entity: 'task' | 'taskli
   return undefined;
 };
 
+const extractTaskTitleFromContent = (content: string): string | undefined => {
+  const quoted = content.match(/"([^"]{2,})"|'([^']{2,})'/);
+  const quotedValue = quoted?.[1] ?? quoted?.[2];
+  if (quotedValue?.trim()) return quotedValue.trim();
+
+  const patterns = [
+    /(?:task\s+named|task\s+called|task\s+titled|task\s+title\s+is|name\s+the\s+task|call\s+the\s+task|create\s+task\s+(?:named|called|titled)?|add\s+task\s+(?:named|called|titled)?)\s+([^.,;\n]+?)(?:\s+(?:to|as|with|status|priority|deadline|description|in|for)\b|$)/i,
+    /(?:create|add)\s+(?:a\s+)?task\s+(?:to\s+be\s+|called\s+|named\s+|titled\s+)?([^.,;\n]+?)(?:\s+(?:to|as|with|status|priority|deadline|description|in|for)\b|$)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = content.match(pattern);
+    if (match?.[1]?.trim()) return match[1].trim();
+  }
+
+  return undefined;
+};
+
 const resolveTaskIdForUser = async (userid: string, query: string): Promise<string | null> => {
   const tasks = await GetTasks(userid);
   const normalizedQuery = normalizeText(query);
@@ -893,8 +911,10 @@ const fallbackAssistantAction = async (userid: string, content: string) => {
   }
 
   if (text.includes('create') && text.includes('task')) {
-    const titleMatch = content.match(/titled\s+(.+)$/i);
-    const title = titleMatch?.[1]?.trim() || 'New task from AI request';
+    const title = pickFirstString(
+      extractTaskTitleFromContent(content),
+      extractEntityQueryFromContent(content, 'task'),
+    ) ?? 'New task from AI request';
 
     const listid = await ensureTaskListId(userid);
     const createTaskData: CreateTaskDTO = {
@@ -1288,10 +1308,21 @@ export const SendMessage = async (data: SendMessageDTO) => {
               typeof args.listid === 'string' ? args.listid : undefined,
             );
 
+            const title = pickFirstString(
+              args.title,
+              args.taskQuery,
+              args.currentTitle,
+              args.taskTitle,
+              args.task_name,
+              args.name,
+              extractTaskTitleFromContent(data.content),
+              extractEntityQueryFromContent(data.content, 'task'),
+            ) ?? 'New task from AI request';
+
             const createTaskData: CreateTaskDTO = {
               userid: data.userid,
               listid: resolvedListId,
-              title: String(args.title ?? ''),
+              title,
             };
 
             if (typeof args.description === 'string') createTaskData.description = args.description;

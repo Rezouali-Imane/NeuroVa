@@ -19,7 +19,7 @@ vi.mock('../src/infrastructure/Brevo.client.js', () => ({
 import openai from '../src/infrastructure/ai/openai.client.js';
 import prisma from '../src/infrastructure/database/prisma.client.js';
 import { HmacClient } from '../src/infrastructure/hmac.client.js';
-import { getPrayerTimes } from '../src/infrastructure/external/prayertime.client.js';
+import * as prayerClient from '../src/infrastructure/external/prayertime.client.js';
 import * as pdfChunker from '../src/infrastructure/pdf.chunker.js';
 import * as embeddingClient from '../src/infrastructure/embedding.client.js';
 import * as vectorClient from '../src/infrastructure/supabase.vector.client.js';
@@ -109,11 +109,51 @@ describe('ai usecases', () => {
   it('ScheduleFocusSession creates a session and links the suggested task', async () => {
     await expect(ScheduleFocusSession({ userid: '' } as any)).rejects.toThrow('User ID is required');
     vi.spyOn(StudentMemoryRepository, 'findByUser').mockResolvedValue({ preferred_study_time: 'morning' });
+    vi.spyOn(prisma.digitaldisciplinesettings, 'findUnique').mockResolvedValue({ faithmodeenabled: false } as any);
     vi.spyOn(prisma.task, 'findMany').mockResolvedValue([{ taskid: 'tsk1', title: 'Study', priority: 3, deadline: new Date('2026-01-02') }] as any);
     vi.mocked((openai as any).openai.chat.completions.create).mockResolvedValue({ choices: [{ message: { content: '{"taskid":"tsk1","durationMinutes":50,"reason":"Highest priority"}' } }] } as any);
     vi.spyOn(FocusSessionRepository, 'create').mockResolvedValue({ sessionid: 'ssn1' } as any);
     vi.spyOn(prisma.sessiontask, 'create').mockResolvedValue({} as any);
     await expect(ScheduleFocusSession({ userid: 'usr1' })).resolves.toEqual({ sessionid: 'ssn1', suggestedTaskid: 'tsk1', durationMinutes: 50, reason: 'Highest priority', message: 'Focus session created! Open Neurova to start.' });
+  });
+
+  it('ScheduleFocusSession shifts sessions around prayer windows in Faith Mode', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-30T11:30:00.000Z'));
+
+    try {
+      const now = new Date();
+      const prayerStart = new Date(now.getTime() + 15 * 60_000);
+      const prayerTime = `${String(prayerStart.getHours()).padStart(2, '0')}:${String(prayerStart.getMinutes()).padStart(2, '0')}`;
+
+      vi.spyOn(StudentMemoryRepository, 'findByUser').mockResolvedValue({ preferred_study_time: 'morning' });
+      vi.spyOn(prisma.digitaldisciplinesettings, 'findUnique').mockResolvedValue({ faithmodeenabled: true } as any);
+      vi.spyOn(prisma.task, 'findMany').mockResolvedValue([{ taskid: 'tsk1', title: 'Study', priority: 3, deadline: new Date('2026-01-02') }] as any);
+      vi.spyOn(prayerClient, 'getPrayerTimes').mockResolvedValue({
+        Fajr: '05:00',
+        Dhuhr: prayerTime,
+        Asr: '15:00',
+        Maghrib: '18:00',
+        Isha: '20:00',
+      } as any);
+      vi.mocked((openai as any).openai.chat.completions.create).mockResolvedValue({ choices: [{ message: { content: '{"taskid":"tsk1","durationMinutes":60,"reason":"Highest priority"}' } }] } as any);
+      vi.spyOn(FocusSessionRepository, 'create').mockResolvedValue({ sessionid: 'ssn1' } as any);
+      vi.spyOn(prisma.sessiontask, 'create').mockResolvedValue({} as any);
+
+      await expect(ScheduleFocusSession({ userid: 'usr1', faithmode: true, city: 'Oran', country: 'Algeria', durationMinutes: 60 } as any)).resolves.toMatchObject({
+        sessionid: 'ssn1',
+        suggestedTaskid: 'tsk1',
+        durationMinutes: 60,
+        faithModeApplied: true,
+        adjustedForPrayer: true,
+        protectedPrayerBlocks: expect.arrayContaining(['Dhuhr']),
+        prayerTimes: {
+          Dhuhr: prayerTime,
+        },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('ProcessDocument validates required fields and indexes chunks', async () => {

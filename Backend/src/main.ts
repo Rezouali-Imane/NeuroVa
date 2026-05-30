@@ -5,6 +5,7 @@ import { createServer } from 'node:http';
 import { Server } from 'socket.io'; 
 import { JwtClient } from './infrastructure/jwt.client.js';
 import { FilterContent } from './usecases/contentModeration/FilterContent.js';
+import { startPrayerReminderScheduler } from './usecases/Notification/PrayerReminderScheduler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -145,6 +146,7 @@ aiCallNamespace.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 
+startPrayerReminderScheduler();
 
 httpServer.listen(PORT, () => {
   console.log(`🚀 Neurova Server running on port ${PORT}`);

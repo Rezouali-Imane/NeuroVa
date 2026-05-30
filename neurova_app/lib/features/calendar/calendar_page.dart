@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/theme/app_theme.dart' show AppTypography;
 import '../../shared/widgets/profile_view_shell.dart';
+import '../discipline/models/prayer_schedule_block.dart';
+import '../discipline/state/faith_mode_provider.dart';
 import '../tasks/models/task_model.dart';
 import '../tasks/state/tasks_notifier.dart';
 
@@ -31,6 +33,11 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   @override
   Widget build(BuildContext context) {
     final tasksState = ref.watch(tasksNotifierProvider);
+    final faithModeState = ref.watch(faithModeSettingsProvider);
+    final prayerBlocks = buildPrayerScheduleBlocks(
+      faithModeState.enabled ? faithModeState.prayerTimes : null,
+      referenceDate: _selectedDay,
+    );
     final monthDays = _buildMonthDays(_visibleMonth);
     final selectedTasks = _tasksForSelectedDay(tasksState.tasks);
 
@@ -54,6 +61,10 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               const SizedBox(height: 10),
               _buildMonthGrid(monthDays),
               const SizedBox(height: 24),
+              if (prayerBlocks.isNotEmpty) ...[
+                _buildPrayerBlocksSection(prayerBlocks),
+                const SizedBox(height: 18),
+              ],
               Text(
                 'Tasks for ${_formatSelectedDay(_selectedDay)}',
                 style: AppTypography.title1.copyWith(color: _nc.textPrimary),
@@ -223,6 +234,83 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   style: AppTypography.caption.copyWith(color: _nc.textSecondary),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrayerBlocksSection(List<PrayerScheduleBlock> prayerBlocks) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _nc.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _nc.surfaceElevated),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.more_time_rounded, size: 18, color: _nc.lilacSurface),
+              const SizedBox(width: 8),
+              Text(
+                'Prayer blocks',
+                style: AppTypography.title2.copyWith(color: _nc.textPrimary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...prayerBlocks.map(
+            (block) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: _nc.background,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _nc.surfaceElevated),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: _nc.lilacSurface,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          block.name,
+                          style: AppTypography.body1.copyWith(
+                            color: _nc.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Protected time block',
+                          style: AppTypography.caption.copyWith(color: _nc.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    block.timeLabel,
+                    style: AppTypography.body1.copyWith(
+                      color: _nc.lilacSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

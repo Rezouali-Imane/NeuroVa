@@ -406,10 +406,10 @@ export const AIAssistantController = {
 
       validateUserAccess(requestUserId, userid);
 
-      const { taskid, durationMinutes } = req.body;
+      const { taskid, durationMinutes, faithmode, city, country } = req.body;
       // Lazy import to defer AI client initialization
       const { ScheduleFocusSession } = await import('../../usecases/ai/Schedulefocussession.js');
-      const result = await ScheduleFocusSession({ userid, taskid, durationMinutes });
+      const result = await ScheduleFocusSession({ userid, taskid, durationMinutes, faithmode, city, country });
       res.status(201).json({ success: true, data: result });
     } catch (error: any) {
       handleAIError(error, res);

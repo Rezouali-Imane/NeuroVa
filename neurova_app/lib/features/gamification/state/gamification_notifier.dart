@@ -76,7 +76,16 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
       final achievements = await _service.getAchievements();
       final badges = await _service.getBadges();
       final leaderboardList = await _service.getLeaderboard(leaderboardId);
-      final challenges = await _service.getActiveChallenges();
+      var challenges = await _service.getActiveChallenges();
+
+      if (challenges.isEmpty) {
+        try {
+          await _service.assignDailyChallenge();
+          challenges = await _service.getActiveChallenges();
+        } catch (assignError) {
+          debugPrint('Warning: Daily challenge assignment failed: $assignError');
+        }
+      }
 
       // Streak calculation may fail if user record isn't fully initialized; make it optional
       int streakData = 0;
@@ -105,23 +114,8 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
   }
 
   Future<void> completeChallenge(String challengeId) async {
-    try {
-      await _service.completeChallenge(challengeId);
-      final updated = state.challenges.map((c) {
-        return c.challengeid == challengeId
-            ? DailyChallenge(
-          challengeid: c.challengeid,
-          title: c.title,
-          description: c.description,
-          iscompleted: true,
-          xpreward: c.xpreward,
-        )
-            : c;
-      }).toList();
-      state = state.copyWith(challenges: updated);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
+    await _service.completeChallenge(challengeId);
+    await _refreshGlobalStats();
   }
 
   Future<void> calculateFocusScore({

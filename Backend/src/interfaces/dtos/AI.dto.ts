@@ -55,4 +55,7 @@ export interface ScheduleFocusSessionDTO {
   userid: string;
   taskid?: string;
   durationMinutes?: number;
+  faithmode?: boolean;
+  city?: string;
+  country?: string;
 }

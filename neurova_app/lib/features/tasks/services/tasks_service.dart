@@ -175,6 +175,42 @@ class TasksService {
     }
   }
 
+  Future<Task> updateTask({
+    required String taskId,
+    required String title,
+    String? description,
+    DateTime? deadline,
+    int priority = 1,
+    String category = 'OTHER',
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await _dio.put<dynamic>(
+        '/api/tasks/$taskId',
+        data: {
+          'title': title,
+          'description': description,
+          'deadline': deadline?.toIso8601String(),
+          'priority': priority,
+          'category': category,
+        },
+        options: _requestOptions(headers),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is! Map<String, dynamic>) {
+          throw Exception('Invalid response format');
+        }
+        return Task.fromJson(data['data'] as Map<String, dynamic>);
+      }
+
+      throw Exception('Failed to update task');
+    } catch (error) {
+      throw Exception(_readApiError(error, 'Error updating task'));
+    }
+  }
+
   Future<Task> updateTaskStatus({
     required String taskId,
     required String status,

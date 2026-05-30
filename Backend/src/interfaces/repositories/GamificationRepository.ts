@@ -160,11 +160,36 @@ export const GamificationRepository = {
     });
   },
 
+  async getActiveChallengesByUser(userid: string) {
+    return await prisma.dailychallenge.findMany({
+      where: {
+        userid,
+        expiresat: { gt: new Date() },
+        iscompleted: false,
+      },
+      orderBy: { assignedat: "desc" },
+      include: { dailychallengetemplate: true },
+    });
+  },
+
   async getAllChallengesByUser(userid: string) {
     return await prisma.dailychallenge.findMany({
       where: { userid },
       orderBy: { assignedat: "desc" },
       include: { dailychallengetemplate: true },
+    });
+  },
+
+  async getAllChallengeTemplates() {
+    return await prisma.dailychallengetemplate.findMany({
+      orderBy: { createdat: "asc" },
+    });
+  },
+
+  async createDailyChallengeTemplates(data: Array<{ title: string; description?: string; xpreward: number }>) {
+    return await prisma.dailychallengetemplate.createMany({
+      data,
+      skipDuplicates: true,
     });
   },
 

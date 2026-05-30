@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/prayer_times_service.dart';
 
+const String _defaultPrayerCity = 'Bejaia';
+const String _defaultPrayerCountry = 'Algeria';
+
 final prayerTimesServiceProvider = Provider((ref) => PrayerTimesService());
 
 final prayerTimesProvider = FutureProvider.family<PrayerTimesResponse?, String>((ref, cityCountry) async {
@@ -73,8 +76,11 @@ class FaithModeNotifier extends StateNotifier<FaithModeSettings> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final enabled = prefs.getBool('faith_mode_enabled') ?? false;
-      final city = prefs.getString('prayer_city');
-      final country = prefs.getString('prayer_country');
+      final city = prefs.getString('prayer_city') ?? _defaultPrayerCity;
+      final country = prefs.getString('prayer_country') ?? _defaultPrayerCountry;
+
+      await prefs.setString('prayer_city', city);
+      await prefs.setString('prayer_country', country);
       
       state = state.copyWith(
         enabled: enabled,
@@ -82,7 +88,7 @@ class FaithModeNotifier extends StateNotifier<FaithModeSettings> {
         country: country,
       );
       
-      if (enabled && city != null && country != null) {
+      if (enabled) {
         await fetchPrayerTimes(city, country);
       }
     } catch (e) {
@@ -99,7 +105,17 @@ class FaithModeNotifier extends StateNotifier<FaithModeSettings> {
       
       if (!enabled) {
         state = state.copyWith(prayerTimes: null);
+        return;
       }
+
+      final city = state.city ?? prefs.getString('prayer_city') ?? _defaultPrayerCity;
+      final country = state.country ?? prefs.getString('prayer_country') ?? _defaultPrayerCountry;
+
+      await prefs.setString('prayer_city', city);
+      await prefs.setString('prayer_country', country);
+
+      state = state.copyWith(city: city, country: country);
+      await fetchPrayerTimes(city, country);
     } catch (e) {
       debugPrint('[FaithMode] Error toggling faith mode: $e');
       state = state.copyWith(error: 'Failed to save settings');

@@ -99,10 +99,15 @@ class GamificationService {
 
   Future<void> completeChallenge(String challengeId) async {
     try {
-      await _dio.post<dynamic>(
+      final response = await _dio.post<dynamic>(
         '/api/gamification/daily-challenges/complete/$challengeId',
         options: await _options(),
       );
+      final data = response.data as Map<String, dynamic>?;
+      if (data == null || data['success'] != true) {
+        final msg = data != null && data['message'] != null ? data['message'] as String : 'Failed to complete challenge';
+        throw Exception(msg);
+      }
     } catch (e) {
       throw Exception(_readError(e, 'Failed to complete challenge'));
     }

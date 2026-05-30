@@ -58,7 +58,7 @@ class AIState {
 class AINotifier extends StateNotifier<AIState> {
   final AIService _aiService;
   final String _userId;
-  final Ref? _ref;
+  final dynamic _ref;
 
   AINotifier(this._aiService, this._userId, [this._ref]) : super(const AIState());
 
@@ -123,7 +123,7 @@ class AINotifier extends StateNotifier<AIState> {
   }
 
   // Send message to AI
-  Future<void> sendMessage(String content, {bool? directChat}) async {
+  Future<void> sendMessage(String content, {bool? directChat, bool? faithMode}) async {
     try {
       state = state.copyWith(isSending: true, error: '', hasError: false);
 
@@ -142,6 +142,7 @@ class AINotifier extends StateNotifier<AIState> {
         userId: _userId,
         content: content,
         directChat: directChat ?? !_shouldUseToolPath(content),
+        faithMode: faithMode ?? false,
       );
 
       await _refreshFromActions(response.metadata);
@@ -164,6 +165,7 @@ class AINotifier extends StateNotifier<AIState> {
     String imagePath, {
     String prompt = '',
     bool directChat = true,
+    bool? faithMode,
   }) async {
     try {
       state = state.copyWith(isSending: true, error: '', hasError: false);
@@ -182,6 +184,7 @@ class AINotifier extends StateNotifier<AIState> {
         imagePath: imagePath,
         prompt: prompt,
         directChat: directChat,
+        faithMode: faithMode ?? false,
       );
 
       state = state.copyWith(
@@ -201,6 +204,7 @@ class AINotifier extends StateNotifier<AIState> {
     String audioPath, {
     String promptPrefix = '',
     bool directChat = true,
+    bool? faithMode,
   }) async {
     try {
       state = state.copyWith(isSending: true, error: '', hasError: false);
@@ -219,6 +223,7 @@ class AINotifier extends StateNotifier<AIState> {
         audioPath: audioPath,
         promptPrefix: promptPrefix,
         directChat: directChat,
+        faithMode: faithMode ?? false,
       );
 
       state = state.copyWith(
@@ -237,6 +242,7 @@ class AINotifier extends StateNotifier<AIState> {
   Future<void> sendRealtimeVoiceTurn(
     String transcript, {
     bool? directChat,
+    bool? faithMode,
   }) async {
     try {
       state = state.copyWith(isSending: true, error: '', hasError: false);
@@ -253,6 +259,7 @@ class AINotifier extends StateNotifier<AIState> {
       final response = await _aiService.sendRealtimeVoiceTurn(
         transcript: transcript,
         directChat: directChat ?? !_shouldUseToolPath(transcript),
+        faithMode: faithMode ?? false,
       );
 
       await _refreshFromActions(response.metadata);
