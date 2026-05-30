@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../shared/services/local_storage_service.dart';
-import '../../../shared/theme/app_theme.dart' show AppColors, AppTypography;
+import '../../discipline/state/faith_mode_provider.dart';
+import '../../../shared/theme/app_theme.dart' show AppColors, AppGradients, AppTypography;
 import '../models/ai_models.dart';
 import '../services/ai_service.dart';
 import '../state/ai_notifier.dart';
@@ -13,7 +14,7 @@ import '../../../shared/widgets/unified_bottom_nav_bar.dart';
 
 enum _AITab { chat, agent, plans, knowledge }
 
-class AIChatScreen extends StatefulWidget {
+class AIChatScreen extends ConsumerStatefulWidget {
   final String userId;
   final AIService aiService;
 
@@ -24,10 +25,10 @@ class AIChatScreen extends StatefulWidget {
   });
 
   @override
-  State<AIChatScreen> createState() => _AIChatScreenState();
+  ConsumerState<AIChatScreen> createState() => _AIChatScreenState();
 }
 
-class _AIChatScreenState extends State<AIChatScreen> {
+class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
@@ -50,11 +51,14 @@ class _AIChatScreenState extends State<AIChatScreen> {
   List<Map<String, dynamic>> _availableVoices = [];
   bool _isUploadingDocument = false;
   String _searchQuery = '';
+  // Recent chat previews shown in the empty state
+  List<_ChatThreadPreview> _recentThreads = [];
+  bool _recentLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _notifier = AINotifier(widget.aiService, widget.userId);
+    _notifier = AINotifier(widget.aiService, widget.userId, ref);
     _stateNotifier = ValueNotifier<AIState>(
       AIState(
         messages: [],
@@ -79,6 +83,20 @@ class _AIChatScreenState extends State<AIChatScreen> {
     _initializeVoiceChat();
     _loadSavedVoiceSettings();
     _loadKnowledgeBase();
+    _loadRecentThreads();
+  }
+
+  Future<void> _loadRecentThreads() async {
+    try {
+      setState(() => _recentLoading = true);
+      final history = await widget.aiService.getChatHistory(userId: widget.userId, limit: 50);
+      final threads = _groupChatThreads(history);
+      if (mounted) setState(() => _recentThreads = threads);
+    } catch (e) {
+      debugPrint('[AI Chat] Failed to load recent threads: $e');
+    } finally {
+      if (mounted) setState(() => _recentLoading = false);
+    }
   }
 
   Future<void> _loadKnowledgeBase() async {
@@ -499,6 +517,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
     if (content.isEmpty) return;
+    final faithModeEnabled = ref.read(faithModeSettingsProvider).enabled;
 
     _messageController.clear();
     if (!_showConversation) {
@@ -506,7 +525,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         _showConversation = true;
       });
     }
-    await _notifier.sendMessage(content);
+    await _notifier.sendMessage(content, faithMode: faithModeEnabled);
   }
 
   Future<void> _toggleVoiceCallMode() async {
@@ -586,9 +605,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   Future<void> _handleVoiceTurn(String transcript) async {
     if (!_voiceCallMode) return;
+    final faithModeEnabled = ref.read(faithModeSettingsProvider).enabled;
 
     final before = _stateNotifier.value.messages.length;
-    await _notifier.sendRealtimeVoiceTurn(transcript);
+    await _notifier.sendRealtimeVoiceTurn(transcript, faithMode: faithModeEnabled);
 
     final messages = _stateNotifier.value.messages;
     String? assistantReply;
@@ -769,68 +789,89 @@ class _AIChatScreenState extends State<AIChatScreen> {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                colors: [Color(0xFFC8B8E8), Color(0xFFA2ADD0)],
-              ),
+              borderRadius: BorderRadius.circular(18),
+              gradient: AppGradients.hero,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.purple.withValues(alpha: 0.22),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
+                  color: AppColors.purple.withValues(alpha: 0.26),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: SvgPicture.asset(
-                'lib/features/onboarding/assets/logo.svg',
-                fit: BoxFit.contain,
-                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-              ),
+              child: Padding(
+              padding: const EdgeInsets.all(9),
+              child: Icon(Icons.auto_awesome, color: Colors.white, size: 18),
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'AI Academic Assistant',
-                  style: TextStyle(
-                    fontFamily: 'Syne',
-                    color: Color(0xA5FFFFFF),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'AI Academic Assistant',
+                      style: TextStyle(
+                        fontFamily: 'Syne',
+                        color: Colors.white.withValues(alpha: 0.94),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.purple.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: AppColors.purple.withValues(alpha: 0.24)),
+                      ),
+                      child: Text(
+                        'Live',
+                        style: AppTypography.caption.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
-                  '● Online · 3 docs indexed',
+                  'Faith-aware study support, planning, and document help.',
                   style: TextStyle(
                     fontFamily: 'Syne',
-                    color: Color(0xCCFFFFFF),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.66),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    height: 1.25,
                   ),
                 ),
               ],
             ),
           ),
           Container(
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: AppColors.glassBackground,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.glassBorderLight),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.refresh, size: 18),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
                   color: AppColors.textSecondary,
+                  tooltip: 'Reset chat',
                   onPressed: () {
                     setState(() {
                       _selectedTab = _AITab.chat;
@@ -841,8 +882,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.tune, size: 18),
+                  icon: const Icon(Icons.tune_rounded, size: 18),
                   color: AppColors.textSecondary,
+                  tooltip: 'AI options',
                   onPressed: () => _showAIMenu(context),
                 ),
               ],
@@ -856,11 +898,19 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Widget _buildModeTabs() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: DecoratedBox(
+      child: Container(
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: AppColors.cardBackgroundLight,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.glassBorderLight),
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -878,22 +928,25 @@ class _AIChatScreenState extends State<AIChatScreen> {
     final selected = _selectedTab == tab;
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(3),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           onTap: () {
             setState(() {
               _selectedTab = tab;
             });
           },
           child: Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 6),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: selected ? AppColors.purple.withValues(alpha: 0.18) : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              gradient: selected
+                  ? AppGradients.purple
+                  : null,
+              color: selected ? null : Colors.transparent,
               border: Border.all(
-                color: selected ? AppColors.purple.withValues(alpha: 0.5) : Colors.transparent,
+                color: selected ? AppColors.glassBorder : Colors.transparent,
               ),
             ),
             child: FittedBox(
@@ -901,14 +954,14 @@ class _AIChatScreenState extends State<AIChatScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 14, color: selected ? AppColors.white : AppColors.textSecondary),
+                  Icon(icon, size: 15, color: selected ? Colors.white : AppColors.textSecondary),
                   const SizedBox(width: 6),
                   Text(
                     label,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? AppColors.white : AppColors.textSecondary,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      color: selected ? Colors.white : AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -929,54 +982,90 @@ class _AIChatScreenState extends State<AIChatScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'How may I help\nyou today?',
-                maxLines: 2,
-                style: TextStyle(
-                  fontFamily: 'Syne',
-                  color: Colors.white,
-                  fontSize: compact ? 38 : 42,
-                  fontWeight: FontWeight.w800,
-                  height: 0.95,
-                  letterSpacing: -1.2,
+              Container(
+                padding: EdgeInsets.all(compact ? 16 : 18),
+                decoration: BoxDecoration(
+                  gradient: AppGradients.glass(AppColors.purple),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: AppColors.glassBorderLight),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.16),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: AppGradients.purple,
+                          ),
+                          child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'How may I help you today?',
+                                maxLines: 2,
+                                style: TextStyle(
+                                  fontFamily: 'Syne',
+                                  color: Colors.white,
+                                  fontSize: compact ? 32 : 36,
+                                  fontWeight: FontWeight.w800,
+                                  height: 0.98,
+                                  letterSpacing: -1.0,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Ask Neurova for study plans, explanations, task ideas, or document help.',
+                                style: AppTypography.body2.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: const [
+                        _StatusPill(icon: Icons.auto_awesome_outlined, label: 'Neurova ready', tint: AppColors.purple),
+                        _StatusPill(icon: Icons.description_outlined, label: '3 docs indexed', tint: AppColors.amber),
+                        _StatusPill(icon: Icons.lock_outline, label: 'Private chat', tint: AppColors.periwinkle),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildPromptChip('Study plan', () => _sendPresetPrompt('Make me a 7-day study plan.')),
+                        _buildPromptChip('Quiz me', () => _sendPresetPrompt('Create a short quiz for me.')),
+                        _buildPromptChip('Weak areas', _analyzeWeakness),
+                        _buildPromptChip('Documents', _showUploadDialog),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                'Ask Neurova for study plans, explanations, task ideas, or document help.',
-                style: AppTypography.body2.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                  height: 1.35,
-                ),
-              ),
-              SizedBox(height: compact ? 12 : 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: const [
-                  _StatusPill(icon: Icons.auto_awesome_outlined, label: 'Neurova ready', tint: Color(0xFFC8B8E8)),
-                  _StatusPill(icon: Icons.description_outlined, label: '3 docs indexed', tint: Color(0xFFF8B878)),
-                  _StatusPill(icon: Icons.lock_outline, label: 'Private chat', tint: Color(0xFFA2ADD0)),
-                ],
-              ),
-              SizedBox(height: compact ? 18 : 22),
-              Text(
-                'Quick prompts',
-                style: AppTypography.label.copyWith(color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildPromptChip('Study plan', () => _sendPresetPrompt('Make me a 7-day study plan.')),
-                  _buildPromptChip('Quiz me', () => _sendPresetPrompt('Create a short quiz for me.')),
-                  _buildPromptChip('Weak areas', _analyzeWeakness),
-                  _buildPromptChip('Documents', _showUploadDialog),
-                ],
-              ),
-              SizedBox(height: compact ? 18 : 22),
+              SizedBox(height: compact ? 16 : 20),
               Row(
                 children: [
                   Text(
@@ -987,7 +1076,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   TextButton.icon(
                     onPressed: _showChatHistorySheet,
                     icon: const Icon(Icons.history_rounded, size: 16),
-                    label: const Text('See chat history'),
+                    label: const Text('See history'),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -997,23 +1086,42 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              _buildHistoryLine(
-                'Explain Newton’s laws simply',
-                '2m ago',
-                'Answered with a quick analogy and example.',
-              ),
-              const SizedBox(height: 10),
-              _buildHistoryLine(
-                'Build a 7-day revision plan',
-                '18m ago',
-                'Created a balanced schedule for three subjects.',
-              ),
-              const SizedBox(height: 10),
-              _buildHistoryLine(
-                'Find my weak topics',
-                '1h ago',
-                'Highlighted the topics that need more practice.',
-              ),
+              if (_recentLoading)
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 10),
+                      Text('Loading recent chats...', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                    ],
+                  ),
+                )
+              else if (_recentThreads.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text('No recent chats yet', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                )
+              else ...[
+                for (final thread in _recentThreads.take(3)) ...[
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      setState(() {
+                        _selectedTab = _AITab.chat;
+                        _showConversation = true;
+                      });
+                      _notifier.replaceMessages(thread.messages);
+                    },
+                    child: _buildHistoryLine(thread.title, _formatRelativeTime(thread.updatedAt), thread.preview),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ],
             ],
           ),
         );
@@ -1029,11 +1137,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
         ),
       _AITab.agent => KeyedSubtree(
           key: const ValueKey<String>('agent_view'),
-          child: _buildAgentTab(),
+          child: _buildAgentTab(state),
         ),
       _AITab.plans => KeyedSubtree(
           key: const ValueKey<String>('plans_view'),
-          child: _buildPlansTab(),
+          child: _buildPlansTab(state),
         ),
       _AITab.knowledge => KeyedSubtree(
           key: const ValueKey<String>('knowledge_view'),
@@ -1088,7 +1196,31 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _buildAgentTab() {
+  Future<void> _generateStudyPlanFromCurrentSettings() async {
+    final faithState = ref.read(faithModeSettingsProvider);
+    setState(() => _selectedTab = _AITab.plans);
+    await _notifier.generateStudyPlan(
+      faithMode: faithState.enabled,
+      city: faithState.city,
+      country: faithState.country,
+    );
+  }
+
+  Future<void> _runWeaknessAnalysis() async {
+    setState(() => _selectedTab = _AITab.agent);
+    await _notifier.analyzeWeakness();
+  }
+
+  Future<void> _openDailyDigest() async {
+    setState(() => _selectedTab = _AITab.chat);
+    await _sendPresetPrompt('Give me a daily digest of my priorities, pending tasks, and what I should focus on today.');
+  }
+
+  Widget _buildAgentTab(AIState state) {
+    final faithState = ref.watch(faithModeSettingsProvider);
+    final hasPlan = state.currentStudyPlan != null;
+    final hasAnalysis = state.weaknessAnalysis != null;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       children: [
@@ -1109,11 +1241,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   gradient: const LinearGradient(colors: [Color(0xFFC8B8E8), Color(0xFFA2ADD0)]),
                 ),
                 padding: const EdgeInsets.all(12),
-                child: SvgPicture.asset(
-                  'lib/features/onboarding/assets/logo.svg',
-                  fit: BoxFit.contain,
-                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                ),
+                child: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 14),
               const Expanded(
@@ -1166,10 +1294,34 @@ class _AIChatScreenState extends State<AIChatScreen> {
           mainAxisSpacing: 12,
           childAspectRatio: 1.03,
           children: [
-            _launchMissionCard('🗓️', 'Optimize my week', 'Analyzes deadlines & schedules optimal sessions', const [Color(0xFF171426), Color(0xFF1D1930)]),
-            _launchMissionCard('🔍', 'Review weak areas', 'Scans notes & tasks to find knowledge gaps', const [Color(0xFF171426), Color(0xFF1D1930)]),
-            _launchMissionCard('📋', 'Build study plan', 'Creates a full week schedule from your syllabus', const [Color(0xFF171426), Color(0xFF1D1930)]),
-            _launchMissionCard('☀️', 'Daily digest', 'Summarizes progress & today’s priorities', const [Color(0xFF171426), Color(0xFF1D1930)]),
+            _launchMissionCard(
+              icon: '🗓️',
+              title: 'Optimize my week',
+              subtitle: 'Build a real study plan from tasks and prayer times',
+              colors: const [Color(0xFF171426), Color(0xFF1D1930)],
+              onTap: _generateStudyPlanFromCurrentSettings,
+            ),
+            _launchMissionCard(
+              icon: '🔍',
+              title: 'Review weak areas',
+              subtitle: 'Run the backend weakness analysis for your account',
+              colors: const [Color(0xFF171426), Color(0xFF1D1930)],
+              onTap: _runWeaknessAnalysis,
+            ),
+            _launchMissionCard(
+              icon: '📋',
+              title: 'Build study plan',
+              subtitle: 'Open the live Plans screen and generate one now',
+              colors: const [Color(0xFF171426), Color(0xFF1D1930)],
+              onTap: _generateStudyPlanFromCurrentSettings,
+            ),
+            _launchMissionCard(
+              icon: '☀️',
+              title: 'Daily digest',
+              subtitle: 'Ask Neurova for today’s priorities and next steps',
+              colors: const [Color(0xFF171426), Color(0xFF1D1930)],
+              onTap: _openDailyDigest,
+            ),
           ],
         ),
         const SizedBox(height: 24),
@@ -1184,67 +1336,149 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _feedItem('Analyzed your focus patterns', '1h ago', AppColors.purple),
+        if (faithState.enabled)
+          _feedItem(
+            'Faith Mode active for ${faithState.city ?? 'your city'}, ${faithState.country ?? 'your country'}',
+            'Live now',
+            AppColors.purple,
+          )
+        else
+          _feedItem('Faith Mode is off right now', 'Live now', AppColors.textMuted),
         const SizedBox(height: 10),
-        _feedItem('Created task from overdue note', '47m ago', AppColors.amber),
+        if (hasPlan)
+          _feedItem(
+            'Latest plan generated with ${state.currentStudyPlan!.sections.length} sections',
+            _formatRelativeTime(state.currentStudyPlan!.generatedAt),
+            AppColors.amber,
+          )
+        else
+          _feedItem('Generate a plan to see it here', 'No plan yet', AppColors.amber),
+        const SizedBox(height: 10),
+        if (hasAnalysis)
+          _feedItem(
+            'Weakness analysis ready with ${state.weaknessAnalysis!.recommendations.length} recommendations',
+            'Latest run',
+            AppColors.success,
+          )
+        else
+          _feedItem('Run weakness analysis for personalized guidance', 'No analysis yet', AppColors.success),
       ],
     );
   }
 
-  Widget _buildPlansTab() {
+  Widget _buildPlansTab(AIState state) {
+    final plan = state.currentStudyPlan;
+    final rawPlan = plan?.details['rawPlan']?.toString() ?? '';
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       children: [
-        const Text(
-          'AI-generated plans tailored to your goals and Knowledge\nBase.',
-          style: TextStyle(
-            fontFamily: 'Syne',
-            color: Color(0xFF9A94A9),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            height: 1.3,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'AI-generated plans tailored to your tasks, weak areas, and Faith Mode schedule.',
+                style: AppTypography.body2.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.3,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilledButton.icon(
+              onPressed: state.isLoading ? null : _generateStudyPlanFromCurrentSettings,
+              icon: state.isLoading
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.auto_awesome, size: 16),
+              label: const Text('Generate'),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        _planCard(
-          title: 'Algorithms\nMastery',
-          subtitle: '7 days · Medium',
-          gradient: const [Color(0xFFC8B8E8), Color(0xFFA2ADD0)],
-          stats: const [('Duration', '7 days'), ('Sessions', '14'), ('Difficulty', 'Medium')],
-        ),
-        const SizedBox(height: 14),
-        _planCard(
-          title: 'System Design\nPrep',
-          subtitle: '5 days · Hard',
-          gradient: const [Color(0xFFF5EFC0), Color(0xFFF3C57D)],
-          stats: const [('Duration', '5 days'), ('Sessions', '10'), ('Difficulty', 'Hard')],
-        ),
-        const SizedBox(height: 14),
-        _planCard(
-          title: 'UX Design Sprint',
-          subtitle: '4 days · Easy',
-          gradient: const [Color(0xFFC8B8E8), Color(0xFFC8A2C8)],
-          stats: const [('Duration', '4 days'), ('Sessions', '8'), ('Difficulty', 'Easy')],
-        ),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackgroundLight,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: AppColors.glassBorderLight),
+        if (state.isLoading && plan == null)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackgroundLight,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: AppColors.glassBorderLight),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Generating a plan from your current tasks and prayer schedule...',
+                    style: AppTypography.body2.copyWith(color: AppColors.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (plan == null)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackgroundLight,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: AppColors.glassBorderLight),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No plan generated yet',
+                  style: AppTypography.title2.copyWith(color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap Generate to build a real study plan from your pending tasks, weak subjects, and Faith Mode settings.',
+                  style: AppTypography.body2.copyWith(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          _planSummaryCard(plan),
+          const SizedBox(height: 14),
+          ...plan.sections.asMap().entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _planSectionCard(index: entry.key, section: entry.value),
+            ),
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.add, color: Color(0xFFC8B8E8)),
-              const SizedBox(width: 10),
-              Text(
-                'Generate Custom Plan with AI',
-                style: AppTypography.title2.copyWith(color: Colors.white),
+          if (rawPlan.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.cardBackgroundLight,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.glassBorderLight),
               ),
-            ],
-          ),
-        ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Raw plan', style: AppTypography.title2.copyWith(color: Colors.white)),
+                  const SizedBox(height: 8),
+                  Text(
+                    rawPlan,
+                    style: AppTypography.body2.copyWith(color: AppColors.textSecondary, height: 1.45),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ],
     );
   }
@@ -1609,22 +1843,92 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _launchMissionCard(String icon, String title, String subtitle, List<Color> colors) {
+  Widget _launchMissionCard({
+    required String icon,
+    required String title,
+    required String subtitle,
+    required List<Color> colors,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: colors),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.glassBorderLight),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(icon, style: const TextStyle(fontSize: 22)),
+                const Spacer(),
+                const Icon(Icons.arrow_outward, color: Colors.white70, size: 16),
+              ],
+            ),
+            const Spacer(),
+            Text(title, style: AppTypography.title2.copyWith(color: Colors.white, height: 1.05)),
+            const SizedBox(height: 8),
+            Text(subtitle, style: AppTypography.caption.copyWith(color: Colors.white70, height: 1.2)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _planSummaryCard(StudyPlan plan) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.cardBackgroundLight,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.glassBorderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 22)),
-          const Spacer(),
-          Text(title, style: AppTypography.title2.copyWith(color: Colors.white, height: 1.05)),
-          const SizedBox(height: 8),
-          Text(subtitle, style: AppTypography.caption.copyWith(color: AppColors.textSecondary, height: 1.2)),
+          Text(plan.title, style: AppTypography.headline2.copyWith(color: Colors.white)),
+          const SizedBox(height: 6),
+          Text(
+            'Generated ${_formatRelativeTime(plan.generatedAt)} · ${plan.sections.length} sections',
+            style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _planSectionCard({required int index, required String section}) {
+    final lines = section.split('\n');
+    final titleLine = lines.isNotEmpty ? lines.first.trim() : 'Section ${index + 1}';
+    final bodyLines = lines.length > 1 ? lines.skip(1).toList() : <String>[];
+    final bodyText = bodyLines.join('\n').trim();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackgroundLight,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.glassBorderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            titleLine,
+            style: AppTypography.title2.copyWith(color: Colors.white),
+          ),
+          if (bodyText.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              bodyText,
+              style: AppTypography.body2.copyWith(color: AppColors.textSecondary, height: 1.45),
+            ),
+          ],
         ],
       ),
     );
@@ -1658,74 +1962,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
-  Widget _planCard({
-    required String title,
-    required String subtitle,
-    required List<Color> gradient,
-    required List<(String, String)> stats,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradient),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.glassBorderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.black.withValues(alpha: 0.12),
-                ),
-                child: const Icon(Icons.calculate_outlined, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTypography.headline2.copyWith(color: Colors.white, height: 0.95),
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: Colors.white, size: 22),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(subtitle, style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.8))),
-          const SizedBox(height: 16),
-          Row(
-            children: stats
-                .map(
-                  (s) => Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(s.$1, style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.78))),
-                          const SizedBox(height: 6),
-                          Text(s.$2, style: AppTypography.title2.copyWith(color: Colors.white, fontSize: 16)),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
+  // Removed unused _planCard widget (declared but not referenced).
 
   Widget _docTile(String title, String meta, Color accent) {
     return Container(
@@ -1836,113 +2073,92 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Widget _buildInputBar(AIState state) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.glassBackgroundHover,
+              AppColors.glassBackground,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: state.isSending ? null : _toggleVoiceCallMode,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: _voiceCallMode
+                      ? AppGradients.amber
+                      : null,
+                  color: _voiceCallMode ? null : Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: _voiceCallMode
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Icon(
+                  Icons.mic_none_rounded,
+                  size: 18,
+                  color: _voiceCallMode ? Colors.white : AppColors.textSecondary,
                 ),
               ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: state.isSending ? null : _toggleVoiceCallMode,
-                    child: Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: _voiceCallMode
-                            ? AppColors.success.withValues(alpha: 0.12)
-                            : Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: _voiceCallMode
-                              ? AppColors.success.withValues(alpha: 0.3)
-                              : Colors.white.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.mic_none,
-                        size: 16,
-                        color: _voiceCallMode ? AppColors.success : AppColors.textSecondary,
-                      ),
-                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _messageController,
+                decoration: InputDecoration(
+                  hintText: 'Message Neurova...',
+                  hintStyle: TextStyle(
+                    color: AppColors.textMuted,
+                    fontFamily: 'Syne',
+                    fontSize: 14,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration.collapsed(
-                        hintText: 'Message Neurova...',
-                        hintStyle: TextStyle(
-                          color: AppColors.textMuted,
-                          fontFamily: 'Syne',
-                          fontSize: 14,
-                        ),
-                      ),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'Syne',
-                        fontSize: 14,
-                      ),
-                      maxLines: 1,
-                      enabled: !state.isSending,
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                ],
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Syne',
+                  fontSize: 14,
+                  height: 1.2,
+                ),
+                maxLines: 1,
+                enabled: !state.isSending,
+                onSubmitted: (_) => _sendMessage(),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-            child: IconButton(
+            const SizedBox(width: 8),
+            _composerIconButton(
+              icon: Icons.attach_file_rounded,
               tooltip: 'Attach file',
-              visualDensity: VisualDensity.compact,
-              icon: Icon(Icons.attach_file, color: AppColors.textSecondary, size: 18),
-              onPressed: state.isSending ? null : _showUploadDialog,
+              enabled: !state.isSending,
+              onPressed: _showUploadDialog,
             ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.purple.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.purple.withValues(alpha: 0.3),
-              ),
-            ),
-            child: IconButton(
-              tooltip: 'Send',
-              icon: Icon(
-                state.isSending ? Icons.hourglass_top : Icons.send,
-                color: AppColors.purple,
-                size: 18,
-              ),
-              visualDensity: VisualDensity.compact,
-              onPressed: state.isSending ? null : _sendMessage,
-            ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            _composerSendButton(state.isSending),
+          ],
+        ),
       ),
     );
   }
@@ -1953,61 +2169,60 @@ class _AIChatScreenState extends State<AIChatScreen> {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.82),
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            // Clean glassmorphism - subtle frosted effect
-            color: isUser
-                ? AppColors.purple.withValues(alpha: 0.14)
-                : Colors.white.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(18),
+            gradient: isUser
+                ? AppGradients.hero
+                : null,
+            color: isUser ? null : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isUser
-                  ? AppColors.purple.withValues(alpha: 0.18)
+                  ? Colors.white.withValues(alpha: 0.12)
                   : Colors.white.withValues(alpha: 0.08),
               width: 0.8,
             ),
-            // Minimal shadow for subtle depth
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Compact header
               Row(
                 children: [
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 30,
+                    height: 30,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       color: isUser
-                          ? AppColors.purple.withValues(alpha: 0.2)
-                          : AppColors.purple.withValues(alpha: 0.16),
+                          ? AppColors.glassBorderLight
+                          : AppColors.purple.withValues(alpha: 0.18),
                     ),
                     child: Icon(
                       isUser ? Icons.person_outline : Icons.auto_awesome,
-                      size: 14,
-                      color: isUser ? AppColors.purple : const Color(0xFFC8B8E8),
+                      size: 15,
+                      color: isUser ? Colors.white : AppColors.lilac,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       isUser ? 'You' : 'Neurova',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Syne',
                         color: Colors.white,
                         fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.1,
                       ),
                     ),
                   ),
@@ -2023,13 +2238,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              // Clean message content
               DefaultTextStyle.merge(
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.88),
+                  color: Colors.white.withValues(alpha: 0.92),
                   fontFamily: 'Syne',
                   fontSize: 14,
-                  height: 1.5,
+                  height: 1.55,
                 ),
                 child: isUser
                     ? Text(message.content)
@@ -2038,18 +2252,18 @@ class _AIChatScreenState extends State<AIChatScreen> {
                         styleSheet: MarkdownStyleSheet(
                           p: TextStyle(
                             fontSize: 14,
-                            color: Colors.white.withValues(alpha: 0.88),
-                            height: 1.5,
+                            color: Colors.white.withValues(alpha: 0.92),
+                            height: 1.55,
                           ),
                           code: TextStyle(
-                            backgroundColor: Colors.white.withValues(alpha: 0.08),
-                            color: const Color(0xFFE0D7FF),
+                            backgroundColor: Colors.white.withValues(alpha: 0.10),
+                            color: AppColors.lilac,
                             fontFamily: 'monospace',
                             fontSize: 12,
                           ),
                           codeblockDecoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.08),
                             ),
@@ -2058,26 +2272,26 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           h1: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFFC8B8E8),
+                            color: AppColors.lilac,
                           ),
                           h2: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFFC8B8E8),
+                            color: AppColors.lilac,
                           ),
                           h3: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFA2ADD0),
+                            color: AppColors.periwinkle,
                           ),
                           blockquote: TextStyle(
                             fontSize: 13,
-                            color: const Color(0xFFA2ADD0).withValues(alpha: 0.8),
+                            color: AppColors.periwinkle.withValues(alpha: 0.8),
                             fontStyle: FontStyle.italic,
                           ),
                           strong: const TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFC8B8E8),
+                            color: AppColors.lilac,
                           ),
                           em: TextStyle(
                             fontStyle: FontStyle.italic,
@@ -2094,6 +2308,61 @@ class _AIChatScreenState extends State<AIChatScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _composerIconButton({
+    required IconData icon,
+    required String tooltip,
+    required bool enabled,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: IconButton(
+        tooltip: tooltip,
+        visualDensity: VisualDensity.compact,
+        icon: Icon(icon, color: AppColors.textSecondary, size: 18),
+        onPressed: enabled ? onPressed : null,
+      ),
+    );
+  }
+
+  Widget _composerSendButton(bool isSending) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFC8B8E8), Color(0xFFA2ADD0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.purple.withValues(alpha: 0.22),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: IconButton(
+        tooltip: 'Send',
+        icon: Icon(
+          isSending ? Icons.hourglass_top_rounded : Icons.send_rounded,
+          color: Colors.white,
+          size: 18,
+        ),
+        visualDensity: VisualDensity.compact,
+        onPressed: isSending ? null : _sendMessage,
       ),
     );
   }
@@ -2129,33 +2398,46 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Future<void> _showStudyPlanDialog() async {
+    final faithState = ref.read(faithModeSettingsProvider);
+    bool draftFaithMode = faithState.enabled;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Generate Study Plan'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CheckboxListTile(
-              title: const Text('Include Prayer Times (Faith Mode)'),
-              value: false,
-              onChanged: (_) {},
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Generate Study Plan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CheckboxListTile(
+                title: const Text('Include Prayer Times (Faith Mode)'),
+                value: draftFaithMode,
+                onChanged: (value) {
+                  setDialogState(() {
+                    draftFaithMode = value ?? false;
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _notifier.generateStudyPlan(
+                  faithMode: draftFaithMode,
+                  city: faithState.city,
+                  country: faithState.country,
+                );
+              },
+              child: const Text('Generate'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _notifier.generateStudyPlan();
-            },
-            child: const Text('Generate'),
-          ),
-        ],
       ),
     );
   }
