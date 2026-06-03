@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -804,7 +805,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             ),
               child: Padding(
               padding: const EdgeInsets.all(9),
-              child: Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+              child: SvgPicture.asset(
+                'lib/features/onboarding/assets/logo.svg',
+                width: 18,
+                height: 18,
+              ),
             ),
           ),
           const SizedBox(width: 12),
