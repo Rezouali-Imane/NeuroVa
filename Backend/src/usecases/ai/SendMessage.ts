@@ -254,7 +254,6 @@ const UPDATE_ONLY_TOOL_NAMES = new Set([
 
 const sleep = async (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Helper to extract text content from Claude or OpenAI response
 const getResponseText = (response: any): string | null => {
   if (aiClient.isClaude) {
     return response.content?.[0]?.text ?? null;
@@ -262,7 +261,6 @@ const getResponseText = (response: any): string | null => {
   return response.choices?.[0]?.message?.content ?? null;
 };
 
-// Helper to extract tool calls from Claude or OpenAI response
 const getToolCalls = (response: any): any[] => {
   if (aiClient.isClaude) {
     return response.content?.filter((block: any) => block.type === 'tool_use') ?? [];
@@ -365,7 +363,6 @@ const createCompletion = async (params: {
 
       try {
         if (isClaude) {
-          // Claude API call
           const claudeMessages = (messages as MessageParam[]).filter(
             (m) => m.role === 'user' || m.role === 'assistant'
           );
@@ -380,7 +377,6 @@ const createCompletion = async (params: {
             );
           }
 
-          // Claude tools format
           const claudeTools = tools?.map((tool: any) => ({
             name: tool.function?.name || '',
             description: tool.function?.description || '',
@@ -396,7 +392,6 @@ const createCompletion = async (params: {
             }) as unknown as Promise<any>
           );
         } else {
-          // OpenAI/Gemini/Ollama/OpenRouter API call
           if (directchat || !tools || tools.length === 0) {
             return await runWithTimeout(
               aiClient.openai.chat.completions.create({
@@ -423,7 +418,6 @@ const createCompletion = async (params: {
         const isRateLimited = status === 429;
         const hasRetryLeft = attempt < maxRetries;
 
-        // Log Claude-specific errors
         if (isClaude) {
           console.error(`[Claude API Error - Attempt ${attempt + 1}/${maxRetries + 1}]:`, {
             status: error?.status,
@@ -489,7 +483,6 @@ const buildProviderFallbackReply = (content: string, language: string, error?: E
   const isOllama = AI_PROVIDER === 'ollama';
   const isClaude = AI_PROVIDER === 'claude';
 
-  // Log error for debugging
   if (error) {
     console.error(`[AI Error - ${AI_PROVIDER}]`, error.message);
   }
@@ -774,6 +767,61 @@ const createSmartTaskPlanFromPrompt = async (userid: string, content: string) =>
   return {
     reply: `Perfect, I created **${listName}** with **${taskCount}** steps and spread them out until **${endDate.toDateString()}**.`,
     actions: ['create_task_list', 'create_task'],
+    createdTasks,
+  };
+};
+
+const splitTaskTitles = (content: string): string[] => {
+  const cleaned = content
+    .replace(/^.*?(?:add|create)\s+(?:these\s+)?tasks?\s*(?:to|into|in)?\s*(?:my\s+)?(?:tasks?|task\s*page)\s*:*/i, '')
+    .replace(/^.*?(?:tasks?|task\s*page)\s*:*/i, '')
+    .trim();
+
+  if (!cleaned) return [];
+
+  const parts = cleaned
+    .split(/(?:\s*,\s*|\s*;\s*|\s+and\s+|\s+then\s+|\n+)/i)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => part.replace(/^[\-•\d.)\s]+/, '').trim())
+    .filter(Boolean);
+
+  return parts;
+};
+
+const createDirectTasksFromPrompt = async (userid: string, content: string) => {
+  const text = content.toLowerCase();
+  const looksLikePluralTaskRequest =
+    /(add|create)\s+(these\s+)?tasks?\b/.test(text) &&
+    /\bmy\s+tasks?\b|\btask\s+page\b|\btasks\s*:/i.test(content) &&
+    !/task\s*list|tasklist/i.test(content);
+
+  if (!looksLikePluralTaskRequest) return null;
+
+  const titles = splitTaskTitles(content)
+    .map((title) => title.replace(/^add\s+/i, '').trim())
+    .filter((title) => title.length > 2)
+    .slice(0, 12);
+
+  if (titles.length === 0) return null;
+
+  const listid = await ensureTaskListId(userid);
+  const createdTasks = [];
+
+  for (const title of titles) {
+    const task = await CreateTask({
+      userid,
+      listid,
+      title,
+      category: TaskCategory.PERSONAL,
+      priority: 1,
+    });
+    createdTasks.push(task);
+  }
+
+  return {
+    reply: `Done, I added **${createdTasks.length}** tasks to your task page.`,
+    actions: ['create_task'],
     createdTasks,
   };
 };
@@ -1199,6 +1247,20 @@ export const SendMessage = async (data: SendMessageDTO) => {
   ];
 
   if (data.directchat && !updateIntent) {
+    const directTaskImport = await createDirectTasksFromPrompt(data.userid, data.content);
+    if (directTaskImport) {
+      await ChatHistoryRepository.save(data.userid, 'USER', data.content);
+      await ChatHistoryRepository.save(data.userid, 'ASSISTANT', directTaskImport.reply);
+      ExtractAndSaveMemory(data.userid, data.content, memory).catch(() => {});
+
+      return {
+        reply: directTaskImport.reply,
+        language,
+        usedDocuments: ragContext.length > 0,
+        actions: directTaskImport.actions,
+      };
+    }
+
     const smartPlan = await createSmartTaskPlanFromPrompt(data.userid, data.content);
     if (smartPlan) {
       await ChatHistoryRepository.save(data.userid, 'USER', data.content);
@@ -1230,7 +1292,6 @@ export const SendMessage = async (data: SendMessageDTO) => {
       aiReply = content ?? aiReply;
     } catch (error1: any) {
       try {
-        // Compact retry path for local models: minimal context reduces intermittent Ollama failures.
         const compactRetry = await createCompletion({
           messages: [
             {
@@ -1266,6 +1327,20 @@ export const SendMessage = async (data: SendMessageDTO) => {
   let lastError: any = null;
 
   try {
+    const directTaskImport = await createDirectTasksFromPrompt(data.userid, data.content);
+    if (directTaskImport) {
+      await ChatHistoryRepository.save(data.userid, 'USER', data.content);
+      await ChatHistoryRepository.save(data.userid, 'ASSISTANT', directTaskImport.reply);
+      ExtractAndSaveMemory(data.userid, data.content, memory).catch(() => {});
+
+      return {
+        reply: directTaskImport.reply,
+        language,
+        usedDocuments: ragContext.length > 0,
+        actions: directTaskImport.actions,
+      };
+    }
+
     const response = await createCompletion({
       messages,
       tools: allowedTools,
@@ -1279,7 +1354,6 @@ export const SendMessage = async (data: SendMessageDTO) => {
     const toolCallsToExecute = toolCalls.length > 0 ? toolCalls : inlineToolCalls;
 
     if (toolCallsToExecute.length > 0) {
-      // Add assistant message to conversation
       messages.push({
         role: 'assistant',
         content: aiReply,

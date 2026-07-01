@@ -368,7 +368,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: _nc.textPrimary,
-                                fontSize: 22,
+                                fontSize: 18,
                                 fontFamily: 'Syne',
                                 fontWeight: FontWeight.w800,
                                 height: 1.15,
@@ -873,10 +873,8 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
           children: List.generate(items.length, (index) {
             final task = items[index];
 
-            // label: show time if available
             final label = '${task.createdat.hour.toString().padLeft(2, '0')}:${task.createdat.minute.toString().padLeft(2, '0')}';
 
-            // map status to visuals
             final status = task.status;
             late final List<Color> colors;
             late final Color textColor;
@@ -892,7 +890,6 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
               textColor = Colors.white;
               tagColor = _nc.amethystSurface.withValues(alpha: 0.85);
             } else {
-              // PENDING or others
               colors = [_nc.lemonSurface, _nc.caramelSurface.withValues(alpha: 0.9)];
               textColor = Colors.black.withValues(alpha: 0.8);
               tagColor = _nc.caramelSurface.withValues(alpha: 0.8);
@@ -964,7 +961,6 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
         final activeState = ref.watch(activeFocusProvider);
         final sessions = sessionState.sessions;
 
-        // Build a map of minutes per day for the past 35 days
         final now = DateTime.now();
         final Map<int, int> minutesByDayIndex = {};
         for (final s in sessions) {
@@ -1513,7 +1509,6 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                               'lib/features/onboarding/assets/logo.svg',
                               width: 16,
                               height: 16,
-                              // Force white icon for good contrast over the gradient header
                               colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                               semanticsLabel: 'Neurova logo',
                             ),
@@ -1573,7 +1568,7 @@ class _Dashboard1State extends ConsumerState<Dashboard1> {
                                             builder: (context, ref, _) {
                                               final gamif = ref.watch(gamificationNotifierProvider);
                                               final xp = gamif.totalXp;
-                                              final level = (xp / 500).floor() + 1; // 500 XP per level
+                                              final level = (xp / 500).floor() + 1;
                                               return Text(
                                                 'Level $level · $xp XP',
                                                 style: AppTypography.caption.copyWith(color: _nc.textSecondary.withValues(alpha: 0.7)),

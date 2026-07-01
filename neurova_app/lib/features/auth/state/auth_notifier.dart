@@ -26,7 +26,6 @@ final localStorageServiceProvider = Provider<LocalStorageService>((Ref ref) {
   return LocalStorageService();
 });
 
-// Lazy initialize GoogleSignIn to avoid crashes during app startup
 final GoogleSignIn _googleSignIn = GoogleSignIn(
   serverClientId: const String.fromEnvironment(
     'GOOGLE_CLIENT_ID',
@@ -52,23 +51,21 @@ final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((
   );
 });
 
-// AI Service Providers
 final aiServiceProvider = Provider<AIService>((Ref ref) {
   final dio = ref.watch(dioProvider);
   final localStorage = ref.watch(localStorageServiceProvider);
   return AIService(dio, localStorage);
 });
 
-final aiNotifierProvider = StateNotifierProvider.family<AINotifier, AIState, String>(
-  (ref, userId) {
-    final aiService = ref.watch(aiServiceProvider);
-    return AINotifier(aiService, userId);
-  },
-);
+final aiNotifierProvider =
+    StateNotifierProvider.family<AINotifier, AIState, String>((ref, userId) {
+      final aiService = ref.watch(aiServiceProvider);
+      return AINotifier(aiService, userId);
+    });
 
 class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier(this._authService, this._localStorageService)
-      : super(const AuthState.initial());
+    : super(const AuthState.initial());
 
   final AuthService _authService;
   final LocalStorageService _localStorageService;
@@ -85,11 +82,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
         token: token,
         isverified: isverified,
+        userId: token != null ? _extractUserIdFromToken(token) : null,
         clearError: true,
       );
 
-      // Restore user profile data so userId/username/name are available
-      // for notes, tasks, and dashboard without requiring a re-login
       if (token != null) {
         await _fetchAndSaveProfile();
       }
@@ -110,7 +106,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final isverified = _extractIsVerifiedFromToken(token);
       final userId = _extractUserIdFromToken(token);
 
-      // Save userId for later use
       if (userId != null) {
         await _localStorageService.saveUserId(userId);
       }
@@ -119,6 +114,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
         token: token,
         isverified: isverified,
+        userId: userId,
         clearError: true,
       );
       await _fetchAndSaveProfile();
@@ -163,9 +159,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final isverified = token != null
           ? _extractIsVerifiedFromToken(token)
           : false;
+      final userId = token != null ? _extractUserIdFromToken(token) : null;
 
       if (token != null) {
-        final userId = _extractUserIdFromToken(token);
         if (userId != null) await _localStorageService.saveUserId(userId);
       }
 
@@ -173,6 +169,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
         token: token,
         isverified: isverified,
+        userId: userId,
         clearError: true,
       );
       await _fetchAndSaveProfile();
@@ -210,6 +207,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(
       token: token,
       isverified: _extractIsVerifiedFromToken(token),
+      userId: _extractUserIdFromToken(token),
       clearError: true,
     );
   }
@@ -311,7 +309,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       'GITHUB_CLIENT_ID',
       defaultValue: 'Ov23lin97M4AuMTF0vgo',
     );
-      final callbackUrl = '${AppConstants.apiBaseUrl}/api/auth/github/callback';
+    final callbackUrl = '${AppConstants.apiBaseUrl}/api/auth/github/callback';
     final url = Uri.https('github.com', '/login/oauth/authorize', {
       'client_id': githubClientId,
       'redirect_uri': callbackUrl,
@@ -391,10 +389,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (username != null) await _localStorageService.saveUsername(username);
       if (name != null) await _localStorageService.saveName(name);
       if (userid != null) await _localStorageService.saveUserId(userid);
-    } catch (e) {
-      // Profile fetch failed (e.g. backend unreachable, expired token).
-      // userId/username/name from SharedPreferences will be used as fallback.
-    }
+    } catch (e) {}
   }
 
   String _readDioError(DioException error) {
@@ -456,6 +451,4 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return null;
     }
   }
-
-
 }

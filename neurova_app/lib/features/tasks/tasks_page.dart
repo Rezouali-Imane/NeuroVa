@@ -41,7 +41,12 @@ class _RingPainter extends CustomPainter {
   final Color backgroundColor;
   final double strokeWidth;
 
-  _RingPainter({required this.progress, required this.color, required this.backgroundColor, this.strokeWidth = 6});
+  _RingPainter({
+    required this.progress,
+    required this.color,
+    required this.backgroundColor,
+    this.strokeWidth = 6,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -56,7 +61,9 @@ class _RingPainter extends CustomPainter {
     canvas.drawCircle(center, radius, bgPaint);
 
     final progressPaint = Paint()
-      ..shader = LinearGradient(colors: [color.withValues(alpha: 1.0), color.withValues(alpha: 0.8)]).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..shader = LinearGradient(
+        colors: [color.withValues(alpha: 1.0), color.withValues(alpha: 0.8)],
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
@@ -82,18 +89,14 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   final TextEditingController taskController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
 
-  // Private UI state (underscored names are used throughout the file).
   String _activeView = 'tasks';
   DateTime _selectedDate = DateTime.now();
   DateTime _visibleMonth = DateTime.now();
   String _calendarScope = 'Month View';
   TimeOfDay _selectedTime = const TimeOfDay(hour: 12, minute: 0);
 
-  // Additional controllers used by the sheet
-  final TextEditingController _projectController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
-  // Aliases so existing code can use underscored names without changing UI code.
   TextEditingController get _searchController => searchController;
   TextEditingController get _titleController => taskController;
   int get _selectedTab => selectedTab;
@@ -118,7 +121,6 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   void dispose() {
     taskController.dispose();
     searchController.dispose();
-    _projectController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -135,26 +137,40 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
     List<Task> filteredTasks = tasksState.tasks;
     if (selectedTab == 1) {
-      filteredTasks = tasksState.tasks.where((t) => t.status == 'PENDING').toList();
+      filteredTasks = tasksState.tasks
+          .where((t) => t.status == 'PENDING')
+          .toList();
     } else if (selectedTab == 2) {
-      filteredTasks = tasksState.tasks.where((t) => t.status == 'IN_PROGRESS').toList();
+      filteredTasks = tasksState.tasks
+          .where((t) => t.status == 'IN_PROGRESS')
+          .toList();
     } else if (selectedTab == 3) {
-      filteredTasks = tasksState.tasks.where((t) => t.status == 'COMPLETED').toList();
+      filteredTasks = tasksState.tasks
+          .where((t) => t.status == 'COMPLETED')
+          .toList();
     }
 
     int totalTasks = tasksState.tasks.length;
-    int completedTasks = tasksState.tasks.where((t) => t.status == 'COMPLETED').length;
-    int inProgress = tasksState.tasks.where((t) => t.status == 'IN_PROGRESS').length;
+    int completedTasks = tasksState.tasks
+        .where((t) => t.status == 'COMPLETED')
+        .length;
+    int inProgress = tasksState.tasks
+        .where((t) => t.status == 'IN_PROGRESS')
+        .length;
     int pending = tasksState.tasks.where((t) => t.status == 'PENDING').length;
-    double progressPercent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+    double progressPercent = totalTasks > 0
+        ? (completedTasks / totalTasks) * 100
+        : 0;
 
-    // Local aliases expected by the UI code below
     final allTasks = tasksState.tasks;
     final state = tasksState;
     final int todoCount = pending;
     final int inProgressCount = inProgress;
     final int doneCount = completedTasks;
-    final visibleTasks = _applyFilters(filteredTasks, _searchController.text.trim().toLowerCase());
+    final visibleTasks = _applyFilters(
+      filteredTasks,
+      _searchController.text.trim().toLowerCase(),
+    );
     final int progressPercentInt = progressPercent.round();
 
     return Scaffold(
@@ -162,7 +178,6 @@ class _TasksPageState extends ConsumerState<TasksPage> {
       body: ProfileViewShell(
         child: Stack(
           children: [
-            // Ambient glow effects
             Positioned(
               left: -140,
               top: -120,
@@ -172,7 +187,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.purple.withValues(alpha: 0.08), Colors.transparent],
+                    colors: [
+                      AppColors.purple.withValues(alpha: 0.08),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
@@ -186,7 +204,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.periwinkle.withValues(alpha: 0.07), Colors.transparent],
+                    colors: [
+                      AppColors.periwinkle.withValues(alpha: 0.07),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
@@ -198,7 +219,12 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                   _buildHeader(allTasks, totalXp),
                   const SizedBox(height: 16),
                   if (_activeView == 'tasks') ...[
-                    _buildProgressCard(progressPercentInt, todoCount, inProgressCount, doneCount),
+                    _buildProgressCard(
+                      progressPercentInt,
+                      todoCount,
+                      inProgressCount,
+                      doneCount,
+                    ),
                     const SizedBox(height: 16),
                     if (prayerBlocks.isNotEmpty) ...[
                       _buildPrayerBlocksSection(prayerBlocks),
@@ -323,23 +349,25 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         const SizedBox(height: 14),
         Align(
           alignment: Alignment.centerLeft,
-          child: SizedBox(
-            width: 236,
-            child: _buildViewTabs(width: 236),
-          ),
+          child: SizedBox(width: 236, child: _buildViewTabs(width: 236)),
         ),
       ],
     );
   }
 
   Widget _buildCalendarView(List<Task> tasks) {
-    final selectedDayTasks = _applyFilters(_tasksForDay(_selectedDate, tasks), _searchController.text.trim().toLowerCase());
+    final selectedDayTasks = _applyFilters(
+      _tasksForDay(_selectedDate, tasks),
+      _searchController.text.trim().toLowerCase(),
+    );
     final faithModeState = ref.watch(faithModeSettingsProvider);
     final prayerBlocks = buildPrayerScheduleBlocks(
       faithModeState.enabled ? faithModeState.prayerTimes : null,
       referenceDate: _selectedDate,
     );
-    final weekStart = _selectedDate.subtract(Duration(days: _selectedDate.weekday % 7));
+    final weekStart = _selectedDate.subtract(
+      Duration(days: _selectedDate.weekday % 7),
+    );
     final days = List.generate(7, (index) {
       return DateTime(weekStart.year, weekStart.month, weekStart.day + index);
     });
@@ -368,19 +396,43 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             ),
             _monthNavButton(Icons.chevron_left, () {
               setState(() {
-                final nextVisibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month - 1, 1);
-                final maxDay = DateTime(nextVisibleMonth.year, nextVisibleMonth.month + 1, 0).day;
+                final nextVisibleMonth = DateTime(
+                  _visibleMonth.year,
+                  _visibleMonth.month - 1,
+                  1,
+                );
+                final maxDay = DateTime(
+                  nextVisibleMonth.year,
+                  nextVisibleMonth.month + 1,
+                  0,
+                ).day;
                 _visibleMonth = nextVisibleMonth;
-                _selectedDate = DateTime(nextVisibleMonth.year, nextVisibleMonth.month, _selectedDate.day.clamp(1, maxDay));
+                _selectedDate = DateTime(
+                  nextVisibleMonth.year,
+                  nextVisibleMonth.month,
+                  _selectedDate.day.clamp(1, maxDay),
+                );
               });
             }),
             const SizedBox(width: 8),
             _monthNavButton(Icons.chevron_right, () {
               setState(() {
-                final nextVisibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month + 1, 1);
-                final maxDay = DateTime(nextVisibleMonth.year, nextVisibleMonth.month + 1, 0).day;
+                final nextVisibleMonth = DateTime(
+                  _visibleMonth.year,
+                  _visibleMonth.month + 1,
+                  1,
+                );
+                final maxDay = DateTime(
+                  nextVisibleMonth.year,
+                  nextVisibleMonth.month + 1,
+                  0,
+                ).day;
                 _visibleMonth = nextVisibleMonth;
-                _selectedDate = DateTime(nextVisibleMonth.year, nextVisibleMonth.month, _selectedDate.day.clamp(1, maxDay));
+                _selectedDate = DateTime(
+                  nextVisibleMonth.year,
+                  nextVisibleMonth.month,
+                  _selectedDate.day.clamp(1, maxDay),
+                );
               });
             }),
             const SizedBox(width: 12),
@@ -389,7 +441,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 return GestureDetector(
                   onTap: () => _openCalendarScopeMenu(anchorContext),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 9,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(color: Colors.white),
@@ -397,7 +452,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.calendar_month_outlined, size: 15, color: Color(0xFFB284BE)),
+                        const Icon(
+                          Icons.calendar_month_outlined,
+                          size: 15,
+                          color: Color(0xFFB284BE),
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           _calendarScope.replaceAll(' View', ''),
@@ -409,7 +468,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        const Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.white70),
+                        const Icon(
+                          Icons.keyboard_arrow_down,
+                          size: 18,
+                          color: Colors.white70,
+                        ),
                       ],
                     ),
                   ),
@@ -470,10 +533,14 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             child: Container(
               width: compact ? 72 : 68,
               decoration: BoxDecoration(
-                color: selected ? const Color(0x304A365C) : const Color(0xFF14101F),
+                color: selected
+                    ? const Color(0x304A365C)
+                    : const Color(0xFF14101F),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: selected ? const Color(0xFF9B7CB5) : const Color(0xFF2A2440),
+                  color: selected
+                      ? const Color(0xFF9B7CB5)
+                      : const Color(0xFF2A2440),
                   width: 1.2,
                 ),
               ),
@@ -510,7 +577,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
   Widget _buildMonthGrid(List<Task> tasks) {
     final firstOfMonth = DateTime(_visibleMonth.year, _visibleMonth.month, 1);
-    final daysInMonth = DateTime(_visibleMonth.year, _visibleMonth.month + 1, 0).day;
+    final daysInMonth = DateTime(
+      _visibleMonth.year,
+      _visibleMonth.month + 1,
+      0,
+    ).day;
     final leading = firstOfMonth.weekday % 7;
     final totalCells = ((leading + daysInMonth) / 7).ceil() * 7;
 
@@ -552,7 +623,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 return const SizedBox.shrink();
               }
 
-              final date = DateTime(_visibleMonth.year, _visibleMonth.month, dayNum);
+              final date = DateTime(
+                _visibleMonth.year,
+                _visibleMonth.month,
+                dayNum,
+              );
               final selected = _sameDay(date, _selectedDate);
               final dotCount = _tasksForDay(date, tasks).take(2).length;
 
@@ -560,9 +635,13 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 onTap: () => setState(() => _selectedDate = date),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: selected ? const Color(0x304A365C) : Colors.transparent,
+                    color: selected
+                        ? const Color(0x304A365C)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
-                    border: selected ? Border.all(color: const Color(0xFF9B7CB5)) : null,
+                    border: selected
+                        ? Border.all(color: const Color(0xFF9B7CB5))
+                        : null,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -570,7 +649,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                       Text(
                         '$dayNum',
                         style: TextStyle(
-                          color: selected ? const Color(0xFFDEB8E8) : Colors.white.withValues(alpha: 0.9),
+                          color: selected
+                              ? const Color(0xFFDEB8E8)
+                              : Colors.white.withValues(alpha: 0.9),
                           fontFamily: 'Syne',
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
@@ -581,12 +662,18 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(dotCount, (i) {
-                            const colors = [Color(0xFFF4B968), Color(0xFFDEB8E8)];
+                            const colors = [
+                              Color(0xFFF4B968),
+                              Color(0xFFDEB8E8),
+                            ];
                             return Container(
                               width: 5,
                               height: 5,
                               margin: const EdgeInsets.symmetric(horizontal: 2),
-                              decoration: BoxDecoration(color: colors[i], shape: BoxShape.circle),
+                              decoration: BoxDecoration(
+                                color: colors[i],
+                                shape: BoxShape.circle,
+                              ),
                             );
                           }),
                         ),
@@ -604,7 +691,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
   Widget _buildDayTimeline(List<Task> selectedDayTasks) {
     if (selectedDayTasks.isNotEmpty) {
-      return Column(children: selectedDayTasks.map(_buildCalendarTaskCard).toList());
+      return Column(
+        children: selectedDayTasks.map(_buildCalendarTaskCard).toList(),
+      );
     }
 
     return Container(
@@ -657,7 +746,15 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   }
 
   String _weekdayName(int weekday) {
-    const names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const names = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
     return names[weekday - 1];
   }
 
@@ -685,7 +782,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           enabled: false,
           child: Row(
             children: [
-              Icon(Icons.access_time, size: 16, color: Colors.white.withValues(alpha: 0.72)),
+              Icon(
+                Icons.access_time,
+                size: 16,
+                color: Colors.white.withValues(alpha: 0.72),
+              ),
               const SizedBox(width: 10),
               const Text(
                 'Today',
@@ -722,7 +823,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             child: Text(
               scope,
               style: TextStyle(
-                color: selected ? const Color(0xFFC59ACE) : Colors.white.withValues(alpha: 0.8),
+                color: selected
+                    ? const Color(0xFFC59ACE)
+                    : Colors.white.withValues(alpha: 0.8),
                 fontFamily: 'Syne',
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
@@ -778,13 +881,17 @@ class _TasksPageState extends ConsumerState<TasksPage> {
               Icon(
                 icon,
                 size: 14,
-                color: selected ? const Color(0xFFBE9FCC) : Colors.white.withValues(alpha: 0.35),
+                color: selected
+                    ? const Color(0xFFBE9FCC)
+                    : Colors.white.withValues(alpha: 0.35),
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? const Color(0xFFC8A8D2) : Colors.white.withValues(alpha: 0.45),
+                  color: selected
+                      ? const Color(0xFFC8A8D2)
+                      : Colors.white.withValues(alpha: 0.45),
                   fontFamily: 'Syne',
                   fontSize: 13,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
@@ -797,7 +904,12 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     );
   }
 
-  Widget _buildProgressCard(int progressPercent, int todo, int inProgress, int done) {
+  Widget _buildProgressCard(
+    int progressPercent,
+    int todo,
+    int inProgress,
+    int done,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       decoration: BoxDecoration(
@@ -861,7 +973,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                   children: [
                     _progressStat('$todo', 'To-do', const Color(0xFF7D8BA8)),
                     const SizedBox(width: 18),
-                    _progressStat('$inProgress', 'In Progress', const Color(0xFFF8B878)),
+                    _progressStat(
+                      '$inProgress',
+                      'In Progress',
+                      const Color(0xFFF8B878),
+                    ),
                     const SizedBox(width: 18),
                     _progressStat('$done', 'Done', const Color(0xFF4CAF50)),
                   ],
@@ -884,10 +1000,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             Container(
               width: 6,
               height: 6,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 6),
             Text(
@@ -917,7 +1030,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
   List<Task> _applyFilters(List<Task> tasks, String q) {
     return tasks.where((task) {
-      if (_selectedTab == 1 && !(task.status == 'PENDING' || task.status == 'OVERDUE')) {
+      if (_selectedTab == 1 &&
+          !(task.status == 'PENDING' || task.status == 'OVERDUE')) {
         return false;
       }
       if (_selectedTab == 2 && task.status != 'IN_PROGRESS') {
@@ -977,7 +1091,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
       ),
       child: Row(
         children: [
-          Icon(Icons.search, size: 20, color: Colors.white.withValues(alpha: 0.5)),
+          Icon(
+            Icons.search,
+            size: 20,
+            color: Colors.white.withValues(alpha: 0.5),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -1009,7 +1127,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 _searchController.clear();
                 setState(() {});
               },
-              child: Icon(Icons.close, size: 18, color: Colors.white.withValues(alpha: 0.4)),
+              child: Icon(
+                Icons.close,
+                size: 18,
+                color: Colors.white.withValues(alpha: 0.4),
+              ),
             ),
         ],
       ),
@@ -1041,13 +1163,17 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 color: selected ? const Color(0x2E6B5A87) : Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: selected ? const Color(0xFF8B6BA0) : const Color(0xFF3A3850),
+                  color: selected
+                      ? const Color(0xFF8B6BA0)
+                      : const Color(0xFF3A3850),
                   width: 1.2,
                 ),
                 boxShadow: selected
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF9B6BA8).withValues(alpha: 0.12),
+                          color: const Color(
+                            0xFF9B6BA8,
+                          ).withValues(alpha: 0.12),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -1061,7 +1187,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                     tabs[index],
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: selected ? const Color(0xFFD4B8E0) : Colors.white.withValues(alpha: 0.48),
+                      color: selected
+                          ? const Color(0xFFD4B8E0)
+                          : Colors.white.withValues(alpha: 0.48),
                       fontFamily: 'Syne',
                       fontSize: 14,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
@@ -1075,12 +1203,16 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: selected ? Colors.white.withValues(alpha: 0.08) : const Color(0xFF3A3850),
+                      color: selected
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : const Color(0xFF3A3850),
                     ),
                     child: Text(
                       '${counts[index]}',
                       style: TextStyle(
-                        color: selected ? const Color(0xFFD4B8E0) : Colors.white.withValues(alpha: 0.42),
+                        color: selected
+                            ? const Color(0xFFD4B8E0)
+                            : Colors.white.withValues(alpha: 0.42),
                         fontFamily: 'Syne',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -1269,10 +1401,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         decoration: BoxDecoration(
           color: const Color(0xFF1A1628),
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: const Color(0xFF2A2440),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFF2A2440), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.2),
@@ -1290,7 +1419,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 Container(
                   width: 6,
                   height: 6,
-                  decoration: BoxDecoration(color: statusInfo.color, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: statusInfo.color,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -1309,23 +1441,33 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 GestureDetector(
                   onTap: () {
                     final nextStatus = _nextStatus(task.status);
-                    ref.read(tasksNotifierProvider.notifier).updateTaskStatus(task.taskid, nextStatus);
+                    ref
+                        .read(tasksNotifierProvider.notifier)
+                        .updateTaskStatus(task.taskid, nextStatus);
                   },
                   child: Container(
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: task.status == 'COMPLETED' ? const Color(0x1A4CAF50) : Colors.transparent,
+                      color: task.status == 'COMPLETED'
+                          ? const Color(0x1A4CAF50)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(99),
                       border: Border.all(
-                        color: task.status == 'COMPLETED' ? const Color(0xFF4CAF50) : const Color(0xFF3A3850),
+                        color: task.status == 'COMPLETED'
+                            ? const Color(0xFF4CAF50)
+                            : const Color(0xFF3A3850),
                         width: 1.2,
                       ),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
-                      task.status == 'COMPLETED' ? Icons.check : Icons.circle_outlined,
-                      color: task.status == 'COMPLETED' ? const Color(0xFF4CAF50) : Colors.white.withValues(alpha: 0.25),
+                      task.status == 'COMPLETED'
+                          ? Icons.check
+                          : Icons.circle_outlined,
+                      color: task.status == 'COMPLETED'
+                          ? const Color(0xFF4CAF50)
+                          : Colors.white.withValues(alpha: 0.25),
                       size: 14,
                     ),
                   ),
@@ -1338,18 +1480,26 @@ class _TasksPageState extends ConsumerState<TasksPage> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: task.status == 'COMPLETED' ? Colors.white.withValues(alpha: 0.48) : Colors.white,
+                color: task.status == 'COMPLETED'
+                    ? Colors.white.withValues(alpha: 0.48)
+                    : Colors.white,
                 fontFamily: 'Syne',
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 height: 1.2,
-                decoration: task.status == 'COMPLETED' ? TextDecoration.lineThrough : null,
+                decoration: task.status == 'COMPLETED'
+                    ? TextDecoration.lineThrough
+                    : null,
               ),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.calendar_today, size: 13, color: Colors.white.withValues(alpha: 0.3)),
+                Icon(
+                  Icons.calendar_today,
+                  size: 13,
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
                 const SizedBox(width: 6),
                 Text(
                   _deadlineLabel(task.deadline),
@@ -1362,7 +1512,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: statusInfo.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(99),
@@ -1385,7 +1538,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             ),
           ],
         ),
-    )
+      ),
     );
   }
 
@@ -1472,7 +1625,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            task.description?.trim().isNotEmpty == true ? task.description!.trim() : task.category,
+                            task.description?.trim().isNotEmpty == true
+                                ? task.description!.trim()
+                                : task.category,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -1508,14 +1663,15 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     return '${format(dt)} - ${format(end)}';
   }
 
-  
-
   _TaskStatusConfig _statusConfig(String status) {
     switch (status) {
       case 'COMPLETED':
         return const _TaskStatusConfig(label: 'Done', color: AppColors.success);
       case 'IN_PROGRESS':
-        return const _TaskStatusConfig(label: 'In Progress', color: AppColors.amber);
+        return const _TaskStatusConfig(
+          label: 'In Progress',
+          color: AppColors.amber,
+        );
       default:
         return const _TaskStatusConfig(label: 'To-do', color: AppColors.purple);
     }
@@ -1545,15 +1701,14 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         return false;
       }
       return _sameDay(deadline, date);
-    }).toList()
-      ..sort((a, b) {
-        final aDeadline = a.deadline;
-        final bDeadline = b.deadline;
-        if (aDeadline == null && bDeadline == null) return 0;
-        if (aDeadline == null) return 1;
-        if (bDeadline == null) return -1;
-        return aDeadline.compareTo(bDeadline);
-      });
+    }).toList()..sort((a, b) {
+      final aDeadline = a.deadline;
+      final bDeadline = b.deadline;
+      if (aDeadline == null && bDeadline == null) return 0;
+      if (aDeadline == null) return 1;
+      if (bDeadline == null) return -1;
+      return aDeadline.compareTo(bDeadline);
+    });
   }
 
   bool _sameDay(DateTime a, DateTime b) {
@@ -1606,10 +1761,17 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                   ),
                   const SizedBox(height: 14),
                   ListTile(
-                    leading: const Icon(Icons.edit_outlined, color: Color(0xFFC6A6DC)),
+                    leading: const Icon(
+                      Icons.edit_outlined,
+                      color: Color(0xFFC6A6DC),
+                    ),
                     title: const Text(
                       'Edit task',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Syne', fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Syne',
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     onTap: () {
                       Navigator.pop(sheetContext);
@@ -1617,10 +1779,17 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.delete_outline, color: Color(0xFFFF7A7A)),
+                    leading: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xFFFF7A7A),
+                    ),
                     title: const Text(
                       'Delete task',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Syne', fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Syne',
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     onTap: () {
                       Navigator.pop(sheetContext);
@@ -1643,10 +1812,16 @@ class _TasksPageState extends ConsumerState<TasksPage> {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: const Color(0xFF181526),
-          title: const Text('Delete task?', style: TextStyle(color: Colors.white, fontFamily: 'Syne')),
+          title: const Text(
+            'Delete task?',
+            style: TextStyle(color: Colors.white, fontFamily: 'Syne'),
+          ),
           content: Text(
             'This will permanently remove "${task.title}".',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.72), fontFamily: 'Syne'),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.72),
+              fontFamily: 'Syne',
+            ),
           ),
           actions: [
             TextButton(
@@ -1655,7 +1830,10 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Delete', style: TextStyle(color: Color(0xFFFF7A7A))),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Color(0xFFFF7A7A)),
+              ),
             ),
           ],
         );
@@ -1677,7 +1855,6 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
   void _openCreateSheet([Task? task]) {
     _titleController.text = task?.title ?? '';
-    _projectController.text = '';
     _descriptionController.text = task?.description ?? '';
     _selectedPriority = (task?.priority ?? 1).toString();
     _selectedCategory = task?.category ?? 'OTHER';
@@ -1685,7 +1862,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         ? TimeOfDay.fromDateTime(task!.deadline!)
         : const TimeOfDay(hour: 12, minute: 0);
     DateTime? selectedDeadline = task?.deadline != null
-        ? DateTime(task!.deadline!.year, task.deadline!.month, task.deadline!.day)
+        ? DateTime(
+            task!.deadline!.year,
+            task.deadline!.month,
+            task.deadline!.day,
+          )
         : _selectedDate;
     final isEditing = task != null;
 
@@ -1748,7 +1929,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                                   shape: BoxShape.circle,
                                   color: Colors.white.withValues(alpha: 0.06),
                                 ),
-                                child: const Icon(Icons.close, color: Colors.white70, size: 18),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white70,
+                                  size: 18,
+                                ),
                               ),
                             ),
                           ],
@@ -1768,19 +1953,6 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                         _sheetInput(_titleController, 'What needs to be done?'),
                         const SizedBox(height: 14),
                         const Text(
-                          'PROJECT',
-                          style: TextStyle(
-                            color: Color(0x55FFFFFF),
-                            fontFamily: 'Syne',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _sheetInput(_projectController, 'Project name...'),
-                        const SizedBox(height: 14),
-                        const Text(
                           'DESCRIPTION',
                           style: TextStyle(
                             color: Color(0x55FFFFFF),
@@ -1791,7 +1963,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        _sheetInput(_descriptionController, 'Add notes or details...', maxLines: 3),
+                        _sheetInput(
+                          _descriptionController,
+                          'Add notes or details...',
+                          maxLines: 3,
+                        ),
                         const SizedBox(height: 16),
                         const Text(
                           'PRIORITY',
@@ -1829,8 +2005,16 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            _categoryChip('ACADEMIC', setModalState, emoji: '📚'),
-                            _categoryChip('PERSONAL', setModalState, emoji: '🌱'),
+                            _categoryChip(
+                              'ACADEMIC',
+                              setModalState,
+                              emoji: '📚',
+                            ),
+                            _categoryChip(
+                              'PERSONAL',
+                              setModalState,
+                              emoji: '🌱',
+                            ),
                             _categoryChip('WORK', setModalState, emoji: '💼'),
                             _categoryChip('HEALTH', setModalState, emoji: '🏃'),
                             _categoryChip('OTHER', setModalState, emoji: '📌'),
@@ -1870,7 +2054,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                                   );
                                   if (picked == null) return;
                                   setModalState(() {
-                                    selectedDeadline = DateTime(picked.year, picked.month, picked.day);
+                                    selectedDeadline = DateTime(
+                                      picked.year,
+                                      picked.month,
+                                      picked.day,
+                                    );
                                   });
                                 },
                               ),
@@ -1894,13 +2082,24 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                                             surface: Color(0xFF1E1830),
                                             onSurface: Color(0xFFE7DAF4),
                                           ),
-                                          timePickerTheme: const TimePickerThemeData(
-                                            backgroundColor: Color(0xFF1A152A),
-                                            hourMinuteTextColor: Color(0xFFEDE2F8),
-                                            dialHandColor: Color(0xFFC6A6DC),
-                                            dialBackgroundColor: Color(0x332B2140),
-                                            entryModeIconColor: Color(0xFFC6A6DC),
-                                          ),
+                                          timePickerTheme:
+                                              const TimePickerThemeData(
+                                                backgroundColor: Color(
+                                                  0xFF1A152A,
+                                                ),
+                                                hourMinuteTextColor: Color(
+                                                  0xFFEDE2F8,
+                                                ),
+                                                dialHandColor: Color(
+                                                  0xFFC6A6DC,
+                                                ),
+                                                dialBackgroundColor: Color(
+                                                  0x332B2140,
+                                                ),
+                                                entryModeIconColor: Color(
+                                                  0xFFC6A6DC,
+                                                ),
+                                              ),
                                         ),
                                         child: child!,
                                       );
@@ -1936,17 +2135,27 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                                   );
 
                             if (isEditing) {
-                              await ref.read(tasksNotifierProvider.notifier).updateTask(
+                              await ref
+                                  .read(tasksNotifierProvider.notifier)
+                                  .updateTask(
                                     taskId: task.taskid,
                                     title: title,
-                                    description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+                                    description:
+                                        _descriptionController.text
+                                            .trim()
+                                            .isEmpty
+                                        ? null
+                                        : _descriptionController.text.trim(),
                                     deadline: combinedDeadline,
-                                    priority: int.tryParse(selectedPriority) ?? 1,
+                                    priority:
+                                        int.tryParse(selectedPriority) ?? 1,
                                     category: selectedCategory,
                                     syncWithGoogle: task.syncwithgoogle,
                                   );
                             } else {
-                              final localStorage = ref.read(localStorageServiceProvider);
+                              final localStorage = ref.read(
+                                localStorageServiceProvider,
+                              );
                               final userId = await localStorage.readUserId();
 
                               if (!context.mounted) return;
@@ -1956,20 +2165,27 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                                 return;
                               }
 
-                              await ref.read(tasksNotifierProvider.notifier).createTask(
+                              await ref
+                                  .read(tasksNotifierProvider.notifier)
+                                  .createTask(
                                     userId: userId,
                                     title: title,
                                     listId: 'default',
-                                    priority: int.tryParse(selectedPriority) ?? 1,
+                                    priority:
+                                        int.tryParse(selectedPriority) ?? 1,
                                     status: 'PENDING',
                                     category: selectedCategory,
-                                    description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+                                    description:
+                                        _descriptionController.text
+                                            .trim()
+                                            .isEmpty
+                                        ? null
+                                        : _descriptionController.text.trim(),
                                     deadline: combinedDeadline,
                                   );
                             }
 
                             _titleController.clear();
-                            _projectController.clear();
                             _descriptionController.clear();
                             selectedPriority = '1';
                             selectedCategory = 'OTHER';
@@ -2010,7 +2226,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     );
   }
 
-  Widget _sheetInput(TextEditingController controller, String hint, {int maxLines = 1}) {
+  Widget _sheetInput(
+    TextEditingController controller,
+    String hint, {
+    int maxLines = 1,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -2039,7 +2259,12 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     return '${deadline.month.toString().padLeft(2, '0')}/${deadline.day.toString().padLeft(2, '0')}/${deadline.year}';
   }
 
-  Widget _sheetDateTimeField({required String label, required String value, required IconData icon, required VoidCallback onTap}) {
+  Widget _sheetDateTimeField({
+    required String label,
+    required String value,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -2068,7 +2293,15 @@ class _TasksPageState extends ConsumerState<TasksPage> {
               children: [
                 Icon(icon, color: const Color(0xFFD4B6EA)),
                 const SizedBox(width: 10),
-                Expanded(child: Text(value, style: const TextStyle(color: Color(0xFFE9DCF8), fontFamily: 'Syne'))),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      color: Color(0xFFE9DCF8),
+                      fontFamily: 'Syne',
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -2077,7 +2310,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     );
   }
 
-  Widget _priorityChip(String value, String label, void Function(void Function()) setModalState) {
+  Widget _priorityChip(
+    String value,
+    String label,
+    void Function(void Function()) setModalState,
+  ) {
     final selected = _selectedPriority == value;
     return Expanded(
       child: GestureDetector(
@@ -2086,14 +2323,22 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           height: 40,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? const Color(0x1FF8B878) : Colors.white.withValues(alpha: 0.04),
+            color: selected
+                ? const Color(0x1FF8B878)
+                : Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: selected ? const Color(0x66F8B878) : const Color(0xFF2A2440)),
+            border: Border.all(
+              color: selected
+                  ? const Color(0x66F8B878)
+                  : const Color(0xFF2A2440),
+            ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? const Color(0xFFF8B878) : Colors.white.withValues(alpha: 0.45),
+              color: selected
+                  ? const Color(0xFFF8B878)
+                  : Colors.white.withValues(alpha: 0.45),
               fontFamily: 'Syne',
               fontSize: 13,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
@@ -2104,21 +2349,31 @@ class _TasksPageState extends ConsumerState<TasksPage> {
     );
   }
 
-  Widget _categoryChip(String category, void Function(void Function()) setModalState, {required String emoji}) {
+  Widget _categoryChip(
+    String category,
+    void Function(void Function()) setModalState, {
+    required String emoji,
+  }) {
     final selected = _selectedCategory == category;
     return GestureDetector(
       onTap: () => setModalState(() => _selectedCategory = category),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0x1FB284BE) : Colors.white.withValues(alpha: 0.04),
+          color: selected
+              ? const Color(0x1FB284BE)
+              : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: selected ? const Color(0x66B284BE) : const Color(0xFF2A2440)),
+          border: Border.all(
+            color: selected ? const Color(0x66B284BE) : const Color(0xFF2A2440),
+          ),
         ),
         child: Text(
           '$emoji  ${_categoryTitle(category)}',
           style: TextStyle(
-            color: selected ? const Color(0xFFCEA4D4) : Colors.white.withValues(alpha: 0.45),
+            color: selected
+                ? const Color(0xFFCEA4D4)
+                : Colors.white.withValues(alpha: 0.45),
             fontFamily: 'Syne',
             fontSize: 12,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
@@ -2143,7 +2398,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
       case 'OTHER':
       default:
         final s = category.toLowerCase();
-        return s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : category;
+        return s.isNotEmpty
+            ? '${s[0].toUpperCase()}${s.substring(1)}'
+            : category;
     }
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../services/tasks_service.dart';
 import '../models/task_model.dart';
-import '../../auth/state/auth_notifier.dart' show localStorageServiceProvider;
+import '../../auth/state/auth_notifier.dart' show authNotifierProvider, localStorageServiceProvider;
 import '../../../core/constants/app_constants.dart';
 import '../services/google_calendar_service.dart';
 import 'package:flutter/foundation.dart';
@@ -54,8 +54,13 @@ class TasksNotifier extends StateNotifier<TasksState> {
   Future<void> fetchTasks() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final localStorage = _ref.read(localStorageServiceProvider);
-      final userId = (await localStorage.readUserId()) ?? 'user';
+      final authState = _ref.read(authNotifierProvider);
+      final userId = authState.userId;
+      if (userId == null || userId.isEmpty) {
+        state = state.copyWith(isLoading: false, error: 'User session is not ready yet');
+        return;
+      }
+
       final tasks = await _tasksService.getTasks(userId);
       state = state.copyWith(tasks: tasks, isLoading: false);
     } catch (e) {

@@ -65,6 +65,7 @@ class AINotifier extends StateNotifier<AIState> {
   bool _shouldUseToolPath(String content) {
     final text = content.toLowerCase();
     final patterns = <RegExp>[
+      RegExp(r'\b(add|create)\s+(these\s+)?tasks?\b'),
       RegExp(r'\b(create|add)\s+(a\s+)?task\b'),
       RegExp(r'\b(update|edit|delete|remove)\s+(a\s+)?task\b'),
       RegExp(r'\b(list|show)\s+(my\s+)?tasks?\b'),
