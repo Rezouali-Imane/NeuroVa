@@ -18,22 +18,22 @@ Neurova is a comprehensive academic productivity and AI-assisted learning platfo
 **Fragmented Learning:** Students juggle multiple apps (note-taking, to-do lists, calendars, chat) losing time switching contexts.
 
 **Neurova Solution:** One integrated platform where:
-• You ask the AI anything about your studies, it remembers your learning style and weak areas
-• You mention "add these 5 tasks", they're auto-created and prioritized
-• You study, every minute is tracked and rewarded
-• Your progress becomes visible, motivation increases through achievements
+- You ask the AI anything about your studies, it remembers your learning style and weak areas
+- You mention "add these 5 tasks", they're auto-created and prioritized
+- You study, every minute is tracked and rewarded
+- Your progress becomes visible, motivation increases through achievements
 
 ### Core Capabilities
 
-• **AI-Powered Tutoring**: Conversational learning with Claude, Gemini, or OpenRouter. The AI remembers what you've studied, identifies knowledge gaps, and adapts explanations to your level.
-• **Semantic Note Search**: Ask "what did I learn about photosynthesis?" and get relevant notes instantly via vector embeddings.
-• **Smart Task Planning**: Natural language task creation ("create a study schedule for the MCAT") with automatic subtask generation.
-• **Focus Session Tracking**: Pomodoro-style study sessions with real-time timer, 35-day heatmap showing study consistency, and streak analytics.
-• **Gamification Engine**: XP rewards (scaled by task difficulty), achievement unlocks, leaderboards, and daily challenges to sustain motivation.
-• **Calendar Integration**: Google Calendar sync shows study sessions alongside classes and deadlines.
-• **Faith Mode**: Prayer time reminders, spiritual study content integration, and faith-based daily challenges.
-• **Smart Notifications**: Contextual reminders for tasks, prayer times, achievements, and daily challenges (customizable per preference).
-• **Multi-Language Support**: Full support for English, French, and Arabic with AI responses in your preferred language.
+- **AI-Powered Tutoring**: Conversational learning with Claude, Gemini, or OpenRouter. The AI remembers what you've studied, identifies knowledge gaps, and adapts explanations to your level.
+- **Semantic Note Search**: Ask "what did I learn about photosynthesis?" and get relevant notes instantly via vector embeddings.
+- **Smart Task Planning**: Natural language task creation ("create a study schedule for the MCAT") with automatic subtask generation.
+- **Focus Session Tracking**: Pomodoro-style study sessions with real-time timer, 35-day heatmap showing study consistency, and streak analytics.
+- **Gamification Engine**: XP rewards (scaled by task difficulty), achievement unlocks, leaderboards, and daily challenges to sustain motivation.
+- **Calendar Integration**: Google Calendar sync shows study sessions alongside classes and deadlines.
+- **Faith Mode**: Prayer time reminders, spiritual study content integration, and faith-based daily challenges.
+- **Smart Notifications**: Contextual reminders for tasks, prayer times, achievements, and daily challenges (customizable per preference).
+- **Multi-Language Support**: Full support for English, French, and Arabic with AI responses in your preferred language.
 
 ---
 
@@ -108,19 +108,19 @@ flutter test --coverage     # Coverage report
 ## 🤝 Architecture Highlights
 
 ### Backend
-• **Clean Architecture:** Entities → Repositories → Use Cases → Controllers
-• **Dependency Injection:** Service providers via constructor injection
-• **Error Handling:** Centralized error handler with consistent HTTP responses
-• **Database:** Prisma migrations for version control
-• **AI Fallback:** Automatic provider failover (Claude → Gemini → OpenRouter → Ollama)
+- Clean Architecture: Entities → Repositories → Use Cases → Controllers
+- Dependency Injection: Service providers via constructor injection
+- Error Handling: Centralized error handler with consistent HTTP responses
+- Database: Prisma migrations for version control
+- AI Fallback: Automatic provider failover (Claude → Gemini → OpenRouter → Ollama)
 
 ---
 
 ### Frontend
-• **Riverpod State Management:** Type-safe, reactive state with providers
-• **Theme System:** NeuropaColors extension with light/dark mode support
-• **Navigation:** GoRouter with deep linking support
-• **API Integration:** Dio with interceptors for token refresh and error handling
+- Riverpod State Management: Type-safe, reactive state with providers
+- Theme System: NeuropaColors extension with light/dark mode support
+- Navigation: GoRouter with deep linking support
+- API Integration: Dio with interceptors for token refresh and error handling
 ---
 ## 📦 Key Features Deep Dive
 
@@ -133,31 +133,31 @@ flutter test --coverage     # Coverage report
 ### Task Management
 - Hierarchical task lists with categories and priorities
 - Status tracking (PENDING → IN_PROGRESS → COMPLETED)
-• Automatic study plan generation from text prompts
-• Calendar view integration
+- Automatic study plan generation from text prompts
+- Calendar view integration
 
 ### Focus Sessions
-• Session timer with start/stop/pause controls
-• 35-day productivity heatmap visualization
-• Session history and duration analytics
-• Integration with gamification system
+- Session timer with start/stop/pause controls
+- 35-day productivity heatmap visualization
+- Session history and duration analytics
+- Integration with gamification system
 
 ### Gamification
-• XP earned per completed task (scaled by priority/category)
-• Achievements with badge system
-• Global leaderboard
-• Daily challenges with streak tracking
+- XP earned per completed task (scaled by priority/category)
+- Achievements with badge system
+- Global leaderboard
+- Daily challenges with streak tracking
 
 ---
 
 ## 🛤 Development Roadmap
 
-☐ Offline mode for mobile app
-☐ Advanced analytics dashboard
-☐ Collaborative study groups
-☐ Video explanation generation from notes
-☐ Mobile web synchronization
-☐ Admin dashboard
+- Offline mode for mobile app
+- Advanced analytics dashboard
+- Collaborative study groups
+- Video explanation generation from notes
+- Mobile web synchronization
+- Admin dashboard
 ---
 ## 🤝 Contributing
 
@@ -168,10 +168,10 @@ flutter test --coverage     # Coverage report
 5. **Open** a Pull Request
 
 **Guidelines:**
-• Follow TypeScript/Dart style conventions
-• Write tests for new features
-• Update documentation
-• Keep commits atomic and descriptive
+- Follow TypeScript/Dart style conventions
+- Write tests for new features
+- Update documentation
+- Keep commits atomic and descriptive
 
 ---
 
