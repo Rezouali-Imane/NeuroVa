@@ -199,9 +199,11 @@ class _Onboarding1State extends State<Onboarding1>
                   width: 367,
                   height: 189,
                   child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                         AnimatedBuilder(
                           animation: _controller,
                           builder: (context, child) => Opacity(
@@ -268,7 +270,8 @@ class _Onboarding1State extends State<Onboarding1>
                             ),
                           ),
                         ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
