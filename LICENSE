@@ -1,0 +1,84 @@
+Neurova Proprietary Software License
+
+Copyright (c) 2026 Imane Rezouali. All rights reserved.
+
+IMPORTANT: This is a proprietary software license, not an open-source license.
+
+1. Ownership
+
+Neurova, including its source code, object code, application design, visual
+assets, documentation, database schemas, prompts, workflows, branding, and
+other original materials in this repository (collectively, the "Software")
+is owned by Imane Rezouali or its licensors. No ownership or intellectual
+property rights are transferred by providing access to the Software.
+
+2. No permission without written authorization
+
+Unless Imane Rezouali gives prior written permission, you may not:
+
+- copy, reproduce, publish, distribute, sell, rent, lease, sublicense, or
+  otherwise provide the Software or any substantial part of it to another
+  person;
+- modify, adapt, translate, merge, fork, or create derivative works based on
+  the Software;
+- use the Software or any substantial part of it for a commercial purpose,
+  production service, competing product, or public demonstration;
+- reverse engineer, decompile, disassemble, or attempt to discover the source
+  code or underlying algorithms, except to the limited extent that applicable
+  law expressly permits that activity and does not allow it to be restricted;
+- remove or alter copyright, trademark, attribution, or proprietary notices;
+  or
+- use the name, logos, designs, or other branding of Neurova or Imane Rezouali
+  without separate written permission.
+
+3. Limited evaluation access
+
+If you received the Software directly from Imane Rezouali for evaluation,
+you may run the unmodified Software privately only for that evaluation. You
+must keep the Software confidential, limit access to people who need it for
+the evaluation and are bound by confidentiality obligations, and delete all
+copies when the evaluation ends or when requested in writing.
+
+No evaluation right is granted to deploy the Software for users, operate it
+as a hosted service, train another model with it, or use it to develop or
+validate a competing product.
+
+4. Third-party materials
+
+This license applies only to materials owned by Imane Rezouali. Components,
+fonts, libraries, APIs, models, and other third-party materials remain subject
+to their own licenses. Those licenses do not grant permission to use Neurova's
+original code, design, branding, or product concept beyond their scope.
+
+5. Confidentiality and remedies
+
+Unauthorized access, use, copying, disclosure, or distribution may violate
+copyright, trade-secret, contract, trademark, or other applicable laws. To the
+maximum extent permitted by law, Imane Rezouali reserves all available rights
+and remedies, including injunctive relief, damages, recovery of profits,
+statutory remedies, and attorneys' fees where available.
+
+6. No warranty
+
+The Software is provided "as is", without warranties of any kind, to the
+maximum extent permitted by law. Imane Rezouali is not liable for damages
+arising from unauthorized or authorized use of the Software except as required
+by applicable law.
+
+7. Termination
+
+Any permission granted under this license ends automatically if you breach
+its terms. When permission ends, you must stop using the Software and delete
+all copies in your possession or control. Ending permission does not limit
+any rights or remedies for the breach.
+
+8. Reservations
+
+All rights not expressly granted are reserved. This license grants no patent,
+trademark, trade-secret, publicity, or other license. Copyright protects
+original expression in the Software; it does not by itself protect an abstract
+idea, business method, or general product concept. Separate confidentiality,
+assignment, trademark, and patent protections may be needed for those matters.
+
+For permission requests or licensing terms, contact the copyright holder
+through the official project contact listed in the repository.

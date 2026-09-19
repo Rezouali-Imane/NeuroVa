@@ -2,7 +2,7 @@
 
 > An intelligent AI-powered academic assistant platform combining a Node.js backend with a Flutter mobile app for personalized learning, task management, and focus optimization.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-C8B8E8?style=flat-square)](https://opensource.org/licenses/MIT)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-C8B8E8?style=flat-square)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-BEB0D0?style=flat-square&logo=node.js)](https://nodejs.org/)
 [![Flutter](https://img.shields.io/badge/Flutter-3.0%2B-E8C898?style=flat-square&logo=flutter)](https://flutter.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5%2B-C8B8E8?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
@@ -177,7 +177,15 @@ flutter test --coverage     # Coverage report
 
 ## 📄 License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+Neurova is proprietary software. All rights are reserved by Imane Rezouali.
+No copying, redistribution, commercial use, modification, reverse engineering,
+or competing use is permitted without prior written authorization. See the
+[LICENSE](LICENSE) file for the complete terms.
+
+The license protects the original code, assets, documentation, and other
+original expression in this repository. It does not by itself protect an
+abstract idea or general product concept; use separate confidentiality,
+trademark, patent, or assignment agreements where appropriate.
 
 ---
 
