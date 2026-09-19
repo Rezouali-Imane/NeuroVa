@@ -288,6 +288,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isLoading: false,
         token: token,
         isverified: isverified,
+        userId: userId,
         clearError: true,
       );
       await _fetchAndSaveProfile();
