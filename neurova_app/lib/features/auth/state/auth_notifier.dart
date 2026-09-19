@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -390,7 +391,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (username != null) await _localStorageService.saveUsername(username);
       if (name != null) await _localStorageService.saveName(name);
       if (userid != null) await _localStorageService.saveUserId(userid);
-    } catch (e) {}
+    } catch (error) {
+      debugPrint('Profile cache update failed: $error');
+    }
   }
 
   String _readDioError(DioException error) {
